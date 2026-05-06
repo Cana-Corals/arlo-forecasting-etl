@@ -1,0 +1,512 @@
+RAW DATA PROFILE REPORT
+Generated from: C:\Users\julioramirez\Desktop\arlo_forecasting_etl\data\raw
+================================================================================
+
+================================================================================
+FILE KEY : res_daily_24
+================================================================================
+Shape    : 59,726 rows  x  12 columns
+
+Column                                   Dtype              Nulls   Null %
+---------------------------------------------------------------------------
+  Property                               str                    0     0.0%
+  Confirmation Number                    int64                  0     0.0%
+  Stay Date                              str                    0     0.0%
+  Rate Code                              str                9,514    15.9%
+  Rate Code Description                  str                9,514    15.9%
+  Rate                                   float64                0     0.0%
+  Room Type                              str                    0     0.0%
+  Room Type To Charge                    str                    0     0.0%
+  Market Code                            str                    0     0.0%
+  Market Code Description                str                    0     0.0%
+  Source Code                            str                    0     0.0%
+  Source Code Description                str                    0     0.0%
+
+Numeric ranges:
+  Column                                            Min            Max           Mean
+  ----------------------------------------------------------------------
+  Confirmation Number                    105,289,246.00 481,511,640.00 317,110,270.31
+  Rate                                             0.00       1,529.00         296.74
+
+Date column ranges (parsed):
+  Stay Date                               2024-01-01  ->  2025-12-30  (59,726 valid)
+
+
+================================================================================
+FILE KEY : res_daily_25
+================================================================================
+Shape    : 65,452 rows  x  12 columns
+
+Column                                   Dtype              Nulls   Null %
+---------------------------------------------------------------------------
+  Property                               str                    0     0.0%
+  Confirmation Number                    int64                  0     0.0%
+  Stay Date                              str                    0     0.0%
+  Rate Code                              str                7,774    11.9%
+  Rate Code Description                  str                7,774    11.9%
+  Rate                                   float64                0     0.0%
+  Room Type                              str                    0     0.0%
+  Room Type To Charge                    str                    0     0.0%
+  Market Code                            str                    0     0.0%
+  Market Code Description                str                    0     0.0%
+  Source Code                            str                    0     0.0%
+  Source Code Description                str                    0     0.0%
+
+Numeric ranges:
+  Column                                            Min            Max           Mean
+  ----------------------------------------------------------------------
+  Confirmation Number                    146,773,851.00 591,131,792.00 560,400,636.58
+  Rate                                             0.00       9,999.00         297.91
+
+Date column ranges (parsed):
+  Stay Date                               2025-01-01  ->  2026-12-30  (65,452 valid)
+
+
+================================================================================
+FILE KEY : res_main
+================================================================================
+Shape    : 50,350 rows  x  14 columns
+
+Column                                   Dtype              Nulls   Null %
+---------------------------------------------------------------------------
+  Property                               str                    0     0.0%
+  Confirmation Number                    int64                  0     0.0%
+  Created Date                           str                    0     0.0%
+  Cancel Date                            str               41,387    82.2%
+  Arrival Date                           str                    0     0.0%
+  Departure Date                         str                    0     0.0%
+  Number of Nights                       int64                  0     0.0%
+  Reservation Status                     str                    0     0.0%
+  Travel Agent Name                      str               45,469    90.3%
+  Company Name                           str               24,560    48.8%
+  Origin Description                     str               21,777    43.3%
+  Print Rate Y/N                         str                    0     0.0%
+  Origin Code                            str               21,034    41.8%
+  Block Name                             str               44,530    88.4%
+
+Numeric ranges:
+  Column                                            Min            Max           Mean
+  ----------------------------------------------------------------------
+  Confirmation Number                    105,289,246.00 591,131,792.00 442,609,013.76
+  Number of Nights                                 0.00         365.00           2.48
+
+Date column ranges (parsed):
+  Created Date                            2023-09-06  ->  2026-01-01  (50,350 valid)
+  Cancel Date                             2023-09-12  ->  2026-01-01  (8,963 valid)
+  Arrival Date                            2024-01-01  ->  2025-12-31  (50,350 valid)
+  Departure Date                          2024-01-01  ->  2026-12-31  (50,350 valid)
+
+
+================================================================================
+FILE KEY : daily_stats_source_2024
+================================================================================
+Shape    : 7,915 rows  x  15 columns
+
+Column                                   Dtype              Nulls   Null %
+---------------------------------------------------------------------------
+  Property                               str                    0     0.0%
+  Business Date                          str                    0     0.0%
+  Origin Code                            str                3,019    38.1%
+  Source Code                            str                  366     4.6%
+  Cancelled Rooms                        float64              188     2.4%
+  Day-Use Rooms                          float64              188     2.4%
+  No-Show Rooms                          float64              188     2.4%
+  Deduct Individual Rooms                float64              132     1.7%
+  Deduct Group Rooms                     float64               54     0.7%
+  Room Nights                            float64              188     2.4%
+  Average Rate                           float64            4,089    51.7%
+  Room Revenue                           float64                0     0.0%
+  Food Revenue                           float64                0     0.0%
+  Other Revenue                          float64                0     0.0%
+  Total Revenue                          float64                0     0.0%
+
+Numeric ranges:
+  Column                                            Min            Max           Mean
+  ----------------------------------------------------------------------
+  Cancelled Rooms                                  0.00          34.00           0.54
+  Day-Use Rooms                                    0.00           3.00           0.01
+  No-Show Rooms                                    0.00           4.00           0.04
+  Deduct Individual Rooms                          0.00          81.00           4.35
+  Deduct Group Rooms                               0.00         103.00           0.98
+  Room Nights                                      0.00         106.00           5.38
+  Average Rate                                -1,771.00       1,450.00         333.40
+  Room Revenue                                -3,587.00      34,425.33       1,774.59
+  Food Revenue                               -20,312.50     249,086.48         486.29
+  Other Revenue                               -3,416.50     504,145.48         366.82
+  Total Revenue                              -20,312.50     504,145.48       2,627.70
+
+Date column ranges (parsed):
+  Business Date                           2024-01-01  ->  2024-12-31  (7,915 valid)
+  Day-Use Rooms                           1970-01-01  ->  1970-01-01  (7,727 valid)
+
+
+================================================================================
+FILE KEY : daily_stats_source_2025
+================================================================================
+Shape    : 7,760 rows  x  15 columns
+
+Column                                   Dtype              Nulls   Null %
+---------------------------------------------------------------------------
+  Property                               str                    0     0.0%
+  Business Date                          str                    0     0.0%
+  Origin Code                            str                1,983    25.6%
+  Source Code                            str                  365     4.7%
+  Cancelled Rooms                        float64              230     3.0%
+  Day-Use Rooms                          float64              230     3.0%
+  No-Show Rooms                          float64              230     3.0%
+  Deduct Individual Rooms                float64              178     2.3%
+  Deduct Group Rooms                     float64               52     0.7%
+  Room Nights                            float64              230     3.0%
+  Average Rate                           float64            3,567    46.0%
+  Room Revenue                           float64                0     0.0%
+  Food Revenue                           float64                0     0.0%
+  Other Revenue                          float64                0     0.0%
+  Total Revenue                          float64                0     0.0%
+
+Numeric ranges:
+  Column                                            Min            Max           Mean
+  ----------------------------------------------------------------------
+  Cancelled Rooms                                  0.00          29.00           0.63
+  Day-Use Rooms                                    0.00           2.00           0.01
+  No-Show Rooms                                    0.00           4.00           0.04
+  Deduct Individual Rooms                          0.00          77.00           5.16
+  Deduct Group Rooms                               0.00          79.00           0.82
+  Room Nights                                      0.00          79.00           6.03
+  Average Rate                                  -661.00       1,308.00         339.90
+  Room Revenue                                -2,644.00      42,928.44       1,966.56
+  Food Revenue                               -21,564.14     331,528.16         464.62
+  Other Revenue                              -17,021.65     101,633.11         351.46
+  Total Revenue                              -17,021.65     331,878.16       2,782.64
+
+Date column ranges (parsed):
+  Business Date                           2025-01-01  ->  2025-12-31  (7,760 valid)
+  Day-Use Rooms                           1970-01-01  ->  1970-01-01  (7,530 valid)
+
+
+================================================================================
+FILE KEY : daily_stats_market_2024
+================================================================================
+Shape    : 18,200 rows  x  15 columns
+
+Column                                   Dtype              Nulls   Null %
+---------------------------------------------------------------------------
+  Property                               str                    0     0.0%
+  Business Date                          str                    0     0.0%
+  Market Code                            str                  366     2.0%
+  Rate Code                              str                1,180     6.5%
+  Cancelled Rooms                        float64              551     3.0%
+  Day-Use Rooms                          float64              551     3.0%
+  No-Show Rooms                          float64              551     3.0%
+  Deduct Individual Rooms                float64              506     2.8%
+  Deduct Group Rooms                     float64               45     0.2%
+  Room Nights                            float64              551     3.0%
+  Average Rate                           float64            6,482    35.6%
+  Room Revenue                           float64                0     0.0%
+  Food Revenue                           float64                0     0.0%
+  Other Revenue                          float64                0     0.0%
+  Total Revenue                          float64                0     0.0%
+
+Numeric ranges:
+  Column                                            Min            Max           Mean
+  ----------------------------------------------------------------------
+  Cancelled Rooms                                  0.00          21.00           0.24
+  Day-Use Rooms                                    0.00           3.00           0.00
+  No-Show Rooms                                    0.00           3.00           0.02
+  Deduct Individual Rooms                          0.00          39.00           1.91
+  Deduct Group Rooms                               0.00         114.00           0.43
+  Room Nights                                      0.00         114.00           2.35
+  Average Rate                                -2,041.72       1,479.00         334.69
+  Room Revenue                                -3,587.00      49,616.00         771.75
+  Food Revenue                               -17,125.64     249,086.48         211.48
+  Other Revenue                               -3,416.50     504,145.48         159.53
+  Total Revenue                              -17,125.64     504,145.48       1,142.76
+
+Date column ranges (parsed):
+  Business Date                           2024-01-01  ->  2024-12-31  (18,200 valid)
+  Day-Use Rooms                           1970-01-01  ->  1970-01-01  (17,649 valid)
+
+
+================================================================================
+FILE KEY : daily_stats_market_2025
+================================================================================
+Shape    : 20,882 rows  x  15 columns
+
+Column                                   Dtype              Nulls   Null %
+---------------------------------------------------------------------------
+  Property                               str                    0     0.0%
+  Business Date                          str                    0     0.0%
+  Market Code                            str                  365     1.7%
+  Rate Code                              str                  983     4.7%
+  Cancelled Rooms                        float64              571     2.7%
+  Day-Use Rooms                          float64              571     2.7%
+  No-Show Rooms                          float64              571     2.7%
+  Deduct Individual Rooms                float64              530     2.5%
+  Deduct Group Rooms                     float64               41     0.2%
+  Room Nights                            float64              571     2.7%
+  Average Rate                           float64            7,027    33.7%
+  Room Revenue                           float64                0     0.0%
+  Food Revenue                           float64                0     0.0%
+  Other Revenue                          float64                0     0.0%
+  Total Revenue                          float64                0     0.0%
+
+Numeric ranges:
+  Column                                            Min            Max           Mean
+  ----------------------------------------------------------------------
+  Cancelled Rooms                                  0.00          19.00           0.23
+  Day-Use Rooms                                    0.00           2.00           0.00
+  No-Show Rooms                                    0.00           2.00           0.01
+  Deduct Individual Rooms                          0.00          34.00           1.92
+  Deduct Group Rooms                               0.00         124.00           0.30
+  Room Nights                                      0.00         124.00           2.24
+  Average Rate                                  -556.98       1,817.00         332.35
+  Room Revenue                                -7,240.75      42,926.00         730.80
+  Food Revenue                                -2,519.18     329,150.16         172.66
+  Other Revenue                              -17,070.64     101,633.11         130.61
+  Total Revenue                              -16,584.76     340,297.84       1,034.06
+
+Date column ranges (parsed):
+  Business Date                           2025-01-01  ->  2025-12-31  (20,882 valid)
+  Day-Use Rooms                           1970-01-01  ->  1970-01-01  (20,311 valid)
+
+
+================================================================================
+FILE KEY : daily_stats_room_type
+================================================================================
+Shape    : 8,772 rows  x  16 columns
+
+Column                                   Dtype              Nulls   Null %
+---------------------------------------------------------------------------
+  Property                               str                    0     0.0%
+  Business Date                          str                    0     0.0%
+  Room Type                              str                    0     0.0%
+  Total Physical Rooms by Room Type      int64                  0     0.0%
+  OOO Rooms                              int64                  0     0.0%
+  Cancelled Rooms                        int64                  0     0.0%
+  Day-Use Rooms                          int64                  0     0.0%
+  No-Show Rooms                          int64                  0     0.0%
+  Deduct Individual Rooms                int64                  0     0.0%
+  Deduct Group Rooms                     int64                  0     0.0%
+  Room Nights                            int64                  0     0.0%
+  Average Rate                           float64              630     7.2%
+  Room Revenue                           float64                0     0.0%
+  Food Revenue                           float64                0     0.0%
+  Other Revenue                          float64                0     0.0%
+  Total Revenue                          float64                0     0.0%
+
+Numeric ranges:
+  Column                                            Min            Max           Mean
+  ----------------------------------------------------------------------
+  Total Physical Rooms by Room Type                1.00          31.00          12.25
+  OOO Rooms                                        0.00          23.00           0.75
+  Cancelled Rooms                                  0.00          22.00           1.01
+  Day-Use Rooms                                    0.00           2.00           0.01
+  No-Show Rooms                                    0.00           3.00           0.07
+  Deduct Individual Rooms                          0.00          31.00           8.31
+  Deduct Group Rooms                               0.00          29.00           1.60
+  Room Nights                                      0.00          31.00           9.91
+  Average Rate                                  -473.91       1,651.65         405.09
+  Room Revenue                                -7,108.68      24,062.08       3,337.10
+  Food Revenue                                  -333.68       3,154.41         170.60
+  Other Revenue                               -1,639.84       4,579.68         329.45
+  Total Revenue                               -5,933.12      25,258.35       3,837.14
+
+Date column ranges (parsed):
+  Business Date                           2024-01-01  ->  2025-12-31  (8,772 valid)
+  Day-Use Rooms                           1970-01-01  ->  1970-01-01  (8,772 valid)
+
+
+================================================================================
+FILE KEY : rate_change_2024
+================================================================================
+Shape    : 8,988 rows  x  9 columns
+
+Column                                   Dtype              Nulls   Null %
+---------------------------------------------------------------------------
+  Unnamed: 0                             str                8,986   100.0%
+  Arlo Williamsburg Rate Change Activity: 1/1/2024–12/31/2024 object                 1     0.0%
+  Unnamed: 2                             str                    1     0.0%
+  Unnamed: 3                             str                    1     0.0%
+  Unnamed: 4                             str                    1     0.0%
+  Unnamed: 5                             object                 1     0.0%
+  Unnamed: 6                             object                 1     0.0%
+  Unnamed: 7                             object                 1     0.0%
+  Unnamed: 8                             object                 1     0.0%
+
+
+================================================================================
+FILE KEY : rate_change_2025
+================================================================================
+Shape    : 17,534 rows  x  9 columns
+
+Column                                   Dtype              Nulls   Null %
+---------------------------------------------------------------------------
+  Unnamed: 0                             str               17,532   100.0%
+  Arlo Williamsburg Rate Change Activity: 1/1/2025–12/31/2025 object                 1     0.0%
+  Unnamed: 2                             str                    1     0.0%
+  Unnamed: 3                             str                    1     0.0%
+  Unnamed: 4                             str                    1     0.0%
+  Unnamed: 5                             object                 1     0.0%
+  Unnamed: 6                             object                 1     0.0%
+  Unnamed: 7                             object                 1     0.0%
+  Unnamed: 8                             object                 1     0.0%
+
+
+================================================================================
+FILE KEY : medallia_2024_h1
+================================================================================
+Shape    : 86 rows  x  31 columns
+
+Column                                   Dtype              Nulls   Null %
+---------------------------------------------------------------------------
+  Unnamed: 0                             str                    0     0.0%
+  Week of 12/ 31                         str                    0     0.0%
+  Week of 01/ 07                         str                    0     0.0%
+  Week of 01/ 14                         str                    0     0.0%
+  Week of 01/ 21                         str                    0     0.0%
+  Week of 01/ 28                         str                    0     0.0%
+  Week of 02/ 04                         str                    0     0.0%
+  Week of 02/ 11                         str                    0     0.0%
+  Week of 02/ 18                         str                    0     0.0%
+  Week of 02/ 25                         str                    0     0.0%
+  Week of 03/ 03                         str                    0     0.0%
+  Week of 03/ 10                         str                    0     0.0%
+  Week of 03/ 17                         str                    0     0.0%
+  Week of 03/ 24                         str                    0     0.0%
+  Week of 03/ 31                         str                    0     0.0%
+  Week of 04/ 07                         str                    0     0.0%
+  Week of 04/ 14                         str                    0     0.0%
+  Week of 04/ 21                         str                    0     0.0%
+  Week of 04/ 28                         str                    0     0.0%
+  Week of 05/ 05                         str                    0     0.0%
+  Week of 05/ 12                         str                    0     0.0%
+  Week of 05/ 19                         str                    0     0.0%
+  Week of 05/ 26                         str                    0     0.0%
+  Week of 06/ 02                         str                    0     0.0%
+  Week of 06/ 09                         str                    0     0.0%
+  Week of 06/ 16                         str                    0     0.0%
+  Week of 06/ 23                         str                    0     0.0%
+  Week of 06/ 30                         str                    0     0.0%
+  Total                                  str                    0     0.0%
+  BenchmarkPrior 3 Months                str                    0     0.0%
+  BenchmarkPrior 3 Months.1              str                    0     0.0%
+
+
+================================================================================
+FILE KEY : medallia_2024_h2
+================================================================================
+Shape    : 68 rows  x  31 columns
+
+Column                                   Dtype              Nulls   Null %
+---------------------------------------------------------------------------
+  Unnamed: 0                             str                    0     0.0%
+  Week of 06/ 30                         str                    0     0.0%
+  Week of 07/ 07                         str                    0     0.0%
+  Week of 07/ 14                         str                    0     0.0%
+  Week of 07/ 21                         str                    0     0.0%
+  Week of 07/ 28                         str                    0     0.0%
+  Week of 08/ 04                         str                    0     0.0%
+  Week of 08/ 11                         str                    0     0.0%
+  Week of 08/ 18                         str                    0     0.0%
+  Week of 08/ 25                         str                    0     0.0%
+  Week of 09/ 01                         str                    0     0.0%
+  Week of 09/ 08                         str                    0     0.0%
+  Week of 09/ 15                         str                    0     0.0%
+  Week of 09/ 22                         str                    0     0.0%
+  Week of 09/ 29                         str                    0     0.0%
+  Week of 10/ 06                         str                    0     0.0%
+  Week of 10/ 13                         str                    0     0.0%
+  Week of 10/ 20                         str                    0     0.0%
+  Week of 10/ 27                         str                    0     0.0%
+  Week of 11/ 03                         str                    0     0.0%
+  Week of 11/ 10                         str                    0     0.0%
+  Week of 11/ 17                         str                    0     0.0%
+  Week of 11/ 24                         str                    0     0.0%
+  Week of 12/ 01                         str                    0     0.0%
+  Week of 12/ 08                         str                    0     0.0%
+  Week of 12/ 15                         str                    0     0.0%
+  Week of 12/ 22                         str                    0     0.0%
+  Week of 12/ 29                         str                    0     0.0%
+  Total                                  str                    0     0.0%
+  BenchmarkPrior 3 Months                str                    0     0.0%
+  BenchmarkPrior 3 Months.1              str                    0     0.0%
+
+
+================================================================================
+FILE KEY : medallia_2025_h1
+================================================================================
+Shape    : 65 rows  x  31 columns
+
+Column                                   Dtype              Nulls   Null %
+---------------------------------------------------------------------------
+  Unnamed: 0                             str                    0     0.0%
+  Week of 12/ 29                         str                    0     0.0%
+  Week of 01/ 05                         str                    0     0.0%
+  Week of 01/ 12                         str                    0     0.0%
+  Week of 01/ 19                         str                    0     0.0%
+  Week of 01/ 26                         str                    0     0.0%
+  Week of 02/ 02                         str                    0     0.0%
+  Week of 02/ 09                         str                    0     0.0%
+  Week of 02/ 16                         str                    0     0.0%
+  Week of 02/ 23                         str                    0     0.0%
+  Week of 03/ 02                         str                    0     0.0%
+  Week of 03/ 09                         str                    0     0.0%
+  Week of 03/ 16                         str                    0     0.0%
+  Week of 03/ 23                         str                    0     0.0%
+  Week of 03/ 30                         str                    0     0.0%
+  Week of 04/ 06                         str                    0     0.0%
+  Week of 04/ 13                         str                    0     0.0%
+  Week of 04/ 20                         str                    0     0.0%
+  Week of 04/ 27                         str                    0     0.0%
+  Week of 05/ 04                         str                    0     0.0%
+  Week of 05/ 11                         str                    0     0.0%
+  Week of 05/ 18                         str                    0     0.0%
+  Week of 05/ 25                         str                    0     0.0%
+  Week of 06/ 01                         str                    0     0.0%
+  Week of 06/ 08                         str                    0     0.0%
+  Week of 06/ 15                         str                    0     0.0%
+  Week of 06/ 22                         str                    0     0.0%
+  Week of 06/ 29                         str                    0     0.0%
+  Total                                  str                    0     0.0%
+  BenchmarkPrior 3 Months                str                    0     0.0%
+  BenchmarkPrior 3 Months.1              str                    0     0.0%
+
+
+================================================================================
+FILE KEY : medallia_2025_h2
+================================================================================
+Shape    : 62 rows  x  31 columns
+
+Column                                   Dtype              Nulls   Null %
+---------------------------------------------------------------------------
+  Unnamed: 0                             str                    0     0.0%
+  Week of 06/ 29                         str                    0     0.0%
+  Week of 07/ 06                         str                    0     0.0%
+  Week of 07/ 13                         str                    0     0.0%
+  Week of 07/ 20                         str                    0     0.0%
+  Week of 07/ 27                         str                    0     0.0%
+  Week of 08/ 03                         str                    0     0.0%
+  Week of 08/ 10                         str                    0     0.0%
+  Week of 08/ 17                         str                    0     0.0%
+  Week of 08/ 24                         str                    0     0.0%
+  Week of 08/ 31                         str                    0     0.0%
+  Week of 09/ 07                         str                    0     0.0%
+  Week of 09/ 14                         str                    0     0.0%
+  Week of 09/ 21                         str                    0     0.0%
+  Week of 09/ 28                         str                    0     0.0%
+  Week of 10/ 05                         str                    0     0.0%
+  Week of 10/ 12                         str                    0     0.0%
+  Week of 10/ 19                         str                    0     0.0%
+  Week of 10/ 26                         str                    0     0.0%
+  Week of 11/ 02                         str                    0     0.0%
+  Week of 11/ 09                         str                    0     0.0%
+  Week of 11/ 16                         str                    0     0.0%
+  Week of 11/ 23                         str                    0     0.0%
+  Week of 11/ 30                         str                    0     0.0%
+  Week of 12/ 07                         str                    0     0.0%
+  Week of 12/ 14                         str                    0     0.0%
+  Week of 12/ 21                         str                    0     0.0%
+  Week of 12/ 28                         str                    0     0.0%
+  Total                                  str                    0     0.0%
+  BenchmarkPrior 3 Months                str                    0     0.0%
+  BenchmarkPrior 3 Months.1              str                    0     0.0%
+

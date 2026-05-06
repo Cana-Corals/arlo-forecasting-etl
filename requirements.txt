@@ -3,6 +3,7 @@ openpyxl
 xlrd
 html5lib
 requests
+beautifulsoup4
 lightgbm
 scikit-learn
 numpy

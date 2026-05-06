@@ -154,6 +154,25 @@ def join_nyc_events(daily: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
+# Step 8: Join competitor rates (Wayback Machine scrape or STR export)
+# ---------------------------------------------------------------------------
+
+def join_competitor_rates(daily: pd.DataFrame) -> pd.DataFrame:
+    path = PROCESSED_DIR / "competitor_rates_daily.csv"
+    if not path.exists():
+        print("  [WARNING] competitor_rates_daily.csv not found — run 12_fetch_competitor_rates.py first")
+        return daily
+    cr = pd.read_csv(path, parse_dates=["business_date"])
+    daily = daily.merge(cr, on="business_date", how="left")
+    # Rate gap: Arlo retail rate vs. average competitor rate (positive = Arlo priced above market)
+    if "retail_rate" in daily.columns and "competitor_avg_rate" in daily.columns:
+        daily["rate_gap_vs_competitors"] = (
+            daily["retail_rate"] - daily["competitor_avg_rate"]
+        ).round(2)
+    return daily
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -161,28 +180,32 @@ def main():
     print("Building daily master dataset...")
 
     daily = build_daily_spine()
-    print(f"  [1/7] Spine built         : {len(daily):,} days ({daily['business_date'].min().date()} -> {daily['business_date'].max().date()})")
+    print(f"  [1/8] Spine built         : {len(daily):,} days ({daily['business_date'].min().date()} -> {daily['business_date'].max().date()})")
 
     daily = join_retail_rate(daily)
-    print(f"  [2/7] Retail rate joined  : {daily['retail_rate'].notna().sum():,} days with rate data")
+    print(f"  [2/8] Retail rate joined  : {daily['retail_rate'].notna().sum():,} days with rate data")
 
     daily = join_medallia(daily)
-    print(f"  [3/7] Medallia joined     : {daily['medallia_overall_satisfaction'].notna().sum():,} days with satisfaction scores")
+    print(f"  [3/8] Medallia joined     : {daily['medallia_overall_satisfaction'].notna().sum():,} days with satisfaction scores")
 
     daily = add_calendar_features(daily)
-    print(f"  [4/7] Calendar features   : added day_of_week, month, quarter, is_weekend, etc.")
+    print(f"  [4/8] Calendar features   : added day_of_week, month, quarter, is_weekend, etc.")
 
     daily = join_weather(daily)
     n_weather = daily["temp_mean_f"].notna().sum() if "temp_mean_f" in daily.columns else 0
-    print(f"  [5/7] Weather joined      : {n_weather:,} days with weather data")
+    print(f"  [5/8] Weather joined      : {n_weather:,} days with weather data")
 
     daily = join_holidays(daily)
     n_holidays = int(daily["is_federal_holiday"].sum()) if "is_federal_holiday" in daily.columns else 0
-    print(f"  [6/7] Holidays joined     : {n_holidays} federal holiday days flagged")
+    print(f"  [6/8] Holidays joined     : {n_holidays} federal holiday days flagged")
 
     daily = join_nyc_events(daily)
     n_events = int(daily["is_major_event_day"].sum()) if "is_major_event_day" in daily.columns else 0
-    print(f"  [7/7] NYC events joined   : {n_events} major event days")
+    print(f"  [7/8] NYC events joined   : {n_events} major event days")
+
+    daily = join_competitor_rates(daily)
+    n_comp = daily["competitor_avg_rate"].notna().sum() if "competitor_avg_rate" in daily.columns else 0
+    print(f"  [8/8] Competitor rates    : {n_comp:,} days with competitor rate data")
 
     # Final column order
     col_order = [
@@ -222,6 +245,12 @@ def main():
         "is_brooklyn_music_event",
         "is_major_concert", "is_major_sports_event",
         "days_to_next_event",
+        # Competitor rates
+        "hoxton_rate", "williamvale_rate", "moxy_rate",
+        "indigo_rate", "white_hotel_rate",
+        "competitor_avg_rate", "competitor_min_rate",
+        "competitor_max_rate", "competitor_rate_spread",
+        "rate_gap_vs_competitors",
     ]
     daily = daily[[c for c in col_order if c in daily.columns]]
 

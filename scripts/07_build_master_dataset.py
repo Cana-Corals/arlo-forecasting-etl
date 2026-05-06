@@ -218,6 +218,8 @@ def main():
         "is_barclays_event", "is_msg_event",
         "is_yankees_game", "is_mets_game",
         "is_nba_game", "is_mlb_game", "is_nhl_game",
+        "is_us_open_event",
+        "is_brooklyn_music_event",
         "is_major_concert", "is_major_sports_event",
         "days_to_next_event",
     ]

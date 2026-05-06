@@ -42,10 +42,22 @@ TARGET_VENUES = [
     ("Madison Square Garden", "msg"),
     ("Yankee Stadium",        "yankee_stadium"),
     ("Citi Field",            "citi_field"),
+    # US Open tennis (late Aug – early Sep, large demand spike)
+    ("Arthur Ashe Stadium",   "arthur_ashe"),
+    # Brooklyn / Queens music venues — close to Arlo Williamsburg
+    ("Brooklyn Mirage",       "brooklyn_mirage"),
+    ("Brooklyn Storehouse",   "brooklyn_storehouse"),
+    ("Knockdown Center",      "knockdown_center"),
 ]
 
 # Venues large enough to classify a Music event as a "major concert"
-LARGE_CONCERT_VENUES = {"barclays_center", "msg"}
+LARGE_CONCERT_VENUES = {
+    "barclays_center", "msg",
+    "brooklyn_mirage", "brooklyn_storehouse", "knockdown_center",
+}
+
+# USTA venues used to flag US Open days specifically
+USTA_VENUES = {"arthur_ashe"}
 
 
 # ---------------------------------------------------------------------------
@@ -142,6 +154,8 @@ def build_daily_signals(events: pd.DataFrame) -> pd.DataFrame:
         "is_barclays_event", "is_msg_event",
         "is_yankees_game", "is_mets_game",
         "is_nba_game", "is_mlb_game", "is_nhl_game",
+        "is_us_open_event",
+        "is_brooklyn_music_event",
         "is_major_concert", "is_major_sports_event", "is_major_event_day",
     ]
     for col in bool_cols:
@@ -158,14 +172,19 @@ def build_daily_signals(events: pd.DataFrame) -> pd.DataFrame:
     def date_set(mask: pd.Series) -> set:
         return set(events.loc[mask, "business_date"])
 
-    barclays_dates = date_set(events["venue"] == "barclays_center")
-    msg_dates      = date_set(events["venue"] == "msg")
-    yankees_dates  = date_set((events["venue"] == "yankee_stadium") & (events["genre"] == "Baseball"))
-    mets_dates     = date_set((events["venue"] == "citi_field")     & (events["genre"] == "Baseball"))
-    nba_dates      = date_set(events["genre"] == "Basketball")
-    mlb_dates      = date_set(events["genre"] == "Baseball")
-    nhl_dates      = date_set(events["genre"] == "Hockey")
-    concert_dates  = date_set(
+    barclays_dates       = date_set(events["venue"] == "barclays_center")
+    msg_dates            = date_set(events["venue"] == "msg")
+    yankees_dates        = date_set((events["venue"] == "yankee_stadium") & (events["genre"] == "Baseball"))
+    mets_dates           = date_set((events["venue"] == "citi_field")     & (events["genre"] == "Baseball"))
+    nba_dates            = date_set(events["genre"] == "Basketball")
+    mlb_dates            = date_set(events["genre"] == "Baseball")
+    nhl_dates            = date_set(events["genre"] == "Hockey")
+    us_open_dates        = date_set(events["venue"].isin(USTA_VENUES))
+    brooklyn_music_dates = date_set(
+        (events["segment"] == "Music") &
+        events["venue"].isin({"brooklyn_mirage", "brooklyn_storehouse", "knockdown_center"})
+    )
+    concert_dates        = date_set(
         (events["segment"] == "Music") & events["venue"].isin(LARGE_CONCERT_VENUES)
     )
 
@@ -184,14 +203,17 @@ def build_daily_signals(events: pd.DataFrame) -> pd.DataFrame:
     set_flag("is_nba_game",          nba_dates)
     set_flag("is_mlb_game",          mlb_dates)
     set_flag("is_nhl_game",          nhl_dates)
+    set_flag("is_us_open_event",     us_open_dates)
+    set_flag("is_brooklyn_music_event", brooklyn_music_dates)
     set_flag("is_major_concert",     concert_dates)
 
     spine["is_major_sports_event"] = (
         spine["is_nba_game"] | spine["is_mlb_game"] | spine["is_nhl_game"]
     )
     spine["is_major_event_day"] = (
-        spine["is_barclays_event"] | spine["is_msg_event"] |
-        spine["is_yankees_game"]   | spine["is_mets_game"]
+        spine["is_barclays_event"]    | spine["is_msg_event"]   |
+        spine["is_yankees_game"]      | spine["is_mets_game"]   |
+        spine["is_us_open_event"]     | spine["is_brooklyn_music_event"]
     )
 
     # Days until the next major event — captures pre-event booking lead-up demand.
@@ -252,6 +274,8 @@ def main():
         "is_barclays_event", "is_msg_event",
         "is_yankees_game", "is_mets_game",
         "is_nba_game", "is_mlb_game", "is_nhl_game",
+        "is_us_open_event",
+        "is_brooklyn_music_event",
         "is_major_concert", "is_major_sports_event",
         "days_to_next_event",
     ]
@@ -261,14 +285,16 @@ def main():
     daily.to_csv(out_path, index=False)
 
     print(f"\nnyc_events_daily.csv")
-    print(f"  Rows             : {len(daily):,} (one per calendar day)")
-    print(f"  Major event days : {int(daily['is_major_event_day'].sum())}")
-    print(f"  NBA game days    : {int(daily['is_nba_game'].sum())}")
-    print(f"  MLB game days    : {int(daily['is_mlb_game'].sum())}")
-    print(f"  NHL game days    : {int(daily['is_nhl_game'].sum())}")
-    print(f"  Concert days     : {int(daily['is_major_concert'].sum())}")
-    print(f"  Barclays events  : {int(daily['is_barclays_event'].sum())}")
-    print(f"  MSG events       : {int(daily['is_msg_event'].sum())}")
+    print(f"  Rows               : {len(daily):,} (one per calendar day)")
+    print(f"  Major event days   : {int(daily['is_major_event_day'].sum())}")
+    print(f"  NBA game days      : {int(daily['is_nba_game'].sum())}")
+    print(f"  MLB game days      : {int(daily['is_mlb_game'].sum())}")
+    print(f"  NHL game days      : {int(daily['is_nhl_game'].sum())}")
+    print(f"  US Open days       : {int(daily['is_us_open_event'].sum())}")
+    print(f"  Brooklyn music days: {int(daily['is_brooklyn_music_event'].sum())}")
+    print(f"  Concert days       : {int(daily['is_major_concert'].sum())}")
+    print(f"  Barclays events    : {int(daily['is_barclays_event'].sum())}")
+    print(f"  MSG events         : {int(daily['is_msg_event'].sum())}")
     print(f"\n  Saved: {out_path}")
 
 

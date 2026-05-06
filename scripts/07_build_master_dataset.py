@@ -111,6 +111,49 @@ def add_calendar_features(daily: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
+# Step 5: Join daily weather signals
+# ---------------------------------------------------------------------------
+
+def join_weather(daily: pd.DataFrame) -> pd.DataFrame:
+    path = PROCESSED_DIR / "weather_daily.csv"
+    if not path.exists():
+        print("  [WARNING] weather_daily.csv not found — run 09_fetch_weather.py first")
+        return daily
+    w = pd.read_csv(path, parse_dates=["business_date"],
+                    true_values=["True"], false_values=["False"])
+    return daily.merge(w, on="business_date", how="left")
+
+
+# ---------------------------------------------------------------------------
+# Step 6: Join federal holiday flags
+# ---------------------------------------------------------------------------
+
+def join_holidays(daily: pd.DataFrame) -> pd.DataFrame:
+    path = PROCESSED_DIR / "federal_holidays.csv"
+    if not path.exists():
+        print("  [WARNING] federal_holidays.csv not found — run 08_fetch_holidays.py first")
+        return daily
+    h = pd.read_csv(path, parse_dates=["business_date"],
+                    true_values=["True"], false_values=["False"])
+    h = h[["business_date", "is_federal_holiday", "holiday_name"]]
+    return daily.merge(h, on="business_date", how="left")
+
+
+# ---------------------------------------------------------------------------
+# Step 7: Join NYC major event signals
+# ---------------------------------------------------------------------------
+
+def join_nyc_events(daily: pd.DataFrame) -> pd.DataFrame:
+    path = PROCESSED_DIR / "nyc_events_daily.csv"
+    if not path.exists():
+        print("  [WARNING] nyc_events_daily.csv not found — run 10_fetch_nyc_events.py first")
+        return daily
+    ev = pd.read_csv(path, parse_dates=["business_date"],
+                     true_values=["True"], false_values=["False"])
+    return daily.merge(ev, on="business_date", how="left")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -118,16 +161,28 @@ def main():
     print("Building daily master dataset...")
 
     daily = build_daily_spine()
-    print(f"  [1/4] Spine built         : {len(daily):,} days ({daily['business_date'].min().date()} -> {daily['business_date'].max().date()})")
+    print(f"  [1/7] Spine built         : {len(daily):,} days ({daily['business_date'].min().date()} -> {daily['business_date'].max().date()})")
 
     daily = join_retail_rate(daily)
-    print(f"  [2/4] Retail rate joined  : {daily['retail_rate'].notna().sum():,} days with rate data")
+    print(f"  [2/7] Retail rate joined  : {daily['retail_rate'].notna().sum():,} days with rate data")
 
     daily = join_medallia(daily)
-    print(f"  [3/4] Medallia joined     : {daily['medallia_overall_satisfaction'].notna().sum():,} days with satisfaction scores")
+    print(f"  [3/7] Medallia joined     : {daily['medallia_overall_satisfaction'].notna().sum():,} days with satisfaction scores")
 
     daily = add_calendar_features(daily)
-    print(f"  [4/4] Calendar features   : added day_of_week, month, quarter, is_weekend, etc.")
+    print(f"  [4/7] Calendar features   : added day_of_week, month, quarter, is_weekend, etc.")
+
+    daily = join_weather(daily)
+    n_weather = daily["temp_mean_f"].notna().sum() if "temp_mean_f" in daily.columns else 0
+    print(f"  [5/7] Weather joined      : {n_weather:,} days with weather data")
+
+    daily = join_holidays(daily)
+    n_holidays = int(daily["is_federal_holiday"].sum()) if "is_federal_holiday" in daily.columns else 0
+    print(f"  [6/7] Holidays joined     : {n_holidays} federal holiday days flagged")
+
+    daily = join_nyc_events(daily)
+    n_events = int(daily["is_major_event_day"].sum()) if "is_major_event_day" in daily.columns else 0
+    print(f"  [7/7] NYC events joined   : {n_events} major event days")
 
     # Final column order
     col_order = [
@@ -151,6 +206,20 @@ def main():
         # Calendar
         "day_of_week", "day_name", "month", "month_name",
         "quarter", "week_of_year", "is_weekend",
+        # Weather
+        "temp_mean_f", "temp_max_f", "temp_min_f",
+        "precipitation_in", "had_precipitation",
+        "snowfall_in", "had_snow",
+        "windspeed_max_mph", "weathercode", "weather_description",
+        # Holidays
+        "is_federal_holiday", "holiday_name",
+        # NYC events
+        "event_count", "is_major_event_day",
+        "is_barclays_event", "is_msg_event",
+        "is_yankees_game", "is_mets_game",
+        "is_nba_game", "is_mlb_game", "is_nhl_game",
+        "is_major_concert", "is_major_sports_event",
+        "days_to_next_event",
     ]
     daily = daily[[c for c in col_order if c in daily.columns]]
 

@@ -205,11 +205,11 @@ def add_targets_and_split(df: pd.DataFrame) -> pd.DataFrame:
     df["target_room_revenue"]   = df["room_revenue"]
     df["target_occupancy_rate"] = df["occupancy_rate"]
     df["target_adr"]            = df["adr"]
-    df["split"] = df["business_date"].dt.year.map({2024: "train", 2025: "test"})
+    df["split"] = np.where(df["business_date"] < "2025-11-01", "train", "test")
 
     n_train = (df["split"] == "train").sum()
     n_test  = (df["split"] == "test").sum()
-    print(f"  [9] Targets defined. Split — train: {n_train} days (2024), test: {n_test} days (2025)")
+    print(f"  [9] Targets defined. Split — train: {n_train} days (2024–Oct 2025), test: {n_test} days (Nov–Dec 2025)")
     return df
 
 

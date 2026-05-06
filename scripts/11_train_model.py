@@ -7,9 +7,9 @@ Three targets:
   - adr
 
 Temporal split:
-  - Train      : 2024-01-01 – 2024-10-31  (304 days)
-  - Val (ES)   : 2024-11-01 – 2024-12-31  ( 61 days)  used for early stopping only
-  - Test        : 2025-01-01 – 2025-12-31  (365 days)
+  - Train fit  : 2024-01-01 – 2025-09-30  (639 days)
+  - Val (ES)   : 2025-10-01 – 2025-10-31  ( 31 days)  used for early stopping only
+  - Test        : 2025-11-01 – 2025-12-31  ( 61 days)
 
 Features are restricted to information known before arrival day (no same-day actuals).
 LightGBM handles NaN natively, so lag-364 nulls in the 2024 train set are fine.
@@ -121,7 +121,7 @@ def train_one(name: str, target_col: str, df: pd.DataFrame) -> tuple:
     test  = df[df["split"] == "test"].copy()
 
     # Split training into fit + early-stopping validation (last 2 months of 2024)
-    val_cutoff = pd.Timestamp("2024-11-01")
+    val_cutoff = pd.Timestamp("2025-10-01")
     fit = train[train["business_date"] < val_cutoff]
     val = train[train["business_date"] >= val_cutoff]
 
@@ -219,7 +219,7 @@ def main():
     # ---------------------------------------------------------------------------
     print()
     print("=" * 65)
-    print("  TEST SET RESULTS (2025, 365 days)")
+    print("  TEST SET RESULTS (Nov–Dec 2025, 61 days)")
     print("=" * 65)
     print(f"  {'Model':<12} {'RMSE':>12} {'MAE':>10} {'MAPE':>8} {'R2':>8}")
     print(f"  {'-'*60}")

@@ -27,4 +27,6 @@ RAW_FILES = {
     "medallia_2024_h2": "medallia_7_1_24__12_31_24.xls",
     "medallia_2025_h1": "medallia_1_1_25__6_30_25.xls",
     "medallia_2025_h2": "medallia_7_1_25__12_31__25.xls",
+
+    "str_compset": "Arlo_Williamsburg_CompSetRaw.csv",
 }

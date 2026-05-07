@@ -68,6 +68,17 @@ FEATURES = [
     "rev_roll_7d", "rev_roll_28d",
     "adr_lag_7d",  "adr_lag_14d",  "adr_lag_28d",  "adr_lag_364d",
     "adr_roll_7d", "adr_roll_28d",
+    # STR comp set lag & rolling features
+    "comp_occ_lag_7d",    "comp_occ_lag_28d",    "comp_occ_roll_7d",    "comp_occ_roll_28d",
+    "comp_adr_lag_7d",    "comp_adr_lag_28d",    "comp_adr_roll_7d",    "comp_adr_roll_28d",
+    "comp_revpar_lag_7d", "comp_revpar_lag_28d",  "comp_revpar_roll_7d", "comp_revpar_roll_28d",
+    "mpi_lag_7d",         "mpi_lag_28d",          "mpi_roll_7d",         "mpi_roll_28d",
+    "ari_lag_7d",         "ari_lag_28d",          "ari_roll_7d",         "ari_roll_28d",
+    "rgi_lag_7d",         "rgi_lag_28d",          "rgi_roll_7d",         "rgi_roll_28d",
+    # Competitive pricing constraint: Arlo ADR minus comp set ADR (lagged)
+    # Teaches the model that large rate deviations from market pricing carry consequences
+    "adr_gap_vs_comp_lag_7d",  "adr_gap_vs_comp_lag_28d",
+    "adr_gap_vs_comp_roll_7d", "adr_gap_vs_comp_roll_28d",
 ]
 
 TARGETS = {

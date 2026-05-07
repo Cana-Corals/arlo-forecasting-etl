@@ -61,6 +61,8 @@ def join_holidays(df: pd.DataFrame) -> pd.DataFrame:
     )
     hol = hol[["business_date", "is_federal_holiday", "holiday_name"]]
 
+    # Master already carries these columns; drop before re-merging to avoid _x/_y suffixes
+    df = df.drop(columns=["is_federal_holiday", "holiday_name"], errors="ignore")
     df = df.merge(hol, on="business_date", how="left")
 
     # Days to next / from last federal holiday
@@ -91,9 +93,11 @@ def join_weather(df: pd.DataFrame) -> pd.DataFrame:
         PROCESSED_DIR / "weather_daily.csv",
         parse_dates=["business_date"],
     )
-    # Drop string description — weathercode is sufficient for a model
     wx = wx.drop(columns=["weather_description"], errors="ignore")
 
+    # Master already carries weather columns; drop before re-merging to avoid _x/_y suffixes
+    weather_cols = [c for c in wx.columns if c != "business_date"]
+    df = df.drop(columns=weather_cols, errors="ignore")
     df = df.merge(wx, on="business_date", how="left")
     n_filled = df["temp_mean_f"].notna().sum()
     print(f"  [3] Weather joined: {n_filled:,} days with temperature data")
@@ -175,7 +179,46 @@ def add_lag_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Step 7: Forward-fill Medallia nulls (scores lag by a week at most)
+# Step 7: STR comp set lag & rolling features
+# ---------------------------------------------------------------------------
+
+STR_LAG_COLS = [
+    ("comp_occ",         "comp_occ"),
+    ("comp_adr",         "comp_adr"),
+    ("comp_revpar",      "comp_revpar"),
+    ("mpi",              "mpi"),
+    ("ari",              "ari"),
+    ("rgi",              "rgi"),
+    ("adr_gap_vs_comp",  "adr_gap_vs_comp"),   # competitive pricing constraint
+]
+
+
+def add_str_lag_features(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.sort_values("business_date").reset_index(drop=True)
+
+    # Rate gap: positive = Arlo priced above comp set, negative = below.
+    # Captures competitive positioning for dynamic pricing.
+    if "adr" in df.columns and "comp_adr" in df.columns:
+        df["adr_gap_vs_comp"] = (df["adr"] - df["comp_adr"]).round(2)
+
+    added = []
+    for col, alias in STR_LAG_COLS:
+        if col not in df.columns:
+            continue
+        for lag in [7, 28]:
+            name = f"{alias}_lag_{lag}d"
+            df[name] = _lag(df[col], lag).round(4)
+            added.append(name)
+        for window in [7, 28]:
+            name = f"{alias}_roll_{window}d"
+            df[name] = _rolling_mean(df[col], window)
+            added.append(name)
+    print(f"  [7] STR lag/roll features added: {len(added)} columns (incl. adr_gap_vs_comp)")
+    return df
+
+
+# ---------------------------------------------------------------------------
+# Step 8: Forward-fill Medallia nulls (scores lag by a week at most)
 # ---------------------------------------------------------------------------
 
 def fill_medallia(df: pd.DataFrame) -> pd.DataFrame:
@@ -187,18 +230,18 @@ def fill_medallia(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Step 8: Drop string label columns (int versions already exist)
+# Step 9: Drop string label columns (int versions already exist)
 # ---------------------------------------------------------------------------
 
 def drop_label_cols(df: pd.DataFrame) -> pd.DataFrame:
     drop = ["day_name", "month_name", "holiday_name"]
     df = df.drop(columns=[c for c in drop if c in df.columns])
-    print(f"  [8] Dropped string label columns: {drop}")
+    print(f"  [9] Dropped string label columns: {drop}")
     return df
 
 
 # ---------------------------------------------------------------------------
-# Step 9: Targets + train/test flag
+# Step 10: Targets + train/test flag
 # ---------------------------------------------------------------------------
 
 def add_targets_and_split(df: pd.DataFrame) -> pd.DataFrame:
@@ -209,7 +252,7 @@ def add_targets_and_split(df: pd.DataFrame) -> pd.DataFrame:
 
     n_train = (df["split"] == "train").sum()
     n_test  = (df["split"] == "test").sum()
-    print(f"  [9] Targets defined. Split — train: {n_train} days (2024–Oct 2025), test: {n_test} days (Nov–Dec 2025)")
+    print(f"  [10] Targets defined. Split — train: {n_train} days (2024–Oct 2025), test: {n_test} days (Nov–Dec 2025)")
     return df
 
 
@@ -227,6 +270,7 @@ def main():
     df = join_booking_pace(df)
     df = join_rooms_on_books(df)
     df = add_lag_features(df)
+    df = add_str_lag_features(df)
     df = fill_medallia(df)
     df = drop_label_cols(df)
     df = add_targets_and_split(df)

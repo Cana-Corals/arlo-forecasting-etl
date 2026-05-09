@@ -154,7 +154,7 @@ def join_nyc_events(daily: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Step 8: Join competitor rates (Wayback Machine scrape or STR export)
+# Step 8: Join STR comp set benchmarks
 # ---------------------------------------------------------------------------
 
 def join_str_data(daily: pd.DataFrame) -> pd.DataFrame:
@@ -171,20 +171,6 @@ def join_str_data(daily: pd.DataFrame) -> pd.DataFrame:
     return daily.merge(str_df[str_cols], on="business_date", how="left")
 
 
-def join_competitor_rates(daily: pd.DataFrame) -> pd.DataFrame:
-    path = PROCESSED_DIR / "competitor_rates_daily.csv"
-    if not path.exists():
-        print("  [WARNING] competitor_rates_daily.csv not found — run 12_fetch_competitor_rates.py first")
-        return daily
-    cr = pd.read_csv(path, parse_dates=["business_date"])
-    daily = daily.merge(cr, on="business_date", how="left")
-    # Rate gap: Arlo retail rate vs. average competitor rate (positive = Arlo priced above market)
-    if "retail_rate" in daily.columns and "competitor_avg_rate" in daily.columns:
-        daily["rate_gap_vs_competitors"] = (
-            daily["retail_rate"] - daily["competitor_avg_rate"]
-        ).round(2)
-    return daily
-
 
 # ---------------------------------------------------------------------------
 # Main
@@ -194,36 +180,32 @@ def main():
     print("Building daily master dataset...")
 
     daily = build_daily_spine()
-    print(f"  [1/9] Spine built         : {len(daily):,} days ({daily['business_date'].min().date()} -> {daily['business_date'].max().date()})")
+    print(f"  [1/8] Spine built         : {len(daily):,} days ({daily['business_date'].min().date()} -> {daily['business_date'].max().date()})")
 
     daily = join_retail_rate(daily)
-    print(f"  [2/9] Retail rate joined  : {daily['retail_rate'].notna().sum():,} days with rate data")
+    print(f"  [2/8] Retail rate joined  : {daily['retail_rate'].notna().sum():,} days with rate data")
 
     daily = join_medallia(daily)
-    print(f"  [3/9] Medallia joined     : {daily['medallia_overall_satisfaction'].notna().sum():,} days with satisfaction scores")
+    print(f"  [3/8] Medallia joined     : {daily['medallia_overall_satisfaction'].notna().sum():,} days with satisfaction scores")
 
     daily = add_calendar_features(daily)
-    print(f"  [4/9] Calendar features   : added day_of_week, month, quarter, is_weekend, etc.")
+    print(f"  [4/8] Calendar features   : added day_of_week, month, quarter, is_weekend, etc.")
 
     daily = join_weather(daily)
     n_weather = daily["temp_mean_f"].notna().sum() if "temp_mean_f" in daily.columns else 0
-    print(f"  [5/9] Weather joined      : {n_weather:,} days with weather data")
+    print(f"  [5/8] Weather joined      : {n_weather:,} days with weather data")
 
     daily = join_holidays(daily)
     n_holidays = int(daily["is_federal_holiday"].sum()) if "is_federal_holiday" in daily.columns else 0
-    print(f"  [6/9] Holidays joined     : {n_holidays} federal holiday days flagged")
+    print(f"  [6/8] Holidays joined     : {n_holidays} federal holiday days flagged")
 
     daily = join_nyc_events(daily)
     n_events = int(daily["is_major_event_day"].sum()) if "is_major_event_day" in daily.columns else 0
-    print(f"  [7/9] NYC events joined   : {n_events} major event days")
-
-    daily = join_competitor_rates(daily)
-    n_comp = daily["competitor_avg_rate"].notna().sum() if "competitor_avg_rate" in daily.columns else 0
-    print(f"  [8/9] Competitor rates    : {n_comp:,} days with competitor rate data")
+    print(f"  [7/8] NYC events joined   : {n_events} major event days")
 
     daily = join_str_data(daily)
     n_str = daily["rgi"].notna().sum() if "rgi" in daily.columns else 0
-    print(f"  [9/9] STR comp set        : {n_str:,} days with STR index scores")
+    print(f"  [8/8] STR comp set        : {n_str:,} days with STR index scores")
 
     # Final column order
     col_order = [
@@ -263,12 +245,6 @@ def main():
         "is_brooklyn_music_event",
         "is_major_concert", "is_major_sports_event",
         "days_to_next_event",
-        # Competitor rates
-        "hoxton_rate", "williamvale_rate", "moxy_rate",
-        "indigo_rate", "white_hotel_rate",
-        "competitor_avg_rate", "competitor_min_rate",
-        "competitor_max_rate", "competitor_rate_spread",
-        "rate_gap_vs_competitors",
         # STR comp set benchmarks
         "comp_occ", "comp_adr", "comp_revpar",
         "mpi", "ari", "rgi",

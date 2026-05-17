@@ -73,6 +73,14 @@ BASE_FEATURES = [
     "rev_roll_7d", "rev_roll_28d",
     "adr_lag_7d",  "adr_lag_14d",  "adr_lag_28d",  "adr_lag_364d",
     "adr_roll_7d", "adr_roll_28d",
+    # NYC major events
+    "is_major_event_day", "is_major_sports_event",
+    "is_barclays_event", "is_msg_event",
+    "is_yankees_game", "is_mets_game",
+    "is_knicks_game", "is_nets_game", "is_rangers_game",
+    "is_nba_game", "is_mlb_game", "is_nhl_game",
+    "is_us_open_event", "is_major_concert",
+    "event_count", "days_to_next_event",
 ]
 
 # Index-based STR features: measure Arlo's position relative to the market.
@@ -230,7 +238,7 @@ def main():
         pred_df[f"actual_{name}"]    = df[target_col].values
         pred_df[f"predicted_{name}"] = models[name].predict(df[features]).round(4)
 
-    out_pred = OUTPUTS_DIR / "model_predictions_optimal.csv"
+    out_pred = OUTPUTS_DIR / "model_predictions_with_events.csv"
     pred_df.to_csv(out_pred, index=False)
     print(f"\n  Predictions saved: {out_pred}")
 
@@ -242,7 +250,7 @@ def main():
     fi = fi.fillna(0).sort_values("revenue", ascending=False)
     fi.columns.name = None
     fi = fi.reset_index()
-    out_fi = OUTPUTS_DIR / "feature_importance_optimal.csv"
+    out_fi = OUTPUTS_DIR / "feature_importance_with_events.csv"
     fi.to_csv(out_fi, index=False)
     print(f"  Feature importance saved: {out_fi}")
 

@@ -240,6 +240,7 @@ def main():
         "event_count", "is_major_event_day",
         "is_barclays_event", "is_msg_event",
         "is_yankees_game", "is_mets_game",
+        "is_knicks_game", "is_nets_game", "is_rangers_game",
         "is_nba_game", "is_mlb_game", "is_nhl_game",
         "is_us_open_event",
         "is_brooklyn_music_event",

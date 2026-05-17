@@ -52,3 +52,5 @@ Commit message conventions used in this project:
 - `feat:` — new scripts or modules
 - `fix:` — bug or data corrections
 - `test:` — validation or profiling scripts
+
+Do NOT add Co-Authored-By or any AI attribution lines to commit messages.

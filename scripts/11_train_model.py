@@ -14,10 +14,15 @@ Temporal split:
 Features are restricted to information known before arrival day (no same-day actuals).
 LightGBM handles NaN natively, so lag-364 nulls in the 2024 train set are fine.
 
+STR feature strategy (targeted):
+  - ADR model      : all STR features (comp rates directly drive pricing decisions)
+  - Revenue model  : index-only STR features (MPI, ARI, RGI, adr_gap) — unique relative-position info
+  - Occupancy model: no STR features (near-zero importance, adds noise only)
+
 Outputs:
-  models/lgbm_{target}.txt         LightGBM booster (text format, portable)
-  outputs/model_predictions.csv    Date, actuals, predictions for all 3 targets
-  outputs/feature_importance.csv   Gain-based feature importance for each model
+  models/lgbm_{target}.txt                      LightGBM booster (text format, portable)
+  outputs/model_predictions_targeted_str.csv    Date, actuals, predictions for all 3 targets
+  outputs/feature_importance_targeted_str.csv   Gain-based feature importance for each model
 """
 
 import sys
@@ -37,10 +42,10 @@ MODELS_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
-# Feature set — no same-day actuals, no targets, no identifiers
+# Feature sets — per-model, no same-day actuals, no targets, no identifiers
 # ---------------------------------------------------------------------------
 
-FEATURES = [
+BASE_FEATURES = [
     # Capacity (known from maintenance schedule)
     "ooo_rooms", "available_rooms",
     # Calendar
@@ -68,18 +73,31 @@ FEATURES = [
     "rev_roll_7d", "rev_roll_28d",
     "adr_lag_7d",  "adr_lag_14d",  "adr_lag_28d",  "adr_lag_364d",
     "adr_roll_7d", "adr_roll_28d",
-    # STR comp set lag & rolling features
-    "comp_occ_lag_7d",    "comp_occ_lag_28d",    "comp_occ_roll_7d",    "comp_occ_roll_28d",
-    "comp_adr_lag_7d",    "comp_adr_lag_28d",    "comp_adr_roll_7d",    "comp_adr_roll_28d",
-    "comp_revpar_lag_7d", "comp_revpar_lag_28d",  "comp_revpar_roll_7d", "comp_revpar_roll_28d",
-    "mpi_lag_7d",         "mpi_lag_28d",          "mpi_roll_7d",         "mpi_roll_28d",
-    "ari_lag_7d",         "ari_lag_28d",          "ari_roll_7d",         "ari_roll_28d",
-    "rgi_lag_7d",         "rgi_lag_28d",          "rgi_roll_7d",         "rgi_roll_28d",
-    # Competitive pricing constraint: Arlo ADR minus comp set ADR (lagged)
-    # Teaches the model that large rate deviations from market pricing carry consequences
+]
+
+# Index-based STR features: measure Arlo's position relative to the market.
+# Not derivable from Arlo's own data alone — genuinely new signal.
+STR_INDEX_FEATURES = [
+    "mpi_lag_7d",  "mpi_lag_28d",  "mpi_roll_7d",  "mpi_roll_28d",
+    "ari_lag_7d",  "ari_lag_28d",  "ari_roll_7d",  "ari_roll_28d",
+    "rgi_lag_7d",  "rgi_lag_28d",  "rgi_roll_7d",  "rgi_roll_28d",
     "adr_gap_vs_comp_lag_7d",  "adr_gap_vs_comp_lag_28d",
     "adr_gap_vs_comp_roll_7d", "adr_gap_vs_comp_roll_28d",
 ]
+
+# Raw comp set values: correlated with Arlo's own lags — adds redundancy.
+# Kept only for ADR model where comp pricing is a direct causal driver.
+STR_RAW_FEATURES = [
+    "comp_occ_lag_7d",    "comp_occ_lag_28d",    "comp_occ_roll_7d",    "comp_occ_roll_28d",
+    "comp_adr_lag_7d",    "comp_adr_lag_28d",    "comp_adr_roll_7d",    "comp_adr_roll_28d",
+    "comp_revpar_lag_7d", "comp_revpar_lag_28d",  "comp_revpar_roll_7d", "comp_revpar_roll_28d",
+]
+
+FEATURES = {
+    "revenue":   BASE_FEATURES + STR_INDEX_FEATURES,
+    "occupancy": BASE_FEATURES,
+    "adr":       BASE_FEATURES + STR_INDEX_FEATURES + STR_RAW_FEATURES,
+}
 
 TARGETS = {
     "revenue":   "target_room_revenue",
@@ -127,7 +145,7 @@ def eval_metrics(y_true, y_pred, label=""):
 # Train one model
 # ---------------------------------------------------------------------------
 
-def train_one(name: str, target_col: str, df: pd.DataFrame) -> tuple:
+def train_one(name: str, target_col: str, df: pd.DataFrame, features: list) -> tuple:
     train = df[df["split"] == "train"].copy()
     test  = df[df["split"] == "test"].copy()
 
@@ -136,11 +154,11 @@ def train_one(name: str, target_col: str, df: pd.DataFrame) -> tuple:
     fit = train[train["business_date"] < val_cutoff]
     val = train[train["business_date"] >= val_cutoff]
 
-    X_fit = fit[FEATURES]
+    X_fit = fit[features]
     y_fit = fit[target_col]
-    X_val = val[FEATURES]
+    X_val = val[features]
     y_val = val[target_col]
-    X_test = test[FEATURES]
+    X_test = test[features]
     y_test  = test[target_col]
 
     model = lgb.LGBMRegressor(**LGBM_PARAMS)
@@ -153,7 +171,7 @@ def train_one(name: str, target_col: str, df: pd.DataFrame) -> tuple:
         ],
     )
 
-    print(f"\n  [{name}]  best iteration: {model.best_iteration_}")
+    print(f"\n  [{name}]  features: {len(features)}  |  best iteration: {model.best_iteration_}")
     eval_metrics(y_fit,            model.predict(X_fit),   label="train-fit")
     eval_metrics(y_val,            model.predict(X_val),   label="val (ES)")
     metrics = eval_metrics(y_test, model.predict(X_test),  label="TEST")
@@ -171,11 +189,12 @@ def main():
     df = df.sort_values("business_date").reset_index(drop=True)
 
     # Verify all features are present
-    missing = [f for f in FEATURES if f not in df.columns]
+    all_features = set(BASE_FEATURES + STR_INDEX_FEATURES + STR_RAW_FEATURES)
+    missing = [f for f in all_features if f not in df.columns]
     if missing:
         raise ValueError(f"Missing feature columns: {missing}")
 
-    print(f"  Rows: {len(df):,}  |  Features: {len(FEATURES)}  |  Train: {(df['split']=='train').sum()}  Test: {(df['split']=='test').sum()}")
+    print(f"  Rows: {len(df):,}  |  Train: {(df['split']=='train').sum()}  |  Test: {(df['split']=='test').sum()}")
     print()
 
     models      = {}
@@ -183,8 +202,9 @@ def main():
     importance_frames = []
 
     for name, target_col in TARGETS.items():
-        print(f"Training {name} model...")
-        model, metrics = train_one(name, target_col, df)
+        features = FEATURES[name]
+        print(f"Training {name} model  ({len(features)} features)...")
+        model, metrics = train_one(name, target_col, df, features)
         models[name] = model
         all_metrics[name] = metrics
 
@@ -195,9 +215,9 @@ def main():
 
         # Feature importance
         imp = pd.DataFrame({
-            "feature":   FEATURES,
+            "feature":    features,
             "importance": model.booster_.feature_importance(importance_type="gain"),
-            "model":     name,
+            "model":      name,
         }).sort_values("importance", ascending=False)
         importance_frames.append(imp)
 
@@ -206,10 +226,11 @@ def main():
     # ---------------------------------------------------------------------------
     pred_df = df[["business_date", "split"]].copy()
     for name, target_col in TARGETS.items():
+        features = FEATURES[name]
         pred_df[f"actual_{name}"]    = df[target_col].values
-        pred_df[f"predicted_{name}"] = models[name].predict(df[FEATURES]).round(4)
+        pred_df[f"predicted_{name}"] = models[name].predict(df[features]).round(4)
 
-    out_pred = OUTPUTS_DIR / "model_predictions.csv"
+    out_pred = OUTPUTS_DIR / "model_predictions_targeted_str.csv"
     pred_df.to_csv(out_pred, index=False)
     print(f"\n  Predictions saved: {out_pred}")
 
@@ -221,7 +242,7 @@ def main():
     fi = fi.fillna(0).sort_values("revenue", ascending=False)
     fi.columns.name = None
     fi = fi.reset_index()
-    out_fi = OUTPUTS_DIR / "feature_importance.csv"
+    out_fi = OUTPUTS_DIR / "feature_importance_targeted_str.csv"
     fi.to_csv(out_fi, index=False)
     print(f"  Feature importance saved: {out_fi}")
 

@@ -14,15 +14,15 @@ Temporal split:
 Features are restricted to information known before arrival day (no same-day actuals).
 LightGBM handles NaN natively, so lag-364 nulls in the 2024 train set are fine.
 
-STR feature strategy (targeted):
-  - ADR model      : all STR features (comp rates directly drive pricing decisions)
-  - Revenue model  : index-only STR features (MPI, ARI, RGI, adr_gap) — unique relative-position info
-  - Occupancy model: no STR features (near-zero importance, adds noise only)
+STR feature strategy (optimal — validated by three-way comparison):
+  - ADR model      : all STR features — comp rates are a direct causal driver of pricing
+  - Revenue model  : no STR features — baseline outperformed all STR variants
+  - Occupancy model: no STR features — near-zero STR importance confirmed across all experiments
 
 Outputs:
-  models/lgbm_{target}.txt                      LightGBM booster (text format, portable)
-  outputs/model_predictions_targeted_str.csv    Date, actuals, predictions for all 3 targets
-  outputs/feature_importance_targeted_str.csv   Gain-based feature importance for each model
+  models/lgbm_{target}.txt             LightGBM booster (text format, portable)
+  outputs/model_predictions_optimal.csv    Date, actuals, predictions for all 3 targets
+  outputs/feature_importance_optimal.csv   Gain-based feature importance for each model
 """
 
 import sys
@@ -94,7 +94,7 @@ STR_RAW_FEATURES = [
 ]
 
 FEATURES = {
-    "revenue":   BASE_FEATURES + STR_INDEX_FEATURES,
+    "revenue":   BASE_FEATURES,
     "occupancy": BASE_FEATURES,
     "adr":       BASE_FEATURES + STR_INDEX_FEATURES + STR_RAW_FEATURES,
 }
@@ -230,7 +230,7 @@ def main():
         pred_df[f"actual_{name}"]    = df[target_col].values
         pred_df[f"predicted_{name}"] = models[name].predict(df[features]).round(4)
 
-    out_pred = OUTPUTS_DIR / "model_predictions_targeted_str.csv"
+    out_pred = OUTPUTS_DIR / "model_predictions_optimal.csv"
     pred_df.to_csv(out_pred, index=False)
     print(f"\n  Predictions saved: {out_pred}")
 
@@ -242,7 +242,7 @@ def main():
     fi = fi.fillna(0).sort_values("revenue", ascending=False)
     fi.columns.name = None
     fi = fi.reset_index()
-    out_fi = OUTPUTS_DIR / "feature_importance_targeted_str.csv"
+    out_fi = OUTPUTS_DIR / "feature_importance_optimal.csv"
     fi.to_csv(out_fi, index=False)
     print(f"  Feature importance saved: {out_fi}")
 

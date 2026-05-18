@@ -12,6 +12,10 @@ if "sb_collapsed" not in st.session_state:
     st.session_state["sb_collapsed"] = False
 COLLAPSED = st.session_state["sb_collapsed"]
 SB_W      = "52px" if COLLAPSED else "220px"
+_sb_icon_css = (
+    "section[data-testid='stSidebar'] .stButton > button {"
+    "text-align:center !important;justify-content:center !important;padding:8px 4px !important;}"
+) if COLLAPSED else ""
 
 # ── CDN: Inter font + Tabler Icons ────────────────────────────────────────────
 st.markdown("""
@@ -105,6 +109,7 @@ section[data-testid="stSidebar"] .stButton:first-of-type > button {{
 section[data-testid="stSidebar"] .stButton:first-of-type > button:hover {{
     background:rgba(255,255,255,.04) !important; color:rgba(245,245,240,.65) !important;
 }}
+{_sb_icon_css}
 /* Pinned user footer at sidebar bottom */
 .sb-footer-fixed {{
     position:fixed; bottom:0; left:0; width:{SB_W};
@@ -431,12 +436,12 @@ with st.sidebar:
         st.markdown('<div style="padding:21px 16px 14px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Analytics</div>', unsafe_allow_html=True)
 
     _analytics = [
-        ("ti-chart-line",  "Forecast",    "pages/2_Forecast.py"),
-        ("ti-trending-up", "Performance", "pages/3_Performance.py"),
-        ("ti-wave-square", "Demand",      "pages/4_Demand.py"),
+        (":material/trending_up:", "Forecast",    "pages/2_Forecast.py"),
+        (":material/bar_chart:",   "Performance", "pages/3_Performance.py"),
+        (":material/event:",       "Demand",      "pages/4_Demand.py"),
     ]
-    for icon_cls, lbl, path in _analytics:
-        btn_lbl = lbl if not COLLAPSED else lbl[0]
+    for icon, lbl, path in _analytics:
+        btn_lbl = lbl if not COLLAPSED else icon
         if st.button(btn_lbl, key=f"nav_{lbl}", use_container_width=True):
             st.switch_page(path)
 
@@ -444,11 +449,11 @@ with st.sidebar:
         st.markdown('<div style="padding:10px 16px 5px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Intelligence</div>', unsafe_allow_html=True)
 
     _intelligence = [
-        ("Competitive",   "pages/5_Competitive.py"),
-        ("Model Insights","pages/6_Model_Insights.py"),
+        (":material/storefront:",  "Competitive",    "pages/5_Competitive.py"),
+        (":material/psychology:",  "Model Insights", "pages/6_Model_Insights.py"),
     ]
-    for lbl, path in _intelligence:
-        btn_lbl = lbl if not COLLAPSED else lbl[0]
+    for icon, lbl, path in _intelligence:
+        btn_lbl = lbl if not COLLAPSED else icon
         if st.button(btn_lbl, key=f"nav_{lbl.replace(' ','_')}", use_container_width=True):
             st.switch_page(path)
 

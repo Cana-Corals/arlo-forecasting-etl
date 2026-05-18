@@ -14,8 +14,16 @@ st.markdown("""
     #MainMenu, footer, header { visibility: hidden; }
     [data-testid="collapsedControl"] { display: none; }
     section[data-testid="stSidebar"] { display: none; }
-    .block-container { padding-top: 2rem; padding-bottom: 5rem; }
+    .block-container { padding-top: 1.5rem; padding-bottom: 5rem; }
 
+    .arlo-header {
+        text-align: center;
+        font-size: 1.0rem;
+        font-weight: 700;
+        color: #1A1A1A;
+        letter-spacing: 0.18em;
+        margin-bottom: 1.2rem;
+    }
     .page-title {
         font-size: 1.6rem;
         font-weight: 700;
@@ -52,6 +60,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# ── Arlo Williamsburg header ──────────────────────────────────────────────────
+st.markdown('<div class="arlo-header">ARLO WILLIAMSBURG</div>', unsafe_allow_html=True)
+
 # ── Top bar: title + user + logout ────────────────────────────────────────────
 col_title, _, col_user = st.columns([5, 4, 1])
 with col_title:
@@ -71,53 +82,24 @@ pred     = load_predictions()
 latest   = master["business_date"].max()
 earliest = master["business_date"].min()
 
-# ── Date filter ───────────────────────────────────────────────────────────────
+# ── Read filter state (set by widgets at bottom on previous rerun) ─────────────
 if "dash_slider" not in st.session_state:
     st.session_state["dash_slider"] = (
         max(latest - pd.DateOffset(years=1), earliest).date(),
         latest.date(),
     )
 
-prev_period = st.session_state.get("_period_prev", "Y")
-
-col_pre, col_slide = st.columns([2, 8])
-with col_pre:
-    period = st.segmented_control(
-        "",
-        ["W", "M", "Q", "Y"],
-        default="Y",
-        label_visibility="collapsed",
-        key="dash_period",
-    )
-
-if period is not None and period != prev_period:
-    _deltas = {
-        "W": pd.Timedelta(days=7),
-        "M": pd.DateOffset(months=1),
-        "Q": pd.DateOffset(months=3),
-        "Y": pd.DateOffset(years=1),
-    }
-    new_start = max(latest - _deltas[period], earliest).date()
-    st.session_state["dash_slider"] = (new_start, latest.date())
-
-st.session_state["_period_prev"] = period
-
-with col_slide:
-    date_range = st.slider(
-        "",
-        min_value=earliest.date(),
-        max_value=latest.date(),
-        label_visibility="collapsed",
-        key="dash_slider",
-    )
-
-start_ts = pd.Timestamp(date_range[0])
-end_ts   = pd.Timestamp(date_range[1])
+date_range = st.session_state["dash_slider"]
+start_ts   = pd.Timestamp(date_range[0])
+end_ts     = pd.Timestamp(date_range[1])
 
 curr       = master[(master["business_date"] >= start_ts) & (master["business_date"] <= end_ts)]
 prev       = master[(master["business_date"] >= start_ts - pd.DateOffset(years=1)) &
                     (master["business_date"] <= end_ts   - pd.DateOffset(years=1))]
 chart_data = pred[(pred["business_date"] >= start_ts) & (pred["business_date"] <= end_ts)]
+
+# ── Nav bar ───────────────────────────────────────────────────────────────────
+render_nav()
 
 # ── KPI helpers ───────────────────────────────────────────────────────────────
 def pct(a, b):
@@ -204,4 +186,38 @@ else:
     )
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-render_nav()
+# ── Date filter (below chart) ─────────────────────────────────────────────────
+st.markdown("<br>", unsafe_allow_html=True)
+
+prev_period = st.session_state.get("_period_prev", "Y")
+
+col_pre, col_slide = st.columns([2, 8])
+with col_pre:
+    period = st.segmented_control(
+        "",
+        ["W", "M", "Q", "Y"],
+        default="Y",
+        label_visibility="collapsed",
+        key="dash_period",
+    )
+
+if period is not None and period != prev_period:
+    _deltas = {
+        "W": pd.Timedelta(days=7),
+        "M": pd.DateOffset(months=1),
+        "Q": pd.DateOffset(months=3),
+        "Y": pd.DateOffset(years=1),
+    }
+    new_start = max(latest - _deltas[period], earliest).date()
+    st.session_state["dash_slider"] = (new_start, latest.date())
+
+st.session_state["_period_prev"] = period
+
+with col_slide:
+    st.slider(
+        "",
+        min_value=earliest.date(),
+        max_value=latest.date(),
+        label_visibility="collapsed",
+        key="dash_slider",
+    )

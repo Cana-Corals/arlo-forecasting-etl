@@ -37,9 +37,15 @@ def render_nav() -> None:
 
     st.divider()
 
-    existing = [(label, path) for label, path in PAGES if (app_root / path).exists()]
-    cols = st.columns(len(existing))
-    for col, (label, path) in zip(cols, existing):
+    # Capture click first, switch after all buttons are rendered
+    nav_target = None
+    cols = st.columns(len(PAGES))
+    for col, (label, path) in zip(cols, PAGES):
+        exists = (app_root / path).exists()
         with col:
-            if st.button(label, key=f"nav_{label}", use_container_width=True):
-                st.switch_page(path)
+            disabled = not exists
+            if st.button(label, key=f"nav_{label}", use_container_width=True, disabled=disabled):
+                nav_target = path
+
+    if nav_target:
+        st.switch_page(nav_target)

@@ -196,15 +196,51 @@ _presets = {
     "Y": pd.DateOffset(years=1),
 }
 
-filter_cols = st.columns([0.5, 0.5, 0.5, 0.5, 0.4, 7])
-for col, label in zip(filter_cols[:4], _presets):
+avail_years = sorted(master["business_date"].dt.year.unique().tolist())
+
+# Row 1 — duration presets (left) + year presets (right)
+n_years  = len(avail_years)
+row1_cols = st.columns([0.5, 0.5, 0.5, 0.5, 2] + [0.8] * n_years)
+
+for col, label in zip(row1_cols[:4], _presets):
     with col:
         if st.button(label, key=f"btn_{label}", use_container_width=True):
             new_start = max(latest - _presets[label], earliest).date()
             st.session_state["dash_slider"] = (new_start, latest.date())
             st.rerun()
 
-with filter_cols[5]:
+for col, yr in zip(row1_cols[5:], avail_years):
+    with col:
+        if st.button(str(yr), key=f"btn_yr_{yr}", use_container_width=True):
+            import datetime as dt
+            st.session_state["dash_slider"] = (
+                max(dt.date(yr, 1, 1), earliest.date()),
+                min(dt.date(yr, 12, 31), latest.date()),
+            )
+            st.rerun()
+
+# Row 2 — shift-left arrow | slider | shift-right arrow
+col_prev, col_slide, col_next = st.columns([0.4, 9, 0.4])
+
+with col_prev:
+    if st.button("◀", key="btn_shift_left", use_container_width=True):
+        s, e = st.session_state["dash_slider"]
+        span = pd.Timestamp(e) - pd.Timestamp(s)
+        new_s = max(pd.Timestamp(s) - span, pd.Timestamp(earliest)).date()
+        new_e = (pd.Timestamp(new_s) + span).date()
+        st.session_state["dash_slider"] = (new_s, new_e)
+        st.rerun()
+
+with col_next:
+    if st.button("▶", key="btn_shift_right", use_container_width=True):
+        s, e = st.session_state["dash_slider"]
+        span = pd.Timestamp(e) - pd.Timestamp(s)
+        new_e = min(pd.Timestamp(e) + span, pd.Timestamp(latest)).date()
+        new_s = (pd.Timestamp(new_e) - span).date()
+        st.session_state["dash_slider"] = (new_s, new_e)
+        st.rerun()
+
+with col_slide:
     st.slider(
         "",
         min_value=earliest.date(),

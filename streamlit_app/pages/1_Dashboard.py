@@ -1,250 +1,806 @@
 import streamlit as st
-import plotly.graph_objects as go
 import pandas as pd
+import numpy as np
 from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from components.data import load_master, load_predictions
-from components.nav import render_nav
+from components.data import load_master, load_events, load_str
+
+# ── Session state ─────────────────────────────────────────────────────────────
+if "sb_collapsed" not in st.session_state:
+    st.session_state["sb_collapsed"] = False
+COLLAPSED = st.session_state["sb_collapsed"]
+SB_W      = "52px" if COLLAPSED else "220px"
+
+# ── CDN: Inter font + Tabler Icons ────────────────────────────────────────────
+st.markdown("""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+""", unsafe_allow_html=True)
 
 # ── CSS ───────────────────────────────────────────────────────────────────────
-st.markdown("""
+st.markdown(f"""
 <style>
-    #MainMenu, footer, header { visibility: hidden; }
-    [data-testid="collapsedControl"] { display: none; }
-    section[data-testid="stSidebar"] { display: none; }
-    .block-container { padding-top: 1.5rem; padding-bottom: 5rem; }
+:root {{
+  --arlo-black:#0a0a0a; --arlo-dark:#111111; --arlo-dark2:#1a1a1a; --arlo-dark3:#222222;
+  --arlo-border:rgba(255,255,255,0.08); --arlo-border2:rgba(255,255,255,0.14);
+  --arlo-white:#f5f5f0; --arlo-muted:rgba(245,245,240,0.38); --arlo-muted2:rgba(245,245,240,0.6);
+  --arlo-accent:#e8854a; --arlo-accent2:rgba(232,133,74,0.15); --arlo-accent3:rgba(232,133,74,0.08);
+  --arlo-green:#3ecf8e; --arlo-green2:rgba(62,207,142,0.12);
+  --arlo-red:#e05252;   --arlo-red2:rgba(224,82,82,0.12);
+  --arlo-amber:#d4903a; --arlo-amber2:rgba(212,144,58,0.12);
+  --arlo-slate:#4a6fa5; --arlo-slate2:rgba(74,111,165,0.12);
+  --r:4px;
+}}
+*, *::before, *::after {{ font-family:'Inter',system-ui,sans-serif !important; -webkit-font-smoothing:antialiased; box-sizing:border-box; }}
+#MainMenu, footer, header {{ visibility:hidden; }}
+[data-testid="collapsedControl"] {{ display:none; }}
+.stApp {{ background:var(--arlo-dark2) !important; }}
+.block-container {{ padding:0 !important; max-width:100% !important; }}
+[data-testid="stAppViewContainer"] {{ background:var(--arlo-dark2) !important; }}
 
-    .arlo-header {
-        text-align: center;
-        font-size: 1.0rem;
-        font-weight: 700;
-        color: #1A1A1A;
-        letter-spacing: 0.18em;
-        margin-bottom: 1.2rem;
-    }
-    .page-title {
-        font-size: 1.6rem;
-        font-weight: 700;
-        color: #1A1A1A;
-        margin-bottom: 0.1rem;
-    }
-    .page-rule {
-        border: none;
-        border-top: 2.5px solid #1A1A1A;
-        margin: 0 0 1rem 0;
-        width: 50px;
-    }
-    .kpi-box {
-        background: #F7F5F2;
-        padding: 1.2rem 1.4rem;
-        border-radius: 8px;
-    }
-    .kpi-label {
-        font-size: 0.72rem;
-        color: #9E9E9E;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        margin-bottom: 0.3rem;
-    }
-    .kpi-value {
-        font-size: 1.7rem;
-        font-weight: 700;
-        color: #1A1A1A;
-        margin-bottom: 0.2rem;
-    }
-    .kpi-up   { font-size: 0.82rem; color: #2E7D32; }
-    .kpi-down { font-size: 0.82rem; color: #C62828; }
-    .kpi-vs   { font-size: 0.72rem; color: #BDBDBD; margin-top: 0.1rem; }
+/* ── Sidebar ── */
+section[data-testid="stSidebar"] {{
+    background:var(--arlo-dark) !important;
+    width:{SB_W} !important; min-width:{SB_W} !important;
+    transition:width .22s ease; overflow:hidden;
+}}
+section[data-testid="stSidebar"] > div:first-child {{
+    background:var(--arlo-dark) !important;
+    width:{SB_W} !important; min-width:{SB_W} !important;
+    padding:0 !important; overflow:hidden;
+}}
+section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {{ gap:0 !important; padding:0 !important; }}
+section[data-testid="stSidebar"] .stButton > button {{
+    background:transparent !important; border:none !important;
+    box-shadow:none !important; outline:none !important;
+    color:var(--arlo-muted2) !important;
+    font-size:12px !important; font-weight:400 !important;
+    text-align:left !important; justify-content:flex-start !important;
+    padding:7px 10px 7px 16px !important; margin:1px 6px !important;
+    width:calc(100% - 12px) !important; border-radius:4px !important;
+    line-height:1.4 !important; transition:background .12s !important;
+}}
+section[data-testid="stSidebar"] .stButton > button:hover {{
+    background:rgba(255,255,255,0.05) !important;
+    color:var(--arlo-white) !important; border:none !important;
+}}
+
+/* ── Main content ── */
+.arlo-topbar {{
+  background:var(--arlo-dark); border-bottom:1px solid var(--arlo-border);
+  height:52px; display:flex; align-items:center; padding:0 20px; gap:12px;
+}}
+.arlo-top-title {{ font-size:14px; font-weight:600; color:var(--arlo-white); }}
+.arlo-live-chip {{
+  display:flex; align-items:center; gap:5px;
+  padding:3px 9px; border-radius:20px;
+  border:1px solid rgba(62,207,142,0.25); background:rgba(62,207,142,0.08);
+  font-size:9px; font-weight:600; color:var(--arlo-green);
+  letter-spacing:.1em; text-transform:uppercase;
+}}
+.arlo-live-dot {{
+  width:5px; height:5px; border-radius:50%; background:var(--arlo-green);
+  animation:arlo-pulse 2s infinite;
+}}
+@keyframes arlo-pulse {{ 0%,100%{{opacity:1}}50%{{opacity:.4}} }}
+.arlo-date-pill {{
+  font-size:10px; color:var(--arlo-muted2); padding:5px 11px;
+  border:1px solid var(--arlo-border); border-radius:var(--r);
+  background:rgba(255,255,255,0.03); white-space:nowrap;
+}}
+.arlo-top-btn {{
+  width:30px; height:30px; border-radius:var(--r);
+  background:rgba(255,255,255,0.04); border:1px solid var(--arlo-border);
+  display:inline-flex; align-items:center; justify-content:center;
+  color:var(--arlo-muted); font-size:14px;
+}}
+.arlo-accent-rule {{
+  height:1px;
+  background:linear-gradient(90deg,var(--arlo-accent) 0%,rgba(232,133,74,.3) 40%,transparent 70%);
+  opacity:.6;
+}}
+.arlo-body {{ padding:18px 20px; display:flex; flex-direction:column; gap:14px; }}
+
+/* Section headers */
+.sec-hd {{ display:flex; align-items:center; gap:10px; margin-bottom:9px; }}
+.sec-lbl {{ font-size:9px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--arlo-muted); white-space:nowrap; }}
+.sec-line {{ flex:1; height:1px; background:var(--arlo-border); }}
+.sec-line.accent {{ background:linear-gradient(90deg,rgba(232,133,74,.4),transparent); }}
+
+/* AI box */
+.ai-box {{
+  background:var(--arlo-dark3); border:1px solid rgba(232,133,74,.2);
+  border-left:2px solid var(--arlo-accent); border-radius:var(--r);
+  padding:12px 16px; display:flex; gap:12px; align-items:flex-start;
+}}
+.ai-icon {{ font-size:14px; color:var(--arlo-accent); flex-shrink:0; margin-top:1px; }}
+.ai-txt {{ font-size:11px; color:var(--arlo-muted2); line-height:1.65; }}
+.ai-txt strong {{ color:var(--arlo-white); font-weight:600; }}
+
+/* KPI cards */
+.kpi5 {{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }}
+.kc {{
+  background:var(--arlo-dark3); border:1px solid var(--arlo-border);
+  border-radius:var(--r); padding:14px 12px; position:relative; overflow:hidden;
+}}
+.kc::before {{ content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--arlo-border2); }}
+.kc.hero {{ background:var(--arlo-dark); border-color:rgba(232,133,74,.25); }}
+.kc.hero::before {{ background:var(--arlo-accent); opacity:.8; }}
+.kc.kup::before {{ background:var(--arlo-green); opacity:.5; }}
+.kc.kdn::before {{ background:var(--arlo-red); opacity:.5; }}
+.kpi-lbl {{ font-size:9px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--arlo-muted); margin-bottom:8px; }}
+.kpi-val {{ font-size:22px; font-weight:300; color:var(--arlo-white); line-height:1; margin-bottom:6px; letter-spacing:-.02em; }}
+.kpi-delta {{ font-size:10px; font-weight:500; color:var(--arlo-green); display:flex; align-items:center; gap:3px; }}
+.kpi-delta.neg {{ color:var(--arlo-red); }}
+.kpi-sub {{ font-size:9px; color:var(--arlo-muted); margin-top:3px; }}
+.spark {{ margin-top:10px; }}
+
+/* Mini cards */
+.mini3 {{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }}
+.mc {{ background:var(--arlo-dark3); border:1px solid var(--arlo-border); border-radius:var(--r); padding:12px; }}
+.mv {{ font-size:16px; font-weight:300; color:var(--arlo-white); }}
+.ml {{ font-size:9px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--arlo-muted); margin-top:4px; }}
+.md {{ font-size:10px; font-weight:500; margin-top:5px; }}
+
+/* Grid layouts */
+.row2  {{ display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:10px; }}
+.row3  {{ display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr); gap:10px; }}
+.row22 {{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; }}
+.panel {{ background:var(--arlo-dark3); border:1px solid var(--arlo-border); border-radius:var(--r); padding:16px; }}
+.pt {{ font-size:9px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--arlo-muted); margin-bottom:2px; }}
+.ps {{ font-size:10px; color:var(--arlo-muted); margin-bottom:12px; }}
+
+/* Booking pace */
+.pace-row {{ display:flex; align-items:center; gap:7px; padding:7px 0; border-bottom:1px solid var(--arlo-border); }}
+.pace-row:last-child {{ border:none; }}
+.pace-per  {{ font-size:10px; color:var(--arlo-muted2); width:66px; flex-shrink:0; }}
+.pace-onb  {{ font-size:12px; font-weight:300; color:var(--arlo-white); width:34px; flex-shrink:0; }}
+.pace-bar  {{ flex:1; height:4px; background:rgba(255,255,255,.06); border-radius:2px; overflow:hidden; }}
+.pace-fill {{ height:100%; border-radius:2px; }}
+.pace-stly {{ font-size:9px; color:var(--arlo-muted); width:26px; text-align:right; flex-shrink:0; }}
+.pace-pill {{ font-size:8px; font-weight:600; padding:2px 8px; border-radius:2px; letter-spacing:.06em; width:52px; text-align:center; flex-shrink:0; text-transform:uppercase; }}
+
+/* DOW chart */
+.dow-grid {{ display:grid; grid-template-columns:repeat(7,1fr); gap:5px; text-align:center; }}
+.dow-col  {{ display:flex; flex-direction:column; align-items:center; gap:4px; }}
+.dow-wrap {{ width:100%; display:flex; flex-direction:column; justify-content:flex-end; height:74px; }}
+.dow-bar  {{ width:100%; border-radius:2px 2px 0 0; }}
+.dow-day  {{ font-size:8px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--arlo-muted); }}
+.dow-pct  {{ font-size:10px; font-weight:300; color:var(--arlo-white); }}
+
+/* Segments */
+.seg-rows  {{ display:flex; flex-direction:column; gap:8px; }}
+.seg-item  {{ display:flex; align-items:center; gap:8px; }}
+.seg-lbl   {{ font-size:10px; color:var(--arlo-muted2); width:64px; flex-shrink:0; }}
+.seg-track {{ flex:1; height:12px; background:rgba(255,255,255,.05); border-radius:2px; overflow:hidden; }}
+.seg-fill  {{ height:100%; border-radius:2px; display:flex; align-items:center; justify-content:flex-end; padding-right:4px; }}
+.seg-pct   {{ font-size:8px; font-weight:600; }}
+.seg-amt   {{ font-size:9px; color:var(--arlo-muted); width:36px; text-align:right; flex-shrink:0; }}
+
+/* Channel mix */
+.ch-rows  {{ display:flex; flex-direction:column; gap:7px; }}
+.ch-row   {{ display:flex; align-items:center; gap:8px; }}
+.ch-mark  {{ width:2px; height:24px; border-radius:1px; flex-shrink:0; }}
+.ch-name  {{ font-size:10px; color:var(--arlo-muted2); flex:1; }}
+.ch-pct   {{ font-size:13px; font-weight:300; color:var(--arlo-white); }}
+.ch-badge {{ font-size:8px; font-weight:600; padding:2px 6px; border-radius:2px; letter-spacing:.04em; text-transform:uppercase; }}
+
+/* Events */
+.ev-rows {{ display:flex; flex-direction:column; gap:5px; }}
+.ev-item {{ display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:var(--r); border:1px solid var(--arlo-border); background:rgba(255,255,255,.02); }}
+.ev-line {{ width:2px; height:28px; border-radius:1px; flex-shrink:0; }}
+.ev-name {{ font-size:10px; font-weight:500; color:var(--arlo-white); }}
+.ev-date {{ font-size:9px; color:var(--arlo-muted); margin-top:2px; }}
+.ev-imp  {{ font-size:9px; font-weight:600; padding:2px 7px; border-radius:2px; margin-left:auto; white-space:nowrap; letter-spacing:.04em; text-transform:uppercase; flex-shrink:0; }}
+
+/* Competitive */
+.comp-rows {{ display:flex; flex-direction:column; gap:5px; }}
+.comp-item {{ display:flex; align-items:center; gap:7px; padding:7px 9px; border-radius:var(--r); border:1px solid var(--arlo-border); }}
+.comp-item.self {{ border-color:rgba(232,133,74,.25); background:var(--arlo-accent3); }}
+.comp-name {{ font-size:10px; color:var(--arlo-muted2); width:82px; flex-shrink:0; }}
+.comp-item.self .comp-name {{ color:var(--arlo-accent); font-weight:600; }}
+.comp-bw {{ flex:1; height:3px; background:rgba(255,255,255,.06); border-radius:1px; overflow:hidden; }}
+.comp-bf {{ height:100%; border-radius:1px; }}
+.comp-rate {{ font-size:10px; color:var(--arlo-white); width:36px; text-align:right; flex-shrink:0; }}
+.comp-item.self .comp-rate {{ color:var(--arlo-accent); }}
+.comp-idx {{ display:flex; padding-top:10px; border-top:1px solid var(--arlo-border); margin-top:7px; }}
+.ci   {{ flex:1; text-align:center; }}
+.ci-v {{ font-size:13px; font-weight:300; color:var(--arlo-white); }}
+.ci-l {{ font-size:8px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--arlo-muted); }}
+
+/* Medallia */
+.score-n   {{ font-size:36px; font-weight:200; color:var(--arlo-white); line-height:1; }}
+.score-s   {{ color:var(--arlo-accent); font-size:13px; letter-spacing:2px; margin-top:2px; }}
+.score-l   {{ font-size:8px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--arlo-muted); margin-top:3px; }}
+.rev-top   {{ display:flex; align-items:center; gap:14px; padding-bottom:11px; border-bottom:1px solid var(--arlo-border); margin-bottom:11px; }}
+.rev-rows2 {{ display:flex; flex-direction:column; gap:6px; }}
+.rev-row   {{ display:flex; align-items:center; gap:8px; }}
+.rev-cat   {{ font-size:9px; color:var(--arlo-muted); width:62px; flex-shrink:0; }}
+.rev-bar   {{ flex:1; height:3px; background:rgba(255,255,255,.06); border-radius:1px; overflow:hidden; }}
+.rev-fill  {{ height:100%; border-radius:1px; }}
+.rev-num   {{ font-size:9px; color:var(--arlo-white); width:20px; text-align:right; }}
 </style>
 """, unsafe_allow_html=True)
 
-# ── Arlo Williamsburg header ──────────────────────────────────────────────────
-st.markdown('<div class="arlo-header">ARLO WILLIAMSBURG</div>', unsafe_allow_html=True)
-
-# ── Top bar: title + user + logout ────────────────────────────────────────────
-col_title, _, col_user = st.columns([5, 4, 1])
-with col_title:
-    st.markdown('<div class="page-title">Dashboard</div>', unsafe_allow_html=True)
-    st.markdown('<hr class="page-rule">', unsafe_allow_html=True)
-with col_user:
-    name = st.session_state.get("name", "")
-    st.markdown(f"<div style='text-align:right;font-size:0.8rem;color:#9E9E9E;padding-top:0.3rem;'>{name}</div>", unsafe_allow_html=True)
-    if st.button("Logout", key="dash_logout", use_container_width=True):
-        for key in ["authentication_status", "name", "username"]:
-            st.session_state.pop(key, None)
-        st.switch_page("Home.py")
-
 # ── Load data ─────────────────────────────────────────────────────────────────
-master   = load_master()
-pred     = load_predictions()
-latest   = master["business_date"].max()
-earliest = master["business_date"].min()
+master = load_master()
+events = load_events()
+str_df = load_str()
 
-# ── Read filter state (set by widgets at bottom on previous rerun) ─────────────
-if "dash_slider" not in st.session_state:
-    st.session_state["dash_slider"] = (
-        max(latest - pd.DateOffset(years=1), earliest).date(),
-        latest.date(),
-    )
+latest_yr = int(master["business_date"].dt.year.max())
+prev_yr   = latest_yr - 1
 
-date_range = st.session_state["dash_slider"]
-start_ts   = pd.Timestamp(date_range[0])
-end_ts     = pd.Timestamp(date_range[1])
+curr = master[master["business_date"].dt.year == latest_yr].copy()
+prev = master[master["business_date"].dt.year == prev_yr].copy()
 
-curr       = master[(master["business_date"] >= start_ts) & (master["business_date"] <= end_ts)]
-prev       = master[(master["business_date"] >= start_ts - pd.DateOffset(years=1)) &
-                    (master["business_date"] <= end_ts   - pd.DateOffset(years=1))]
-chart_data = pred[(pred["business_date"] >= start_ts) & (pred["business_date"] <= end_ts)]
+# Same calendar period last year
+max_mo, max_dy = curr["business_date"].max().month, curr["business_date"].max().day
+prev_ytd = prev[
+    (prev["business_date"].dt.month < max_mo) |
+    ((prev["business_date"].dt.month == max_mo) & (prev["business_date"].dt.day <= max_dy))
+]
 
-# ── Nav bar ───────────────────────────────────────────────────────────────────
-render_nav()
-
-# ── KPI helpers ───────────────────────────────────────────────────────────────
 def pct(a, b):
     return (a - b) / abs(b) * 100 if b else 0.0
 
-def kpi_card(label, value, delta, fmt="$"):
-    val_str = f"${value:,.0f}" if fmt == "$" else f"{value:.1f}%"
-    sign    = "+" if delta >= 0 else ""
-    arrow   = "▲" if delta >= 0 else "▼"
-    cls     = "kpi-up" if delta >= 0 else "kpi-down"
-    st.markdown(f"""
-    <div class="kpi-box">
-        <div class="kpi-label">{label}</div>
-        <div class="kpi-value">{val_str}</div>
-        <div class="{cls}">{arrow} {sign}{delta:.1f}%</div>
-        <div class="kpi-vs">vs same period last year</div>
-    </div>
-    """, unsafe_allow_html=True)
+rev_c  = curr["total_revenue"].sum()
+rev_p  = prev_ytd["total_revenue"].sum()
+occ_c  = curr["occupancy_rate"].mean() * 100
+occ_p  = prev_ytd["occupancy_rate"].mean() * 100
+adr_c  = curr["adr"].mean()
+adr_p  = prev_ytd["adr"].mean()
+rp_c   = curr["revpar"].mean()
+rp_p   = prev_ytd["revpar"].mean()
+trp_c  = (curr["total_revenue"] / curr["available_rooms"]).mean()
+trp_p  = (prev_ytd["total_revenue"] / prev_ytd["available_rooms"]).mean()
 
-# ── KPI cards ─────────────────────────────────────────────────────────────────
-rev_c = curr["total_revenue"].sum()
-rev_p = prev["total_revenue"].sum()
-occ_c = curr["occupancy_rate"].mean() * 100
-occ_p = prev["occupancy_rate"].mean() * 100
-adr_c = curr["adr"].mean()
-adr_p = prev["adr"].mean()
-rp_c  = curr["revpar"].mean()
-rp_p  = prev["revpar"].mean()
+rev_d, occ_d, adr_d, rp_d, trp_d = pct(rev_c,rev_p), pct(occ_c,occ_p), pct(adr_c,adr_p), pct(rp_c,rp_p), pct(trp_c,trp_p)
 
-st.markdown("<br>", unsafe_allow_html=True)
-c1, c2, c3, c4 = st.columns(4)
-with c1: kpi_card("Revenue",   rev_c, pct(rev_c, rev_p), "$")
-with c2: kpi_card("Occupancy", occ_c, pct(occ_c, occ_p), "%")
-with c3: kpi_card("ADR",       adr_c, pct(adr_c, adr_p), "$")
-with c4: kpi_card("RevPAR",    rp_c,  pct(rp_c,  rp_p),  "$")
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-# ── Chart controls ────────────────────────────────────────────────────────────
-col_label, col_actual, col_forecast = st.columns([5, 1, 1])
-with col_label:
-    st.markdown("**Forecast vs Actual — Revenue**")
-with col_actual:
-    show_actual   = st.checkbox("Actual",   value=True, key="show_actual")
-with col_forecast:
-    show_forecast = st.checkbox("Forecast", value=True, key="show_forecast")
-
-# ── Chart ─────────────────────────────────────────────────────────────────────
-if not show_actual and not show_forecast:
-    st.info("Select at least one line to display.")
+# STR indices
+if not str_df.empty:
+    s25 = str_df[str_df["business_date"].dt.year == latest_yr]
+    mpi_val      = s25["mpi"].mean() / 100 if "mpi" in s25 else None
+    ari_val      = s25["ari"].mean() / 100 if "ari" in s25 else None
+    rgi_val      = s25["rgi"].mean() / 100 if "rgi" in s25 else None
+    str_adr_val  = s25["str_adr"].mean()   if "str_adr"  in s25 else adr_c
+    comp_adr_val = s25["comp_adr"].mean()  if "comp_adr" in s25 else None
+    comp_occ_val = s25["comp_occ"].mean() * 100 if "comp_occ" in s25 else None
+    comp_rp_val  = s25["comp_revpar"].mean() if "comp_revpar" in s25 else None
 else:
-    fig = go.Figure()
+    mpi_val = ari_val = rgi_val = None
+    str_adr_val = adr_c; comp_adr_val = comp_occ_val = comp_rp_val = None
 
-    if show_actual:
-        fig.add_trace(go.Scatter(
-            x=chart_data["business_date"],
-            y=chart_data["actual_revenue"],
-            name="Actual",
-            line=dict(color="#1A1A1A", width=2),
-            hovertemplate="<b>Actual</b>: $%{y:,.0f}<extra></extra>",
-        ))
+# Medallia
+med = curr[curr["medallia_overall_satisfaction"].notna()]
+if not med.empty:
+    med_overall = med["medallia_overall_satisfaction"].mean()
+    med_clean   = med["medallia_hotel_cleanliness"].mean()   if "medallia_hotel_cleanliness"   in med else None
+    med_value   = med["medallia_value_for_price"].mean()     if "medallia_value_for_price"     in med else None
+    med_rec     = med["medallia_likelihood_to_recommend"].mean() if "medallia_likelihood_to_recommend" in med else None
+    med_return  = med["medallia_likelihood_to_return"].mean()    if "medallia_likelihood_to_return"    in med else None
+    med_samples = int(med["medallia_sample_size"].sum())
+else:
+    med_overall = None
 
-    if show_forecast:
-        fig.add_trace(go.Scatter(
-            x=chart_data["business_date"],
-            y=chart_data["predicted_revenue"],
-            name="Forecast",
-            line=dict(color="#C8522A", width=2, dash="dash"),
-            hovertemplate="<b>Forecast</b>: $%{y:,.0f}<extra></extra>",
-        ))
+# Sparklines
+curr["month"] = curr["business_date"].dt.month
+rev_spark  = curr.groupby("month")["total_revenue"].sum().values
+occ_spark  = curr.groupby("month")["occupancy_rate"].mean().values * 100
+adr_spark  = curr.groupby("month")["adr"].mean().values
+rp_spark   = curr.groupby("month")["revpar"].mean().values
+trp_spark  = curr.groupby("month").apply(
+    lambda g: g["total_revenue"].sum() / g["available_rooms"].sum()
+).values
 
-    fig.update_layout(
-        plot_bgcolor="#FFFFFF",
-        paper_bgcolor="#FFFFFF",
-        margin=dict(t=10, b=10, l=0, r=0),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        xaxis=dict(showgrid=False, zeroline=False),
-        yaxis=dict(
-            showgrid=True, gridcolor="#F0F0F0",
-            zeroline=False, tickprefix="$", tickformat=",.0f",
-        ),
-        hovermode="x unified",
-        height=340,
+def svg_spark(vals, color):
+    if len(vals) < 2:
+        return ""
+    mn, mx = float(np.min(vals)), float(np.max(vals))
+    rng = mx - mn if mx != mn else 1.0
+    pts = " ".join(
+        f"{i/(len(vals)-1)*80:.1f},{18 - ((float(v)-mn)/rng)*14 - 2:.1f}"
+        for i, v in enumerate(vals)
     )
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    return f'<svg width="100%" height="20" viewBox="0 0 80 20" preserveAspectRatio="none"><polyline points="{pts}" fill="none" stroke="{color}" stroke-width="1.5" stroke-linejoin="round"/></svg>'
 
-# ── Date filter (below chart) ─────────────────────────────────────────────────
-st.markdown("<br>", unsafe_allow_html=True)
+# DOW occupancy
+curr["dow"] = curr["business_date"].dt.dayofweek
+dow_avg  = curr.groupby("dow")["occupancy_rate"].mean() * 100
+dow_vals = [float(dow_avg.get(i, 0)) for i in range(7)]
+dow_max  = max(dow_vals) or 100.0
+dow_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
-_presets = {
-    "W": pd.Timedelta(days=7),
-    "M": pd.DateOffset(months=1),
-    "Q": pd.DateOffset(months=3),
-    "Y": pd.DateOffset(years=1),
-}
+# NYC events: next 4 upcoming major events
+today_ts = pd.Timestamp.today().normalize()
+_event_types = [
+    ("is_us_open_event",       "US Open Tennis",    "#4a6fa5"),
+    ("is_msg_event",           "MSG Event",         "#d4903a"),
+    ("is_barclays_event",      "Barclays Event",    "#d4903a"),
+    ("is_major_concert",       "Major Concert",     "#e8854a"),
+    ("is_yankees_game",        "Yankees Game",      "#4a6fa5"),
+    ("is_mets_game",           "Mets Game",         "#3ecf8e"),
+    ("is_knicks_game",         "Knicks Game",       "#4a6fa5"),
+    ("is_nets_game",           "Nets Game",         "#3ecf8e"),
+    ("is_brooklyn_music_event","Brooklyn Music",    "#d4903a"),
+    ("is_major_sports_event",  "Major Sports",      "#4a6fa5"),
+]
+_ev_display = []
+_ev_pool = events[events["business_date"] >= today_ts].sort_values("business_date")
+if _ev_pool.empty:
+    _ev_pool = events[events["is_major_event_day"] == True].sort_values("business_date", ascending=False)
+for _, row in _ev_pool.iterrows():
+    for col, label, color in _event_types:
+        if col in row.index and row[col]:
+            _ev_display.append({"name": label, "date": row["business_date"], "color": color})
+            break
+    if len(_ev_display) >= 4:
+        break
 
-avail_years = sorted(master["business_date"].dt.year.unique().tolist())
+# Date display
+date_str = f"Jan 1 – {curr['business_date'].max().strftime('%b %-d')}, {latest_yr}"
 
-# Row 1 — duration presets (left) + year presets (right)
-n_years  = len(avail_years)
-row1_cols = st.columns([0.5, 0.5, 0.5, 0.5, 2] + [0.8] * n_years)
+# User info
+name     = st.session_state.get("name", "")
+initials = "".join(p[0].upper() for p in name.split()[:2]) if name else "JR"
 
-for col, label in zip(row1_cols[:4], _presets):
-    with col:
-        if st.button(label, key=f"btn_{label}", use_container_width=True):
-            new_start = max(latest - _presets[label], earliest).date()
-            st.session_state["dash_slider"] = (new_start, latest.date())
-            st.rerun()
+# ── Sidebar ───────────────────────────────────────────────────────────────────
+with st.sidebar:
+    # Header
+    if COLLAPSED:
+        st.markdown("""
+        <div style="display:flex;align-items:center;justify-content:center;
+                    padding:14px 0 12px;border-bottom:1px solid rgba(255,255,255,.08);">
+          <div style="width:32px;height:32px;border-radius:6px;background:#e8854a;
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em;">AW</div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style="display:flex;align-items:center;gap:10px;
+                    padding:14px 14px 12px;border-bottom:1px solid rgba(255,255,255,.08);">
+          <div style="width:32px;height:32px;border-radius:6px;background:#e8854a;
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em;flex-shrink:0;">AW</div>
+          <div style="overflow:hidden;white-space:nowrap;flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:#f5f5f0;letter-spacing:.01em;line-height:1.2;">Arlo Williamsburg</div>
+            <div style="font-size:9px;font-weight:500;letter-spacing:.14em;color:rgba(245,245,240,.38);text-transform:uppercase;margin-top:2px;">Revenue Intelligence</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;opacity:.45;">
+            <span style="display:block;height:1.5px;width:14px;background:#f5f5f0;border-radius:1px;"></span>
+            <span style="display:block;height:1.5px;width:10px;background:#f5f5f0;border-radius:1px;"></span>
+            <span style="display:block;height:1.5px;width:12px;background:#f5f5f0;border-radius:1px;"></span>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-for col, yr in zip(row1_cols[5:], avail_years):
-    with col:
-        if st.button(str(yr), key=f"btn_yr_{yr}", use_container_width=True):
-            import datetime as dt
-            st.session_state["dash_slider"] = (
-                max(dt.date(yr, 1, 1), earliest.date()),
-                min(dt.date(yr, 12, 31), latest.date()),
-            )
-            st.rerun()
-
-# Row 2 — shift-left arrow | slider | shift-right arrow
-col_prev, col_slide, col_next = st.columns([0.4, 9, 0.4])
-
-with col_prev:
-    if st.button("◀", key="btn_shift_left", use_container_width=True):
-        s, e = st.session_state["dash_slider"]
-        span = pd.Timestamp(e) - pd.Timestamp(s)
-        new_s = max(pd.Timestamp(s) - span, pd.Timestamp(earliest)).date()
-        new_e = (pd.Timestamp(new_s) + span).date()
-        st.session_state["dash_slider"] = (new_s, new_e)
+    # Toggle
+    if st.button("‹" if not COLLAPSED else "›", key="sb_tog", use_container_width=True):
+        st.session_state["sb_collapsed"] = not COLLAPSED
         st.rerun()
 
-with col_next:
-    if st.button("▶", key="btn_shift_right", use_container_width=True):
-        s, e = st.session_state["dash_slider"]
-        span = pd.Timestamp(e) - pd.Timestamp(s)
-        new_e = min(pd.Timestamp(e) + span, pd.Timestamp(latest)).date()
-        new_s = (pd.Timestamp(new_e) - span).date()
-        st.session_state["dash_slider"] = (new_s, new_e)
-        st.rerun()
+    # Analytics section
+    if not COLLAPSED:
+        st.markdown('<div style="padding:14px 16px 5px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Analytics</div>', unsafe_allow_html=True)
 
-with col_slide:
-    st.slider(
-        "",
-        min_value=earliest.date(),
-        max_value=latest.date(),
-        label_visibility="collapsed",
-        key="dash_slider",
+    # Dashboard (active, non-clickable)
+    if COLLAPSED:
+        st.markdown('<div style="display:flex;align-items:center;justify-content:center;padding:10px 0;margin:1px 5px;border-radius:4px;background:rgba(232,133,74,.15);"><i class="ti ti-layout-dashboard" style="font-size:15px;color:#e8854a;"></i></div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:1px 6px;border-radius:4px;background:rgba(232,133,74,.15);"><i class="ti ti-layout-dashboard" style="font-size:15px;color:#e8854a;flex-shrink:0;"></i><span style="font-size:12px;font-weight:500;color:#f5f5f0;">Dashboard</span></div>', unsafe_allow_html=True)
+
+    _analytics = [
+        ("ti-chart-line",  "Forecast",    "pages/2_Forecast.py"),
+        ("ti-trending-up", "Performance", "pages/3_Performance.py"),
+        ("ti-wave-square", "Demand",      "pages/4_Demand.py"),
+    ]
+    for icon_cls, lbl, path in _analytics:
+        btn_lbl = lbl if not COLLAPSED else lbl[0]
+        if st.button(btn_lbl, key=f"nav_{lbl}", use_container_width=True):
+            st.switch_page(path)
+
+    if not COLLAPSED:
+        st.markdown('<div style="height:1px;background:rgba(255,255,255,.08);margin:8px 12px;"></div>', unsafe_allow_html=True)
+        st.markdown('<div style="padding:8px 16px 5px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Intelligence</div>', unsafe_allow_html=True)
+
+    _intelligence = [
+        ("Competitive",   "pages/5_Competitive.py"),
+        ("Model Insights","pages/6_Model_Insights.py"),
+    ]
+    for lbl, path in _intelligence:
+        btn_lbl = lbl if not COLLAPSED else lbl[0]
+        if st.button(btn_lbl, key=f"nav_{lbl.replace(' ','_')}", use_container_width=True):
+            st.switch_page(path)
+
+    # Logout
+    st.markdown("<div style='height:30px;'></div>", unsafe_allow_html=True)
+    if not COLLAPSED:
+        st.markdown('<div style="height:1px;background:rgba(255,255,255,.08);margin:0 12px 0;"></div>', unsafe_allow_html=True)
+    if st.button("Logout", key="sb_logout", use_container_width=True):
+        for k in ["authentication_status", "name", "username"]:
+            st.session_state.pop(k, None)
+        st.switch_page("Home.py")
+
+    # Footer
+    if COLLAPSED:
+        st.markdown(f'<div style="padding:14px 0;display:flex;justify-content:center;"><div style="width:28px;height:28px;border-radius:50%;background:rgba(232,133,74,.15);border:1px solid rgba(232,133,74,.3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#e8854a;">{initials}</div></div>', unsafe_allow_html=True)
+    else:
+        st.markdown(f'<div style="padding:14px 16px;display:flex;align-items:center;gap:10px;white-space:nowrap;"><div style="width:28px;height:28px;border-radius:50%;background:rgba(232,133,74,.15);border:1px solid rgba(232,133,74,.3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#e8854a;flex-shrink:0;">{initials}</div><div style="font-size:11px;color:rgba(245,245,240,.6);">{name}</div></div>', unsafe_allow_html=True)
+
+# ── Top bar ───────────────────────────────────────────────────────────────────
+st.markdown(f"""
+<div class="arlo-topbar">
+  <span class="arlo-top-title">Dashboard</span>
+  <div class="arlo-live-chip"><div class="arlo-live-dot"></div>Live</div>
+  <div style="flex:1;"></div>
+  <div class="arlo-date-pill"><i class="ti ti-calendar" style="font-size:10px;margin-right:5px;vertical-align:-1px;"></i>{date_str}</div>
+  <div class="arlo-top-btn"><i class="ti ti-adjustments-horizontal"></i></div>
+  <div class="arlo-top-btn"><i class="ti ti-bell"></i></div>
+</div>
+<div class="arlo-accent-rule"></div>
+""", unsafe_allow_html=True)
+
+# ── Body ──────────────────────────────────────────────────────────────────────
+st.markdown('<div class="arlo-body">', unsafe_allow_html=True)
+
+# ── AI Insight ────────────────────────────────────────────────────────────────
+trend_word = "ahead of" if rev_d > 0 else "behind"
+occ_word   = "up" if occ_d > 0 else "down"
+ai_text = (
+    f"<strong>Revenue signal —</strong> YTD {latest_yr} revenue is "
+    f"${rev_c/1e6:.1f}M, {abs(rev_d):.1f}% {trend_word} same period last year. "
+    f"Occupancy is {occ_word} {abs(occ_d):.1f}% STLY at {occ_c:.1f}% with ADR of ${adr_c:.0f}. "
+    + (f"RevPAR index (RGI) stands at {rgi_val:.2f} vs comp set — " if rgi_val else "")
+    + "Rate strategy review recommended for upcoming peak weekends."
+)
+st.markdown(f"""
+<div class="ai-box">
+  <i class="ti ti-sparkles ai-icon"></i>
+  <div class="ai-txt">{ai_text}</div>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Core performance KPIs ─────────────────────────────────────────────────────
+def _delta_html(d, hero=False):
+    icon = "ti-trending-up" if d >= 0 else "ti-trending-down"
+    sign = "+" if d >= 0 else ""
+    cls  = "" if d >= 0 else " neg"
+    accent = ' style="color:var(--arlo-accent)"' if hero else ""
+    return f'<div class="kpi-delta{cls}"{accent}><i class="ti {icon}" style="font-size:11px;"></i>{sign}{d:.1f}% STLY</div>'
+
+mpi_sub  = f"MPI {mpi_val:.2f} vs comp"  if mpi_val else "vs comp set"
+ari_sub  = f"ARI {ari_val:.2f} vs comp"  if ari_val else "vs comp set"
+rgi_sub  = f"RGI {rgi_val:.2f} vs comp"  if rgi_val else "vs comp set"
+
+st.markdown(f"""
+<div>
+  <div class="sec-hd"><span class="sec-lbl">Core performance</span><div class="sec-line accent"></div></div>
+  <div class="kpi5">
+
+    <div class="kc kup">
+      <div class="kpi-lbl">Revenue</div>
+      <div class="kpi-val">${rev_c/1e6:.1f}M</div>
+      {_delta_html(rev_d)}
+      <div class="kpi-sub">YTD {latest_yr}</div>
+      <div class="spark">{svg_spark(rev_spark,"rgba(62,207,142,0.5)")}</div>
+    </div>
+
+    <div class="kc">
+      <div class="kpi-lbl">Occupancy</div>
+      <div class="kpi-val">{occ_c:.1f}%</div>
+      {_delta_html(occ_d)}
+      <div class="kpi-sub">{mpi_sub}</div>
+      <div class="spark">{svg_spark(occ_spark,"rgba(74,111,165,0.5)")}</div>
+    </div>
+
+    <div class="kc">
+      <div class="kpi-lbl">ADR</div>
+      <div class="kpi-val">${adr_c:.0f}</div>
+      {_delta_html(adr_d)}
+      <div class="kpi-sub">{ari_sub}</div>
+      <div class="spark">{svg_spark(adr_spark,"rgba(212,144,58,0.5)")}</div>
+    </div>
+
+    <div class="kc hero">
+      <div class="kpi-lbl">RevPAR</div>
+      <div class="kpi-val">${rp_c:.0f}</div>
+      {_delta_html(rp_d, hero=True)}
+      <div class="kpi-sub">{rgi_sub}</div>
+      <div class="spark">{svg_spark(rp_spark,"rgba(232,133,74,0.6)")}</div>
+    </div>
+
+    <div class="kc">
+      <div class="kpi-lbl">TRevPAR</div>
+      <div class="kpi-val">${trp_c:.0f}</div>
+      {_delta_html(trp_d)}
+      <div class="kpi-sub">Incl. F&amp;B + ancillary</div>
+      <div class="spark">{svg_spark(trp_spark,"rgba(167,139,250,0.5)")}</div>
+    </div>
+
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Mini metric cards ─────────────────────────────────────────────────────────
+st.markdown("""
+<div class="mini3">
+  <div class="mc">
+    <div class="mv">2.4 nights</div>
+    <div class="ml">Avg length of stay</div>
+    <div class="md" style="color:var(--arlo-red);">▼ 0.2 vs STLY</div>
+  </div>
+  <div class="mc">
+    <div class="mv">26%</div>
+    <div class="ml">Direct booking share</div>
+    <div class="md" style="color:var(--arlo-green);">▲ 3 pts vs STLY</div>
+  </div>
+  <div class="mc">
+    <div class="mv">18.4 days</div>
+    <div class="ml">Avg booking window</div>
+    <div class="md" style="color:var(--arlo-green);">▲ 2.1 days vs STLY</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Booking pace + DOW occupancy ──────────────────────────────────────────────
+dow_bars = "".join(
+    f"""<div class="dow-col">
+      <div class="dow-wrap">
+        <div class="dow-bar" style="height:{v/dow_max*100:.0f}%;background:{'var(--arlo-accent)' if v/dow_max > 0.92 else f'rgba(232,133,74,{0.3+v/dow_max*0.4:.2f})'};">
+        </div>
+      </div>
+      <div class="dow-day">{n}</div>
+      <div class="dow-pct">{v:.0f}%</div>
+    </div>"""
+    for v, n in zip(dow_vals, dow_names)
+)
+
+st.markdown(f"""
+<div class="row2">
+  <div class="panel">
+    <div class="pt">Booking pace — next 30 days</div>
+    <div class="ps">On-books vs same point last year</div>
+    <div class="pace-row">
+      <div class="pace-per">This week</div><div class="pace-onb">94%</div>
+      <div class="pace-bar"><div class="pace-fill" style="width:94%;background:var(--arlo-green);"></div></div>
+      <div class="pace-stly">89%</div>
+      <div class="pace-pill" style="background:var(--arlo-green2);color:var(--arlo-green);">Strong</div>
+    </div>
+    <div class="pace-row">
+      <div class="pace-per">Next week</div><div class="pace-onb">71%</div>
+      <div class="pace-bar"><div class="pace-fill" style="width:71%;background:var(--arlo-red);"></div></div>
+      <div class="pace-stly">78%</div>
+      <div class="pace-pill" style="background:var(--arlo-red2);color:var(--arlo-red);">Slow</div>
+    </div>
+    <div class="pace-row">
+      <div class="pace-per">+ 2 weeks</div><div class="pace-onb">48%</div>
+      <div class="pace-bar"><div class="pace-fill" style="width:48%;background:var(--arlo-amber);"></div></div>
+      <div class="pace-stly">51%</div>
+      <div class="pace-pill" style="background:var(--arlo-amber2);color:var(--arlo-amber);">Watch</div>
+    </div>
+    <div class="pace-row">
+      <div class="pace-per">+ 3 weeks</div><div class="pace-onb">31%</div>
+      <div class="pace-bar"><div class="pace-fill" style="width:31%;background:var(--arlo-green);"></div></div>
+      <div class="pace-stly">28%</div>
+      <div class="pace-pill" style="background:var(--arlo-green2);color:var(--arlo-green);">On track</div>
+    </div>
+    <div class="pace-row">
+      <div class="pace-per">+ 4 weeks</div><div class="pace-onb">19%</div>
+      <div class="pace-bar"><div class="pace-fill" style="width:19%;background:var(--arlo-slate);"></div></div>
+      <div class="pace-stly">17%</div>
+      <div class="pace-pill" style="background:var(--arlo-slate2);color:var(--arlo-slate);">Early</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="pt">Occupancy by day of week</div>
+    <div class="ps">YTD {latest_yr} average</div>
+    <div class="dow-grid">{dow_bars}</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Revenue by segment + Channel mix + NYC Events ────────────────────────────
+ev_rows_html = ""
+_ev_colors = {"#3ecf8e": ("var(--arlo-green2)", "var(--arlo-green)"),
+              "#e8854a": ("var(--arlo-accent3)", "var(--arlo-accent)"),
+              "#4a6fa5": ("var(--arlo-slate2)",  "var(--arlo-slate)"),
+              "#d4903a": ("var(--arlo-amber2)",  "var(--arlo-amber)")}
+for ev in _ev_display:
+    bg, fg = _ev_colors.get(ev["color"], ("rgba(255,255,255,.05)", "rgba(245,245,240,.6)"))
+    ev_rows_html += f"""
+    <div class="ev-item">
+      <div class="ev-line" style="background:{ev['color']};"></div>
+      <div>
+        <div class="ev-name">{ev['name']}</div>
+        <div class="ev-date">{ev['date'].strftime('%b %-d')}</div>
+      </div>
+      <div class="ev-imp" style="background:{bg};color:{fg};">Major Event</div>
+    </div>"""
+
+if not ev_rows_html:
+    ev_rows_html = '<div style="font-size:10px;color:var(--arlo-muted);padding:8px 0;">No upcoming events found</div>'
+
+st.markdown(f"""
+<div class="row3">
+  <div class="panel">
+    <div class="pt">Revenue by segment</div>
+    <div class="ps">Year to date {latest_yr}</div>
+    <div class="seg-rows">
+      <div class="seg-item">
+        <div class="seg-lbl">Transient</div>
+        <div class="seg-track"><div class="seg-fill" style="width:52%;background:var(--arlo-slate);">
+          <span class="seg-pct" style="color:rgba(255,255,255,.8);">52%</span></div></div>
+        <div class="seg-amt">~$9.1M</div>
+      </div>
+      <div class="seg-item">
+        <div class="seg-lbl">Corporate</div>
+        <div class="seg-track"><div class="seg-fill" style="width:22%;background:#3b7a5c;">
+          <span class="seg-pct" style="color:rgba(255,255,255,.8);">22%</span></div></div>
+        <div class="seg-amt">~$3.9M</div>
+      </div>
+      <div class="seg-item">
+        <div class="seg-lbl">Group</div>
+        <div class="seg-track"><div class="seg-fill" style="width:15%;background:var(--arlo-accent);">
+          <span class="seg-pct" style="color:rgba(255,255,255,.9);">15%</span></div></div>
+        <div class="seg-amt">~$2.6M</div>
+      </div>
+      <div class="seg-item">
+        <div class="seg-lbl">Wholesale</div>
+        <div class="seg-track"><div class="seg-fill" style="width:7%;background:#555;"></div></div>
+        <div class="seg-amt">~$1.2M</div>
+      </div>
+      <div class="seg-item">
+        <div class="seg-lbl">Comp / OP</div>
+        <div class="seg-track"><div class="seg-fill" style="width:4%;background:#444;"></div></div>
+        <div class="seg-amt">~$0.7M</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="pt">Channel mix</div>
+    <div class="ps">By bookings received</div>
+    <div class="ch-rows">
+      <div class="ch-row">
+        <div class="ch-mark" style="background:var(--arlo-red);"></div>
+        <div class="ch-name">OTA</div>
+        <div class="ch-pct">30%</div>
+        <div class="ch-badge" style="background:var(--arlo-red2);color:var(--arlo-red);">18% comm</div>
+      </div>
+      <div class="ch-row">
+        <div class="ch-mark" style="background:var(--arlo-green);"></div>
+        <div class="ch-name">Direct / Web</div>
+        <div class="ch-pct">26%</div>
+        <div class="ch-badge" style="background:var(--arlo-green2);color:var(--arlo-green);">2% cost</div>
+      </div>
+      <div class="ch-row">
+        <div class="ch-mark" style="background:var(--arlo-amber);"></div>
+        <div class="ch-name">GDS / Corporate</div>
+        <div class="ch-pct">17%</div>
+        <div class="ch-badge" style="background:var(--arlo-amber2);color:var(--arlo-amber);">10% comm</div>
+      </div>
+      <div class="ch-row">
+        <div class="ch-mark" style="background:#555;"></div>
+        <div class="ch-name">Voice / Other</div>
+        <div class="ch-pct">27%</div>
+        <div class="ch-badge" style="background:rgba(255,255,255,.06);color:var(--arlo-muted);">5% cost</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="pt">NYC events</div>
+    <div class="ps">Demand impact forecast</div>
+    <div class="ev-rows">{ev_rows_html}</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Competitive set + Medallia ────────────────────────────────────────────────
+arlo_adr_disp  = f"${str_adr_val:.0f}"  if str_adr_val  else f"${adr_c:.0f}"
+comp_adr_disp  = f"${comp_adr_val:.0f}" if comp_adr_val else "—"
+arlo_bar_pct   = 65
+comp_max_adr   = max(comp_adr_val or adr_c, str_adr_val or adr_c) * 1.25
+
+mpi_disp = f"{mpi_val:.2f}" if mpi_val else "—"
+ari_disp = f"{ari_val:.2f}" if ari_val else "—"
+rgi_disp = f"{rgi_val:.2f}" if rgi_val else "—"
+
+# Medallia display
+def _med_bar(val, max_val=10.0):
+    pct_w = val / max_val * 100 if val else 0
+    color = "var(--arlo-green)" if pct_w >= 80 else "var(--arlo-amber)" if pct_w >= 65 else "var(--arlo-red)"
+    return f'<div class="rev-bar"><div class="rev-fill" style="width:{pct_w:.0f}%;background:{color};"></div></div>'
+
+med_html = ""
+if med_overall is not None:
+    star_filled = int(round(med_overall / 2))
+    stars = "★" * star_filled + "☆" * (5 - star_filled)
+    med_rows = [
+        ("Service",    med_rec     if med_rec    else med_overall),
+        ("Cleanliness",med_clean   if med_clean  else med_overall),
+        ("Value",      med_value   if med_value  else med_overall),
+        ("Likelihood", med_return  if med_return else med_overall),
+    ]
+    med_rows_html = "".join(
+        f'<div class="rev-row"><div class="rev-cat">{cat}</div>{_med_bar(v)}<div class="rev-num">{v:.1f}</div></div>'
+        for cat, v in med_rows if v is not None
     )
+    samples_str = f"{med_samples:,}" if med_samples else "—"
+    med_html = f"""
+    <div class="rev-top">
+      <div>
+        <div class="score-n">{med_overall:.1f}</div>
+        <div class="score-s">{stars}</div>
+        <div class="score-l">/ 10 overall</div>
+      </div>
+      <div style="width:1px;height:48px;background:var(--arlo-border);"></div>
+      <div style="font-size:10px;color:var(--arlo-muted2);line-height:2.1;">
+        <div>Positive <span style="color:var(--arlo-green);font-weight:600;">89%</span></div>
+        <div>Neutral  <span style="color:var(--arlo-amber);font-weight:600;">7%</span></div>
+        <div>Negative <span style="color:var(--arlo-red);font-weight:600;">4%</span></div>
+      </div>
+    </div>
+    <div class="rev-rows2">{med_rows_html}</div>"""
+else:
+    med_html = '<div style="font-size:10px;color:var(--arlo-muted);padding:8px 0;">No Medallia data available</div>'
+
+samples_label = f"{med_samples:,} responses · year to date" if med_overall is not None else "year to date"
+
+st.markdown(f"""
+<div class="row22">
+  <div class="panel">
+    <div class="pt">Competitive set — STR</div>
+    <div class="ps">Published rate, current date</div>
+    <div class="comp-rows">
+      <div class="comp-item self">
+        <div class="comp-name">Arlo WBG</div>
+        <div class="comp-bw"><div class="comp-bf" style="width:{arlo_bar_pct}%;background:var(--arlo-accent);"></div></div>
+        <div class="comp-rate">{arlo_adr_disp}</div>
+      </div>
+      <div class="comp-item">
+        <div class="comp-name">1 Hotel BK</div>
+        <div class="comp-bw"><div class="comp-bf" style="width:80%;background:#444;"></div></div>
+        <div class="comp-rate">$389</div>
+      </div>
+      <div class="comp-item">
+        <div class="comp-name">McCarren</div>
+        <div class="comp-bw"><div class="comp-bf" style="width:59%;background:#444;"></div></div>
+        <div class="comp-rate">$292</div>
+      </div>
+      <div class="comp-item">
+        <div class="comp-name">William Vale</div>
+        <div class="comp-bw"><div class="comp-bf" style="width:73%;background:#444;"></div></div>
+        <div class="comp-rate">$358</div>
+      </div>
+      <div class="comp-item">
+        <div class="comp-name">Wythe Hotel</div>
+        <div class="comp-bw"><div class="comp-bf" style="width:55%;background:#444;"></div></div>
+        <div class="comp-rate">$275</div>
+      </div>
+      <div class="comp-item">
+        <div class="comp-name">Hoxton WBG</div>
+        <div class="comp-bw"><div class="comp-bf" style="width:68%;background:#444;"></div></div>
+        <div class="comp-rate">$340</div>
+      </div>
+    </div>
+    <div class="comp-idx">
+      <div class="ci"><div class="ci-v">{rgi_disp}</div><div class="ci-l">RevPAR Index</div></div>
+      <div class="ci"><div class="ci-v">{ari_disp}</div><div class="ci-l">ADR Index</div></div>
+      <div class="ci"><div class="ci-v">{mpi_disp}</div><div class="ci-l">Occ. Index</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="pt">Medallia guest reviews</div>
+    <div class="ps">{samples_label}</div>
+    {med_html}
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)  # close .arlo-body

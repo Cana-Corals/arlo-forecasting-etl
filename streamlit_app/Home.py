@@ -10,7 +10,7 @@ st.set_page_config(
     page_title="Arlo Williamsburg Forecasting",
     page_icon="🏨",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 # ── Shared CSS ────────────────────────────────────────────────────────────────
@@ -18,35 +18,6 @@ st.markdown("""
 <style>
     #MainMenu, footer, header { visibility: hidden; }
     [data-testid="collapsedControl"] { display: none; }
-    section[data-testid="stSidebar"] { display: none; }
-    .block-container { padding-top: 2rem; padding-bottom: 2rem; }
-
-    .arlo-title {
-        text-align: center;
-        font-size: 2.4rem;
-        font-weight: 700;
-        color: #1A1A1A;
-        margin-bottom: 0.2rem;
-    }
-    .arlo-date {
-        text-align: center;
-        font-size: 0.95rem;
-        color: #9E9E9E;
-        margin-bottom: 2.5rem;
-    }
-    .confidential {
-        text-align: center;
-        font-size: 0.75rem;
-        color: #BDBDBD;
-        letter-spacing: 0.12em;
-        margin-top: 2rem;
-    }
-    .search-hint {
-        text-align: center;
-        font-size: 0.82rem;
-        color: #BDBDBD;
-        margin-top: 0.4rem;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -79,6 +50,14 @@ authenticator = stauth.Authenticate(
 
 # ── Login page ────────────────────────────────────────────────────────────────
 def login_page():
+    st.markdown("""
+    <style>
+        section[data-testid="stSidebar"] { display: none; }
+        .block-container { padding-top: 2rem; padding-bottom: 2rem; }
+        .arlo-title { text-align:center; font-size:2.4rem; font-weight:700; color:#f5f5f0; margin-bottom:0.2rem; }
+        .confidential { text-align:center; font-size:0.75rem; color:rgba(245,245,240,0.3); letter-spacing:0.12em; margin-top:2rem; }
+    </style>
+    """, unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 1.2, 1])
     with col2:
         st.markdown("<br><br>", unsafe_allow_html=True)

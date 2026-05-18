@@ -23,6 +23,9 @@ env/
 config/users.yaml
 .streamlit/secrets.toml
 
+# Claude Code internal memory — contains sensitive notes
+memory/
+
 # Jupyter
 .ipynb_checkpoints/
 *.ipynb_checkpoints

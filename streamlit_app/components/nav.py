@@ -9,6 +9,7 @@ PAGES = [
     ("Demand",         "pages/4_Demand.py"),
     ("Competitive",    "pages/5_Competitive.py"),
     ("Model Insights", "pages/6_Model_Insights.py"),
+    ("Dashboard v2",   "pages/7_Dashboard_v2.py"),
 ]
 
 

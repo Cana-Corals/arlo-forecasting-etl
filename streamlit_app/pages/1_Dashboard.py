@@ -52,7 +52,15 @@ section[data-testid="stSidebar"] > div:first-child {{
     width:{SB_W} !important; min-width:{SB_W} !important;
     padding:0 !important; overflow:hidden;
 }}
-section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {{ gap:0 !important; padding:0 !important; }}
+section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {{ gap:0 !important; padding:0 0 58px 0 !important; }}
+/* Remove element-container margins that cause overlapping */
+section[data-testid="stSidebar"] .element-container,
+section[data-testid="stSidebar"] .stElementContainer {{
+    margin:0 !important; padding:0 !important;
+}}
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {{
+    margin:0 !important;
+}}
 section[data-testid="stSidebar"] .stButton > button {{
     background:transparent !important; border:none !important;
     box-shadow:none !important; outline:none !important;
@@ -66,6 +74,23 @@ section[data-testid="stSidebar"] .stButton > button {{
 section[data-testid="stSidebar"] .stButton > button:hover {{
     background:rgba(255,255,255,0.05) !important;
     color:var(--arlo-white) !important; border:none !important;
+}}
+/* Toggle collapse button — centered, subtle */
+section[data-testid="stSidebar"] .stButton:first-of-type > button {{
+    text-align:center !important; justify-content:center !important;
+    padding:4px 0 !important; margin:0 !important; width:100% !important;
+    border-radius:0 !important; border-bottom:1px solid rgba(255,255,255,.06) !important;
+    color:var(--arlo-muted) !important; font-size:13px !important; letter-spacing:0 !important;
+}}
+section[data-testid="stSidebar"] .stButton:first-of-type > button:hover {{
+    background:rgba(255,255,255,.04) !important; color:var(--arlo-muted2) !important;
+}}
+/* Pinned user footer at sidebar bottom */
+.sb-footer-fixed {{
+    position:fixed; bottom:0; left:0; width:{SB_W};
+    background:var(--arlo-dark); border-top:1px solid rgba(255,255,255,.08);
+    padding:10px 14px; z-index:200;
+    transition:width .22s ease; overflow:hidden; white-space:nowrap;
 }}
 
 /* ── Main content ── */
@@ -416,19 +441,35 @@ with st.sidebar:
             st.switch_page(path)
 
     # Logout
-    st.markdown("<div style='height:30px;'></div>", unsafe_allow_html=True)
-    if not COLLAPSED:
-        st.markdown('<div style="height:1px;background:rgba(255,255,255,.08);margin:0 12px 0;"></div>', unsafe_allow_html=True)
+    st.markdown('<div style="height:1px;background:rgba(255,255,255,.08);margin:8px 12px 4px;"></div>', unsafe_allow_html=True)
     if st.button("Logout", key="sb_logout", use_container_width=True):
         for k in ["authentication_status", "name", "username"]:
             st.session_state.pop(k, None)
         st.switch_page("Home.py")
 
-    # Footer
+    # User footer — fixed at sidebar bottom
     if COLLAPSED:
-        st.markdown(f'<div style="padding:14px 0;display:flex;justify-content:center;"><div style="width:28px;height:28px;border-radius:50%;background:rgba(232,133,74,.15);border:1px solid rgba(232,133,74,.3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#e8854a;">{initials}</div></div>', unsafe_allow_html=True)
+        st.markdown(f'''
+        <div class="sb-footer-fixed" style="padding:10px 0;display:flex;justify-content:center;">
+          <div style="width:28px;height:28px;border-radius:50%;background:rgba(232,133,74,.15);
+                      border:1px solid rgba(232,133,74,.3);display:flex;align-items:center;
+                      justify-content:center;font-size:10px;font-weight:600;color:#e8854a;">{initials}</div>
+        </div>
+        ''', unsafe_allow_html=True)
     else:
-        st.markdown(f'<div style="padding:14px 16px;display:flex;align-items:center;gap:10px;white-space:nowrap;"><div style="width:28px;height:28px;border-radius:50%;background:rgba(232,133,74,.15);border:1px solid rgba(232,133,74,.3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#e8854a;flex-shrink:0;">{initials}</div><div style="font-size:11px;color:rgba(245,245,240,.6);">{name}</div></div>', unsafe_allow_html=True)
+        st.markdown(f'''
+        <div class="sb-footer-fixed">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:28px;height:28px;border-radius:50%;background:rgba(232,133,74,.15);
+                        border:1px solid rgba(232,133,74,.3);display:flex;align-items:center;
+                        justify-content:center;font-size:10px;font-weight:600;color:#e8854a;flex-shrink:0;">{initials}</div>
+            <div>
+              <div style="font-size:11px;font-weight:500;color:rgba(245,245,240,.8);">{name}</div>
+              <div style="font-size:9px;color:rgba(245,245,240,.35);letter-spacing:.06em;margin-top:1px;">REVENUE MANAGER</div>
+            </div>
+          </div>
+        </div>
+        ''', unsafe_allow_html=True)
 
 # ── Top bar ───────────────────────────────────────────────────────────────────
 st.html(f"""

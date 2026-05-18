@@ -192,17 +192,8 @@ def show_home():
             st.info("AI Assistant coming soon — all other pages must be built first.")
 
     # Bottom nav
-    st.markdown("<br><br><br><br><br><br>", unsafe_allow_html=True)
-    st.markdown("""
-    <div class="nav-bar">
-        <a class="nav-item" href="/Dashboard">Dashboard</a>
-        <a class="nav-item" href="/Forecast">Forecast</a>
-        <a class="nav-item" href="/Performance">Performance</a>
-        <a class="nav-item" href="/Demand">Demand</a>
-        <a class="nav-item" href="/Competitive">Competitive</a>
-        <a class="nav-item" href="/Model_Insights">Model Insights</a>
-    </div>
-    """, unsafe_allow_html=True)
+    from components.nav import render_nav
+    render_nav()
 
     # Logout in top right
     with st.container():

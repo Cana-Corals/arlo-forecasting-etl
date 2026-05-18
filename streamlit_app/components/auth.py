@@ -23,21 +23,11 @@ def _load_config() -> dict:
         return yaml.load(f, Loader=SafeLoader)
 
 
-def require_auth() -> stauth.Authenticate:
+def require_auth() -> None:
     """
     Call at the top of every page (after set_page_config).
-    Restores auth from the login cookie if the session was reset by navigation.
-    Redirects to the login screen if the cookie is missing or expired.
+    Navigation via st.page_link keeps session alive, so a plain session check is enough.
+    Redirects to login only if someone lands on the page without an active session.
     """
-    config = _load_config()
-    authenticator = stauth.Authenticate(
-        config["credentials"],
-        config["cookie"]["name"],
-        config["cookie"]["key"],
-        config["cookie"]["expiry_days"],
-    )
-    # Check cookie silently — no UI rendered
-    authenticator.login(location="unrendered")
     if not st.session_state.get("authentication_status"):
         st.switch_page("Home.py")
-    return authenticator

@@ -7,6 +7,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from components.data import load_master, load_predictions
 from components.auth import require_auth
+from components.nav import render_nav
 
 # ── Page config — must be first ──────────────────────────────────────────────
 st.set_page_config(
@@ -210,15 +211,4 @@ fig.update_layout(
 st.markdown("**Forecast vs Actual — Revenue**")
 st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-# ── Bottom nav ────────────────────────────────────────────────────────────────
-st.markdown("""
-<div class="nav-bar">
-    <a class="nav-item" href="/">Home</a>
-    <span class="nav-active">Dashboard</span>
-    <a class="nav-item" href="/Forecast">Forecast</a>
-    <a class="nav-item" href="/Performance">Performance</a>
-    <a class="nav-item" href="/Demand">Demand</a>
-    <a class="nav-item" href="/Competitive">Competitive</a>
-    <a class="nav-item" href="/Model_Insights">Model Insights</a>
-</div>
-""", unsafe_allow_html=True)
+render_nav()

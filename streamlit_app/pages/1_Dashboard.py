@@ -2,7 +2,6 @@ import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
 from pathlib import Path
-from datetime import timedelta
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -72,78 +71,53 @@ pred     = load_predictions()
 latest   = master["business_date"].max()
 earliest = master["business_date"].min()
 
-# ── Period mode ───────────────────────────────────────────────────────────────
-mode = st.radio(
-    "", ["Quick", "Custom Range"],
-    horizontal=True,
-    label_visibility="collapsed",
-    key="dash_mode",
-)
+# ── Date filter ───────────────────────────────────────────────────────────────
+if "dash_slider" not in st.session_state:
+    st.session_state["dash_slider"] = (
+        max(latest - pd.DateOffset(years=1), earliest).date(),
+        latest.date(),
+    )
 
-if mode == "Quick":
-    period = st.radio(
-        "", ["W", "M", "Q", "Y"],
-        horizontal=True,
-        index=3,
+prev_period = st.session_state.get("_period_prev", "Y")
+
+col_pre, col_slide = st.columns([2, 8])
+with col_pre:
+    period = st.segmented_control(
+        "",
+        ["W", "M", "Q", "Y"],
+        default="Y",
         label_visibility="collapsed",
         key="dash_period",
     )
 
-    if period == "W":
-        curr       = master[master["business_date"] > latest - pd.Timedelta(days=7)]
-        prev       = master[
-            (master["business_date"] > latest - pd.Timedelta(days=7) - pd.DateOffset(years=1)) &
-            (master["business_date"] <= latest - pd.DateOffset(years=1))
-        ]
-        chart_data = pred[pred["business_date"] > latest - pd.Timedelta(days=56)]
+if period is not None and period != prev_period:
+    _deltas = {
+        "W": pd.Timedelta(days=7),
+        "M": pd.DateOffset(months=1),
+        "Q": pd.DateOffset(months=3),
+        "Y": pd.DateOffset(years=1),
+    }
+    new_start = max(latest - _deltas[period], earliest).date()
+    st.session_state["dash_slider"] = (new_start, latest.date())
 
-    elif period == "M":
-        curr       = master[(master["business_date"].dt.month == latest.month) &
-                            (master["business_date"].dt.year  == latest.year)]
-        prev       = master[(master["business_date"].dt.month == latest.month) &
-                            (master["business_date"].dt.year  == latest.year - 1)]
-        chart_data = pred[pred["business_date"] > latest - pd.DateOffset(months=12)]
+st.session_state["_period_prev"] = period
 
-    elif period == "Q":
-        curr       = master[(master["business_date"].dt.quarter == latest.quarter) &
-                            (master["business_date"].dt.year    == latest.year)]
-        prev       = master[(master["business_date"].dt.quarter == latest.quarter) &
-                            (master["business_date"].dt.year    == latest.year - 1)]
-        chart_data = pred[pred["business_date"].dt.year == latest.year]
+with col_slide:
+    date_range = st.slider(
+        "",
+        min_value=earliest.date(),
+        max_value=latest.date(),
+        label_visibility="collapsed",
+        key="dash_slider",
+    )
 
-    else:  # Y
-        curr       = master[master["business_date"].dt.year == latest.year]
-        prev       = master[master["business_date"].dt.year == latest.year - 1]
-        chart_data = pred.copy()
+start_ts = pd.Timestamp(date_range[0])
+end_ts   = pd.Timestamp(date_range[1])
 
-else:  # Custom Range
-    col_from, col_to, _ = st.columns([2, 2, 4])
-    with col_from:
-        start = st.date_input(
-            "From",
-            value=latest.date() - timedelta(days=90),
-            min_value=earliest.date(),
-            max_value=latest.date(),
-            key="dash_start",
-        )
-    with col_to:
-        end = st.date_input(
-            "To",
-            value=latest.date(),
-            min_value=earliest.date(),
-            max_value=latest.date(),
-            key="dash_end",
-        )
-
-    start_ts = pd.Timestamp(start)
-    end_ts   = pd.Timestamp(end)
-
-    curr       = master[(master["business_date"] >= start_ts) &
-                        (master["business_date"] <= end_ts)]
-    prev       = master[(master["business_date"] >= start_ts - pd.DateOffset(years=1)) &
-                        (master["business_date"] <= end_ts   - pd.DateOffset(years=1))]
-    chart_data = pred[(pred["business_date"] >= start_ts) &
-                      (pred["business_date"] <= end_ts)]
+curr       = master[(master["business_date"] >= start_ts) & (master["business_date"] <= end_ts)]
+prev       = master[(master["business_date"] >= start_ts - pd.DateOffset(years=1)) &
+                    (master["business_date"] <= end_ts   - pd.DateOffset(years=1))]
+chart_data = pred[(pred["business_date"] >= start_ts) & (pred["business_date"] <= end_ts)]
 
 # ── KPI helpers ───────────────────────────────────────────────────────────────
 def pct(a, b):

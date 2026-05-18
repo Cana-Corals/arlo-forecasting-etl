@@ -6,19 +6,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from components.data import load_master, load_predictions
-from components.auth import require_auth
 from components.nav import render_nav
-
-# ── Page config — must be first ──────────────────────────────────────────────
-st.set_page_config(
-    page_title="Dashboard · Arlo Forecasting",
-    page_icon="🏨",
-    layout="wide",
-    initial_sidebar_state="collapsed",
-)
-
-# ── Auth guard — restores session from cookie, redirects if not logged in ────
-require_auth()
 
 # ── CSS ──────────────────────────────────────────────────────────────────────
 st.markdown("""

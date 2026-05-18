@@ -2,13 +2,14 @@ import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
 from pathlib import Path
+from datetime import timedelta
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from components.data import load_master, load_predictions
 from components.nav import render_nav
 
-# ── CSS ──────────────────────────────────────────────────────────────────────
+# ── CSS ───────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
     #MainMenu, footer, header { visibility: hidden; }
@@ -25,7 +26,7 @@ st.markdown("""
     .page-rule {
         border: none;
         border-top: 2.5px solid #1A1A1A;
-        margin: 0 0 1.5rem 0;
+        margin: 0 0 1rem 0;
         width: 50px;
     }
     .kpi-box {
@@ -49,40 +50,37 @@ st.markdown("""
     .kpi-up   { font-size: 0.82rem; color: #2E7D32; }
     .kpi-down { font-size: 0.82rem; color: #C62828; }
     .kpi-vs   { font-size: 0.72rem; color: #BDBDBD; margin-top: 0.1rem; }
-
-    .nav-bar {
-        position: fixed;
-        bottom: 0; left: 0; right: 0;
-        background: #FFFFFF;
-        border-top: 1px solid #E0E0E0;
-        padding: 0.75rem 2rem;
-        display: flex;
-        justify-content: center;
-        gap: 2.5rem;
-        z-index: 999;
-    }
-    .nav-item {
-        font-size: 0.85rem;
-        color: #757575;
-        text-decoration: none;
-        letter-spacing: 0.05em;
-    }
-    .nav-item:hover { color: #C8522A; }
-    .nav-active {
-        font-size: 0.85rem;
-        color: #C8522A;
-        font-weight: 600;
-        letter-spacing: 0.05em;
-    }
 </style>
 """, unsafe_allow_html=True)
 
-# ── Header + Period toggle ────────────────────────────────────────────────────
-col_title, _, col_toggle = st.columns([4, 2, 2])
+# ── Top bar: title + user + logout ────────────────────────────────────────────
+col_title, _, col_user = st.columns([5, 4, 1])
 with col_title:
     st.markdown('<div class="page-title">Dashboard</div>', unsafe_allow_html=True)
     st.markdown('<hr class="page-rule">', unsafe_allow_html=True)
-with col_toggle:
+with col_user:
+    name = st.session_state.get("name", "")
+    st.markdown(f"<div style='text-align:right;font-size:0.8rem;color:#9E9E9E;padding-top:0.3rem;'>{name}</div>", unsafe_allow_html=True)
+    if st.button("Logout", key="dash_logout", use_container_width=True):
+        for key in ["authentication_status", "name", "username"]:
+            st.session_state.pop(key, None)
+        st.switch_page("Home.py")
+
+# ── Load data ─────────────────────────────────────────────────────────────────
+master   = load_master()
+pred     = load_predictions()
+latest   = master["business_date"].max()
+earliest = master["business_date"].min()
+
+# ── Period mode ───────────────────────────────────────────────────────────────
+mode = st.radio(
+    "", ["Quick", "Custom Range"],
+    horizontal=True,
+    label_visibility="collapsed",
+    key="dash_mode",
+)
+
+if mode == "Quick":
     period = st.radio(
         "", ["W", "M", "Q", "Y"],
         horizontal=True,
@@ -91,51 +89,71 @@ with col_toggle:
         key="dash_period",
     )
 
-# ── Load data ─────────────────────────────────────────────────────────────────
-master = load_master()
-pred   = load_predictions()
-latest = master["business_date"].max()
+    if period == "W":
+        curr       = master[master["business_date"] > latest - pd.Timedelta(days=7)]
+        prev       = master[
+            (master["business_date"] > latest - pd.Timedelta(days=7) - pd.DateOffset(years=1)) &
+            (master["business_date"] <= latest - pd.DateOffset(years=1))
+        ]
+        chart_data = pred[pred["business_date"] > latest - pd.Timedelta(days=56)]
 
-# ── Period slices ─────────────────────────────────────────────────────────────
-if period == "W":
-    curr       = master[master["business_date"] > latest - pd.Timedelta(days=7)]
-    prev       = master[
-        (master["business_date"] > latest - pd.Timedelta(days=7) - pd.DateOffset(years=1)) &
-        (master["business_date"] <= latest - pd.DateOffset(years=1))
-    ]
-    chart_data = pred[pred["business_date"] > latest - pd.Timedelta(days=56)]
+    elif period == "M":
+        curr       = master[(master["business_date"].dt.month == latest.month) &
+                            (master["business_date"].dt.year  == latest.year)]
+        prev       = master[(master["business_date"].dt.month == latest.month) &
+                            (master["business_date"].dt.year  == latest.year - 1)]
+        chart_data = pred[pred["business_date"] > latest - pd.DateOffset(months=12)]
 
-elif period == "M":
-    curr       = master[(master["business_date"].dt.month == latest.month) &
-                        (master["business_date"].dt.year  == latest.year)]
-    prev       = master[(master["business_date"].dt.month == latest.month) &
-                        (master["business_date"].dt.year  == latest.year - 1)]
-    chart_data = pred[pred["business_date"] > latest - pd.DateOffset(months=12)]
+    elif period == "Q":
+        curr       = master[(master["business_date"].dt.quarter == latest.quarter) &
+                            (master["business_date"].dt.year    == latest.year)]
+        prev       = master[(master["business_date"].dt.quarter == latest.quarter) &
+                            (master["business_date"].dt.year    == latest.year - 1)]
+        chart_data = pred[pred["business_date"].dt.year == latest.year]
 
-elif period == "Q":
-    curr       = master[(master["business_date"].dt.quarter == latest.quarter) &
-                        (master["business_date"].dt.year    == latest.year)]
-    prev       = master[(master["business_date"].dt.quarter == latest.quarter) &
-                        (master["business_date"].dt.year    == latest.year - 1)]
-    chart_data = pred[pred["business_date"].dt.year == latest.year]
+    else:  # Y
+        curr       = master[master["business_date"].dt.year == latest.year]
+        prev       = master[master["business_date"].dt.year == latest.year - 1]
+        chart_data = pred.copy()
 
-else:  # Y
-    curr       = master[master["business_date"].dt.year == latest.year]
-    prev       = master[master["business_date"].dt.year == latest.year - 1]
-    chart_data = pred.copy()
+else:  # Custom Range
+    col_from, col_to, _ = st.columns([2, 2, 4])
+    with col_from:
+        start = st.date_input(
+            "From",
+            value=latest.date() - timedelta(days=90),
+            min_value=earliest.date(),
+            max_value=latest.date(),
+            key="dash_start",
+        )
+    with col_to:
+        end = st.date_input(
+            "To",
+            value=latest.date(),
+            min_value=earliest.date(),
+            max_value=latest.date(),
+            key="dash_end",
+        )
+
+    start_ts = pd.Timestamp(start)
+    end_ts   = pd.Timestamp(end)
+
+    curr       = master[(master["business_date"] >= start_ts) &
+                        (master["business_date"] <= end_ts)]
+    prev       = master[(master["business_date"] >= start_ts - pd.DateOffset(years=1)) &
+                        (master["business_date"] <= end_ts   - pd.DateOffset(years=1))]
+    chart_data = pred[(pred["business_date"] >= start_ts) &
+                      (pred["business_date"] <= end_ts)]
 
 # ── KPI helpers ───────────────────────────────────────────────────────────────
 def pct(a, b):
     return (a - b) / abs(b) * 100 if b else 0.0
 
 def kpi_card(label, value, delta, fmt="$"):
-    if fmt == "$":
-        val_str = f"${value:,.0f}" if value >= 1000 else f"${value:,.2f}"
-    else:
-        val_str = f"{value:.1f}%"
-    sign  = "+" if delta >= 0 else ""
-    arrow = "▲" if delta >= 0 else "▼"
-    cls   = "kpi-up" if delta >= 0 else "kpi-down"
+    val_str = f"${value:,.0f}" if fmt == "$" else f"{value:.1f}%"
+    sign    = "+" if delta >= 0 else ""
+    arrow   = "▲" if delta >= 0 else "▼"
+    cls     = "kpi-up" if delta >= 0 else "kpi-down"
     st.markdown(f"""
     <div class="kpi-box">
         <div class="kpi-label">{label}</div>
@@ -145,17 +163,17 @@ def kpi_card(label, value, delta, fmt="$"):
     </div>
     """, unsafe_allow_html=True)
 
-# ── KPI values ────────────────────────────────────────────────────────────────
-rev_c  = curr["total_revenue"].sum()
-rev_p  = prev["total_revenue"].sum()
-occ_c  = curr["occupancy_rate"].mean() * 100
-occ_p  = prev["occupancy_rate"].mean() * 100
-adr_c  = curr["adr"].mean()
-adr_p  = prev["adr"].mean()
-rp_c   = curr["revpar"].mean()
-rp_p   = prev["revpar"].mean()
+# ── KPI cards ─────────────────────────────────────────────────────────────────
+rev_c = curr["total_revenue"].sum()
+rev_p = prev["total_revenue"].sum()
+occ_c = curr["occupancy_rate"].mean() * 100
+occ_p = prev["occupancy_rate"].mean() * 100
+adr_c = curr["adr"].mean()
+adr_p = prev["adr"].mean()
+rp_c  = curr["revpar"].mean()
+rp_p  = prev["revpar"].mean()
 
-# ── KPI Cards ─────────────────────────────────────────────────────────────────
+st.markdown("<br>", unsafe_allow_html=True)
 c1, c2, c3, c4 = st.columns(4)
 with c1: kpi_card("Revenue",   rev_c, pct(rev_c, rev_p), "$")
 with c2: kpi_card("Occupancy", occ_c, pct(occ_c, occ_p), "%")
@@ -164,39 +182,52 @@ with c4: kpi_card("RevPAR",    rp_c,  pct(rp_c,  rp_p),  "$")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ── Forecast vs Actual chart ──────────────────────────────────────────────────
-fig = go.Figure()
+# ── Chart controls ────────────────────────────────────────────────────────────
+col_label, col_actual, col_forecast = st.columns([5, 1, 1])
+with col_label:
+    st.markdown("**Forecast vs Actual — Revenue**")
+with col_actual:
+    show_actual   = st.checkbox("Actual",   value=True, key="show_actual")
+with col_forecast:
+    show_forecast = st.checkbox("Forecast", value=True, key="show_forecast")
 
-fig.add_trace(go.Scatter(
-    x=chart_data["business_date"],
-    y=chart_data["actual_revenue"],
-    name="Actual",
-    line=dict(color="#1A1A1A", width=2),
-    hovertemplate="<b>Actual</b>: $%{y:,.0f}<extra></extra>",
-))
-fig.add_trace(go.Scatter(
-    x=chart_data["business_date"],
-    y=chart_data["predicted_revenue"],
-    name="Forecast",
-    line=dict(color="#C8522A", width=2, dash="dash"),
-    hovertemplate="<b>Forecast</b>: $%{y:,.0f}<extra></extra>",
-))
+# ── Chart ─────────────────────────────────────────────────────────────────────
+if not show_actual and not show_forecast:
+    st.info("Select at least one line to display.")
+else:
+    fig = go.Figure()
 
-fig.update_layout(
-    plot_bgcolor="#FFFFFF",
-    paper_bgcolor="#FFFFFF",
-    margin=dict(t=10, b=10, l=0, r=0),
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-    xaxis=dict(showgrid=False, zeroline=False),
-    yaxis=dict(
-        showgrid=True, gridcolor="#F0F0F0",
-        zeroline=False, tickprefix="$", tickformat=",.0f",
-    ),
-    hovermode="x unified",
-    height=340,
-)
+    if show_actual:
+        fig.add_trace(go.Scatter(
+            x=chart_data["business_date"],
+            y=chart_data["actual_revenue"],
+            name="Actual",
+            line=dict(color="#1A1A1A", width=2),
+            hovertemplate="<b>Actual</b>: $%{y:,.0f}<extra></extra>",
+        ))
 
-st.markdown("**Forecast vs Actual — Revenue**")
-st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    if show_forecast:
+        fig.add_trace(go.Scatter(
+            x=chart_data["business_date"],
+            y=chart_data["predicted_revenue"],
+            name="Forecast",
+            line=dict(color="#C8522A", width=2, dash="dash"),
+            hovertemplate="<b>Forecast</b>: $%{y:,.0f}<extra></extra>",
+        ))
+
+    fig.update_layout(
+        plot_bgcolor="#FFFFFF",
+        paper_bgcolor="#FFFFFF",
+        margin=dict(t=10, b=10, l=0, r=0),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        xaxis=dict(showgrid=False, zeroline=False),
+        yaxis=dict(
+            showgrid=True, gridcolor="#F0F0F0",
+            zeroline=False, tickprefix="$", tickformat=",.0f",
+        ),
+        hovermode="x unified",
+        height=340,
+    )
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 render_nav()

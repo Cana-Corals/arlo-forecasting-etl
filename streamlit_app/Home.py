@@ -152,7 +152,7 @@ if is_auth:
     )
 else:
     pg = st.navigation(
-        [st.Page(login_page, title="Login", url_path="")],
+        [st.Page(login_page, title="Login", url_path="", default=True)],
         position="hidden",
     )
 

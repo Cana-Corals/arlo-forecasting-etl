@@ -52,7 +52,7 @@ section[data-testid="stSidebar"] > div:first-child {{
     width:{SB_W} !important; min-width:{SB_W} !important;
     padding:0 !important; overflow:hidden;
 }}
-section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {{ gap:0 !important; padding:0 0 58px 0 !important; }}
+section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {{ gap:0 !important; padding:0 0 94px 0 !important; }}
 /* Remove element-container margins that cause overlapping */
 section[data-testid="stSidebar"] .element-container,
 section[data-testid="stSidebar"] .stElementContainer {{
@@ -109,7 +109,7 @@ section[data-testid="stSidebar"] .stButton:first-of-type > button:hover {{
 .sb-footer-fixed {{
     position:fixed; bottom:0; left:0; width:{SB_W};
     background:var(--arlo-dark); border-top:1px solid rgba(255,255,255,.08);
-    padding:10px 14px; z-index:200;
+    padding:0; z-index:200;
     transition:width .22s ease; overflow:hidden; white-space:nowrap;
 }}
 
@@ -428,7 +428,7 @@ with st.sidebar:
 
     # ── Analytics section ─────────────────────────────────────────────────────
     if not COLLAPSED:
-        st.markdown('<div style="padding:21px 16px 5px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Analytics</div>', unsafe_allow_html=True)
+        st.markdown('<div style="padding:21px 16px 14px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Analytics</div>', unsafe_allow_html=True)
 
     _analytics = [
         ("ti-chart-line",  "Forecast",    "pages/2_Forecast.py"),
@@ -441,8 +441,7 @@ with st.sidebar:
             st.switch_page(path)
 
     if not COLLAPSED:
-        st.markdown('<div style="height:1px;background:rgba(255,255,255,.08);margin:8px 12px;"></div>', unsafe_allow_html=True)
-        st.markdown('<div style="padding:8px 16px 5px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Intelligence</div>', unsafe_allow_html=True)
+        st.markdown('<div style="padding:10px 16px 5px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Intelligence</div>', unsafe_allow_html=True)
 
     _intelligence = [
         ("Competitive",   "pages/5_Competitive.py"),
@@ -453,17 +452,10 @@ with st.sidebar:
         if st.button(btn_lbl, key=f"nav_{lbl.replace(' ','_')}", use_container_width=True):
             st.switch_page(path)
 
-    # Logout
-    st.markdown('<div style="height:1px;background:rgba(255,255,255,.08);margin:8px 12px 4px;"></div>', unsafe_allow_html=True)
-    if st.button("Logout", key="sb_logout", use_container_width=True):
-        for k in ["authentication_status", "name", "username"]:
-            st.session_state.pop(k, None)
-        st.switch_page("Home.py")
-
-    # User footer — fixed at sidebar bottom
+    # User footer — fixed at sidebar bottom (includes Logout above user info)
     if COLLAPSED:
         st.markdown(f'''
-        <div class="sb-footer-fixed" style="padding:10px 0;display:flex;justify-content:center;">
+        <div class="sb-footer-fixed" style="display:flex;justify-content:center;align-items:center;padding:12px 0;">
           <div style="width:28px;height:28px;border-radius:50%;background:rgba(232,133,74,.15);
                       border:1px solid rgba(232,133,74,.3);display:flex;align-items:center;
                       justify-content:center;font-size:10px;font-weight:600;color:#e8854a;">{initials}</div>
@@ -472,7 +464,15 @@ with st.sidebar:
     else:
         st.markdown(f'''
         <div class="sb-footer-fixed">
-          <div style="display:flex;align-items:center;gap:10px;">
+          <div onclick="window.location.href='/'"
+               style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;"
+               onmouseover="this.style.background='rgba(255,255,255,.05)'"
+               onmouseout="this.style.background='transparent'">
+            <i class="ti ti-logout" style="font-size:14px;color:rgba(245,245,240,.35);flex-shrink:0;"></i>
+            <span style="font-size:11px;color:rgba(245,245,240,.45);">Logout</span>
+          </div>
+          <div style="height:1px;background:rgba(255,255,255,.08);margin:0 14px;"></div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;">
             <div style="width:28px;height:28px;border-radius:50%;background:rgba(232,133,74,.15);
                         border:1px solid rgba(232,133,74,.3);display:flex;align-items:center;
                         justify-content:center;font-size:10px;font-weight:600;color:#e8854a;flex-shrink:0;">{initials}</div>

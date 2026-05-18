@@ -1,0 +1,12 @@
+[theme]
+primaryColor        = "#C8522A"     # Arlo warm orange — update with exact brand hex
+backgroundColor     = "#FFFFFF"
+secondaryBackgroundColor = "#F7F5F2"
+textColor           = "#1A1A1A"
+font                = "sans serif"
+
+[server]
+headless            = true
+
+[browser]
+gatherUsageStats    = false

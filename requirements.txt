@@ -1,3 +1,4 @@
+# ETL pipeline
 pandas
 openpyxl
 xlrd
@@ -7,3 +8,11 @@ beautifulsoup4
 lightgbm
 scikit-learn
 numpy
+
+# Streamlit app
+streamlit
+streamlit-authenticator
+plotly
+pyyaml
+anthropic
+python-dotenv

@@ -19,6 +19,10 @@ env/
 .env
 *.env
 
+# App credentials — never commit passwords
+config/users.yaml
+.streamlit/secrets.toml
+
 # Jupyter
 .ipynb_checkpoints/
 *.ipynb_checkpoints

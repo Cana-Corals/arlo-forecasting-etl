@@ -147,6 +147,7 @@ if is_auth:
             st.Page("pages/4_Demand.py",         title="Demand"),
             st.Page("pages/5_Competitive.py",    title="Competitive"),
             st.Page("pages/6_Model_Insights.py", title="Model Insights"),
+            st.Page("pages/7_Dashboard_v2.py",   title="Dashboard v2"),
         ],
         position="hidden",
     )

@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from components.data import load_master, load_predictions
+from components.auth import require_auth
 
 # ── Page config — must be first ──────────────────────────────────────────────
 st.set_page_config(
@@ -15,9 +16,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ── Auth guard ───────────────────────────────────────────────────────────────
-if not st.session_state.get("authentication_status"):
-    st.switch_page("Home.py")
+# ── Auth guard — restores session from cookie, redirects if not logged in ────
+require_auth()
 
 # ── CSS ──────────────────────────────────────────────────────────────────────
 st.markdown("""

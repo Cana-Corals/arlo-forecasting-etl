@@ -195,12 +195,12 @@ def show_home():
     st.markdown("<br><br><br><br><br><br>", unsafe_allow_html=True)
     st.markdown("""
     <div class="nav-bar">
-        <span class="nav-item">Dashboard</span>
-        <span class="nav-item">Forecast</span>
-        <span class="nav-item">Performance</span>
-        <span class="nav-item">Demand</span>
-        <span class="nav-item">Competitive</span>
-        <span class="nav-item">Model Insights</span>
+        <a class="nav-item" href="/Dashboard">Dashboard</a>
+        <a class="nav-item" href="/Forecast">Forecast</a>
+        <a class="nav-item" href="/Performance">Performance</a>
+        <a class="nav-item" href="/Demand">Demand</a>
+        <a class="nav-item" href="/Competitive">Competitive</a>
+        <a class="nav-item" href="/Model_Insights">Model Insights</a>
     </div>
     """, unsafe_allow_html=True)
 

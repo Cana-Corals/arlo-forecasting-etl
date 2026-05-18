@@ -431,7 +431,7 @@ with st.sidebar:
         st.markdown(f'<div style="padding:14px 16px;display:flex;align-items:center;gap:10px;white-space:nowrap;"><div style="width:28px;height:28px;border-radius:50%;background:rgba(232,133,74,.15);border:1px solid rgba(232,133,74,.3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#e8854a;flex-shrink:0;">{initials}</div><div style="font-size:11px;color:rgba(245,245,240,.6);">{name}</div></div>', unsafe_allow_html=True)
 
 # ── Top bar ───────────────────────────────────────────────────────────────────
-st.markdown(f"""
+st.html(f"""
 <div class="arlo-topbar">
   <span class="arlo-top-title">Dashboard</span>
   <div class="arlo-live-chip"><div class="arlo-live-dot"></div>Live</div>
@@ -441,10 +441,7 @@ st.markdown(f"""
   <div class="arlo-top-btn"><i class="ti ti-bell"></i></div>
 </div>
 <div class="arlo-accent-rule"></div>
-""", unsafe_allow_html=True)
-
-# ── Body ──────────────────────────────────────────────────────────────────────
-st.markdown('<div class="arlo-body">', unsafe_allow_html=True)
+""")
 
 # ── AI Insight ────────────────────────────────────────────────────────────────
 trend_word = "ahead of" if rev_d > 0 else "behind"
@@ -456,12 +453,14 @@ ai_text = (
     + (f"RevPAR index (RGI) stands at {rgi_val:.2f} vs comp set — " if rgi_val else "")
     + "Rate strategy review recommended for upcoming peak weekends."
 )
-st.markdown(f"""
-<div class="ai-box">
-  <i class="ti ti-sparkles ai-icon"></i>
-  <div class="ai-txt">{ai_text}</div>
+st.html(f"""
+<div style="padding:18px 20px 0;">
+  <div class="ai-box">
+    <i class="ti ti-sparkles ai-icon"></i>
+    <div class="ai-txt">{ai_text}</div>
+  </div>
 </div>
-""", unsafe_allow_html=True)
+""")
 
 # ── Core performance KPIs ─────────────────────────────────────────────────────
 def _delta_html(d, hero=False):
@@ -475,14 +474,19 @@ mpi_sub  = f"MPI {mpi_val:.2f} vs comp"  if mpi_val else "vs comp set"
 ari_sub  = f"ARI {ari_val:.2f} vs comp"  if ari_val else "vs comp set"
 rgi_sub  = f"RGI {rgi_val:.2f} vs comp"  if rgi_val else "vs comp set"
 
-st.markdown(f"""
-<div>
+_rev_val  = f"{rev_c/1e6:.1f}M"
+_adr_val  = f"{adr_c:.0f}"
+_rp_val   = f"{rp_c:.0f}"
+_trp_val  = f"{trp_c:.0f}"
+
+st.html(f"""
+<div style="padding:14px 20px 0;">
   <div class="sec-hd"><span class="sec-lbl">Core performance</span><div class="sec-line accent"></div></div>
   <div class="kpi5">
 
     <div class="kc kup">
       <div class="kpi-lbl">Revenue</div>
-      <div class="kpi-val">${rev_c/1e6:.1f}M</div>
+      <div class="kpi-val">${_rev_val}</div>
       {_delta_html(rev_d)}
       <div class="kpi-sub">YTD {latest_yr}</div>
       <div class="spark">{svg_spark(rev_spark,"rgba(62,207,142,0.5)")}</div>
@@ -498,7 +502,7 @@ st.markdown(f"""
 
     <div class="kc">
       <div class="kpi-lbl">ADR</div>
-      <div class="kpi-val">${adr_c:.0f}</div>
+      <div class="kpi-val">${_adr_val}</div>
       {_delta_html(adr_d)}
       <div class="kpi-sub">{ari_sub}</div>
       <div class="spark">{svg_spark(adr_spark,"rgba(212,144,58,0.5)")}</div>
@@ -506,7 +510,7 @@ st.markdown(f"""
 
     <div class="kc hero">
       <div class="kpi-lbl">RevPAR</div>
-      <div class="kpi-val">${rp_c:.0f}</div>
+      <div class="kpi-val">${_rp_val}</div>
       {_delta_html(rp_d, hero=True)}
       <div class="kpi-sub">{rgi_sub}</div>
       <div class="spark">{svg_spark(rp_spark,"rgba(232,133,74,0.6)")}</div>
@@ -514,7 +518,7 @@ st.markdown(f"""
 
     <div class="kc">
       <div class="kpi-lbl">TRevPAR</div>
-      <div class="kpi-val">${trp_c:.0f}</div>
+      <div class="kpi-val">${_trp_val}</div>
       {_delta_html(trp_d)}
       <div class="kpi-sub">Incl. F&amp;B + ancillary</div>
       <div class="spark">{svg_spark(trp_spark,"rgba(167,139,250,0.5)")}</div>
@@ -522,28 +526,30 @@ st.markdown(f"""
 
   </div>
 </div>
-""", unsafe_allow_html=True)
+""")
 
 # ── Mini metric cards ─────────────────────────────────────────────────────────
-st.markdown("""
-<div class="mini3">
-  <div class="mc">
-    <div class="mv">2.4 nights</div>
-    <div class="ml">Avg length of stay</div>
-    <div class="md" style="color:var(--arlo-red);">▼ 0.2 vs STLY</div>
-  </div>
-  <div class="mc">
-    <div class="mv">26%</div>
-    <div class="ml">Direct booking share</div>
-    <div class="md" style="color:var(--arlo-green);">▲ 3 pts vs STLY</div>
-  </div>
-  <div class="mc">
-    <div class="mv">18.4 days</div>
-    <div class="ml">Avg booking window</div>
-    <div class="md" style="color:var(--arlo-green);">▲ 2.1 days vs STLY</div>
+st.html("""
+<div style="padding:0 20px;">
+  <div class="mini3">
+    <div class="mc">
+      <div class="mv">2.4 nights</div>
+      <div class="ml">Avg length of stay</div>
+      <div class="md" style="color:var(--arlo-red);">&#9660; 0.2 vs STLY</div>
+    </div>
+    <div class="mc">
+      <div class="mv">26%</div>
+      <div class="ml">Direct booking share</div>
+      <div class="md" style="color:var(--arlo-green);">&#9650; 3 pts vs STLY</div>
+    </div>
+    <div class="mc">
+      <div class="mv">18.4 days</div>
+      <div class="ml">Avg booking window</div>
+      <div class="md" style="color:var(--arlo-green);">&#9650; 2.1 days vs STLY</div>
+    </div>
   </div>
 </div>
-""", unsafe_allow_html=True)
+""")
 
 # ── Booking pace + DOW occupancy ──────────────────────────────────────────────
 dow_bars = "".join(
@@ -558,7 +564,8 @@ dow_bars = "".join(
     for v, n in zip(dow_vals, dow_names)
 )
 
-st.markdown(f"""
+st.html(f"""
+<div style="padding:0 20px;">
 <div class="row2">
   <div class="panel">
     <div class="pt">Booking pace — next 30 days</div>
@@ -601,7 +608,8 @@ st.markdown(f"""
     <div class="dow-grid">{dow_bars}</div>
   </div>
 </div>
-""", unsafe_allow_html=True)
+</div>
+""")
 
 # ── Revenue by segment + Channel mix + NYC Events ────────────────────────────
 ev_rows_html = ""
@@ -624,7 +632,8 @@ for ev in _ev_display:
 if not ev_rows_html:
     ev_rows_html = '<div style="font-size:10px;color:var(--arlo-muted);padding:8px 0;">No upcoming events found</div>'
 
-st.markdown(f"""
+st.html(f"""
+<div style="padding:0 20px;">
 <div class="row3">
   <div class="panel">
     <div class="pt">Revenue by segment</div>
@@ -698,7 +707,8 @@ st.markdown(f"""
     <div class="ev-rows">{ev_rows_html}</div>
   </div>
 </div>
-""", unsafe_allow_html=True)
+</div>
+""")
 
 # ── Competitive set + Medallia ────────────────────────────────────────────────
 arlo_adr_disp  = f"${str_adr_val:.0f}"  if str_adr_val  else f"${adr_c:.0f}"
@@ -751,7 +761,8 @@ else:
 
 samples_label = f"{med_samples:,} responses · year to date" if med_overall is not None else "year to date"
 
-st.markdown(f"""
+st.html(f"""
+<div style="padding:0 20px; margin-bottom:18px;">
 <div class="row22">
   <div class="panel">
     <div class="pt">Competitive set — STR</div>
@@ -801,6 +812,5 @@ st.markdown(f"""
     {med_html}
   </div>
 </div>
-""", unsafe_allow_html=True)
-
-st.markdown('</div>', unsafe_allow_html=True)  # close .arlo-body
+</div>
+""")

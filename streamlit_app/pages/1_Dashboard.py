@@ -75,15 +75,35 @@ section[data-testid="stSidebar"] .stButton > button:hover {{
     background:rgba(255,255,255,0.05) !important;
     color:var(--arlo-white) !important; border:none !important;
 }}
-/* Toggle collapse button — centered, subtle */
+/* Hamburger toggle inside header column (expanded) */
+section[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] {{
+    border-bottom:1px solid rgba(255,255,255,.08);
+    padding:0 !important; margin:0 !important; gap:0 !important;
+}}
+section[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] [data-testid="column"] {{
+    padding:0 !important; min-width:0 !important;
+}}
+section[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] .stButton > button {{
+    width:100% !important; height:54px !important;
+    padding:0 !important; margin:0 !important;
+    text-align:center !important; justify-content:center !important;
+    font-size:17px !important; letter-spacing:0 !important;
+    color:rgba(245,245,240,.38) !important;
+    background:transparent !important; border:none !important; border-radius:0 !important;
+}}
+section[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] .stButton > button:hover {{
+    color:rgba(245,245,240,.7) !important; background:rgba(255,255,255,.04) !important;
+}}
+/* Collapsed ☰ toggle (sits below AW monogram header) */
 section[data-testid="stSidebar"] .stButton:first-of-type > button {{
     text-align:center !important; justify-content:center !important;
-    padding:4px 0 !important; margin:0 !important; width:100% !important;
+    padding:8px 0 !important; margin:0 !important; width:100% !important;
     border-radius:0 !important; border-bottom:1px solid rgba(255,255,255,.06) !important;
-    color:var(--arlo-muted) !important; font-size:13px !important; letter-spacing:0 !important;
+    color:rgba(245,245,240,.38) !important; font-size:17px !important; letter-spacing:0 !important;
+    background:transparent !important; border-left:none !important; border-right:none !important; border-top:none !important;
 }}
 section[data-testid="stSidebar"] .stButton:first-of-type > button:hover {{
-    background:rgba(255,255,255,.04) !important; color:var(--arlo-muted2) !important;
+    background:rgba(255,255,255,.04) !important; color:rgba(245,245,240,.65) !important;
 }}
 /* Pinned user footer at sidebar bottom */
 .sb-footer-fixed {{
@@ -373,7 +393,7 @@ initials = "".join(p[0].upper() for p in name.split()[:2]) if name else "JR"
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    # Header
+    # ── Header: brand + hamburger toggle ──────────────────────────────────────
     if COLLAPSED:
         st.markdown("""
         <div style="display:flex;align-items:center;justify-content:center;
@@ -383,39 +403,32 @@ with st.sidebar:
                       font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em;">AW</div>
         </div>
         """, unsafe_allow_html=True)
+        if st.button("☰", key="sb_tog", use_container_width=True):
+            st.session_state["sb_collapsed"] = False
+            st.rerun()
     else:
-        st.markdown("""
-        <div style="display:flex;align-items:center;gap:10px;
-                    padding:14px 14px 12px;border-bottom:1px solid rgba(255,255,255,.08);">
-          <div style="width:32px;height:32px;border-radius:6px;background:#e8854a;
-                      display:flex;align-items:center;justify-content:center;
-                      font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em;flex-shrink:0;">AW</div>
-          <div style="overflow:hidden;white-space:nowrap;flex:1;min-width:0;">
-            <div style="font-size:13px;font-weight:600;color:#f5f5f0;letter-spacing:.01em;line-height:1.2;">Arlo Williamsburg</div>
-            <div style="font-size:9px;font-weight:500;letter-spacing:.14em;color:rgba(245,245,240,.38);text-transform:uppercase;margin-top:2px;">Revenue Intelligence</div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;opacity:.45;">
-            <span style="display:block;height:1.5px;width:14px;background:#f5f5f0;border-radius:1px;"></span>
-            <span style="display:block;height:1.5px;width:10px;background:#f5f5f0;border-radius:1px;"></span>
-            <span style="display:block;height:1.5px;width:12px;background:#f5f5f0;border-radius:1px;"></span>
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
+        _col_brand, _col_ham = st.columns([4, 1])
+        with _col_brand:
+            st.markdown("""
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 0 10px 14px;">
+              <div style="width:32px;height:32px;border-radius:6px;background:#e8854a;
+                          display:flex;align-items:center;justify-content:center;
+                          font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em;flex-shrink:0;">AW</div>
+              <div style="overflow:hidden;white-space:nowrap;flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:600;color:#f5f5f0;letter-spacing:.01em;line-height:1.2;">Arlo Williamsburg</div>
+                <div style="font-size:9px;font-weight:500;letter-spacing:.14em;color:rgba(245,245,240,.38);text-transform:uppercase;margin-top:2px;">Revenue Intelligence</div>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+        with _col_ham:
+            if st.button("☰", key="sb_tog"):
+                st.session_state["sb_collapsed"] = True
+                st.rerun()
+        st.markdown('<div style="height:1px;background:rgba(255,255,255,.08);margin:0;"></div>', unsafe_allow_html=True)
 
-    # Toggle
-    if st.button("‹" if not COLLAPSED else "›", key="sb_tog", use_container_width=True):
-        st.session_state["sb_collapsed"] = not COLLAPSED
-        st.rerun()
-
-    # Analytics section
+    # ── Analytics section ─────────────────────────────────────────────────────
     if not COLLAPSED:
         st.markdown('<div style="padding:14px 16px 5px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Analytics</div>', unsafe_allow_html=True)
-
-    # Dashboard (active, non-clickable)
-    if COLLAPSED:
-        st.markdown('<div style="display:flex;align-items:center;justify-content:center;padding:10px 0;margin:1px 5px;border-radius:4px;background:rgba(232,133,74,.15);"><i class="ti ti-layout-dashboard" style="font-size:15px;color:#e8854a;"></i></div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:1px 6px;border-radius:4px;background:rgba(232,133,74,.15);"><i class="ti ti-layout-dashboard" style="font-size:15px;color:#e8854a;flex-shrink:0;"></i><span style="font-size:12px;font-weight:500;color:#f5f5f0;">Dashboard</span></div>', unsafe_allow_html=True)
 
     _analytics = [
         ("ti-chart-line",  "Forecast",    "pages/2_Forecast.py"),

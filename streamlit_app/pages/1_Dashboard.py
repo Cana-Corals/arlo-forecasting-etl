@@ -189,31 +189,22 @@ else:
 # ── Date filter (below chart) ─────────────────────────────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
 
-prev_period = st.session_state.get("_period_prev", "Y")
+_presets = {
+    "W": pd.Timedelta(days=7),
+    "M": pd.DateOffset(months=1),
+    "Q": pd.DateOffset(months=3),
+    "Y": pd.DateOffset(years=1),
+}
 
-col_pre, col_slide = st.columns([2, 8])
-with col_pre:
-    period = st.segmented_control(
-        "",
-        ["W", "M", "Q", "Y"],
-        default="Y",
-        label_visibility="collapsed",
-        key="dash_period",
-    )
+filter_cols = st.columns([0.5, 0.5, 0.5, 0.5, 0.4, 7])
+for col, label in zip(filter_cols[:4], _presets):
+    with col:
+        if st.button(label, key=f"btn_{label}", use_container_width=True):
+            new_start = max(latest - _presets[label], earliest).date()
+            st.session_state["dash_slider"] = (new_start, latest.date())
+            st.rerun()
 
-if period is not None and period != prev_period:
-    _deltas = {
-        "W": pd.Timedelta(days=7),
-        "M": pd.DateOffset(months=1),
-        "Q": pd.DateOffset(months=3),
-        "Y": pd.DateOffset(years=1),
-    }
-    new_start = max(latest - _deltas[period], earliest).date()
-    st.session_state["dash_slider"] = (new_start, latest.date())
-
-st.session_state["_period_prev"] = period
-
-with col_slide:
+with filter_cols[5]:
     st.slider(
         "",
         min_value=earliest.date(),

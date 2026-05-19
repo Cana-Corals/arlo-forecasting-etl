@@ -596,7 +596,7 @@ ai_text = (
     + "Rate strategy review recommended for upcoming peak weekends."
 )
 st.html(f"""
-<div style="padding:10px 100px 0;">
+<div style="padding:10px 50px 0;">
   <div class="ai-box">
     <i class="ti ti-sparkles ai-icon"></i>
     <div class="ai-txt" style="font-size:16px;">{ai_text}</div>

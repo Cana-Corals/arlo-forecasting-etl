@@ -39,6 +39,7 @@ st.markdown(f"""
   --r:4px;
 }}
 *, *::before, *::after {{ font-family:'Inter',system-ui,sans-serif !important; -webkit-font-smoothing:antialiased; box-sizing:border-box; }}
+.material-symbols-rounded {{ font-family:'Material Symbols Rounded' !important; }}
 #MainMenu, footer, header {{ visibility:hidden; }}
 [data-testid="collapsedControl"] {{ display:none; }}
 .stApp {{ background:var(--arlo-dark2) !important; }}

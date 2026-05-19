@@ -487,7 +487,7 @@ with st.sidebar:
         for lbl, path in [("Forecast","pages/2_Forecast.py"),("Performance","pages/3_Performance.py"),("Demand","pages/4_Demand.py")]:
             if st.button(lbl, key=f"nav_{lbl}", use_container_width=True):
                 st.switch_page(path)
-        st.markdown('<div style="padding:10px 16px 5px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Intelligence</div>', unsafe_allow_html=True)
+        st.markdown('<div style="padding:21px 16px 5px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Intelligence</div>', unsafe_allow_html=True)
         for lbl, path in [("Competitive","pages/5_Competitive.py"),("Model Insights","pages/6_Model_Insights.py")]:
             if st.button(lbl, key=f"nav_{lbl.replace(' ','_')}", use_container_width=True):
                 st.switch_page(path)

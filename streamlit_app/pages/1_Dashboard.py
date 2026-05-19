@@ -599,7 +599,7 @@ st.html(f"""
 <div style="padding:10px 100px 0;">
   <div class="ai-box">
     <i class="ti ti-sparkles ai-icon"></i>
-    <div class="ai-txt">{ai_text}</div>
+    <div class="ai-txt" style="font-size:22px;">{ai_text}</div>
   </div>
 </div>
 """)

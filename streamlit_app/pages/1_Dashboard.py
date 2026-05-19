@@ -53,7 +53,7 @@ st.markdown(f"""
 #MainMenu, footer, header {{ visibility:hidden; }}
 [data-testid="collapsedControl"] {{ display:none; }}
 .stApp {{ background:var(--arlo-dark2) !important; }}
-.block-container {{ padding:0 !important; max-width:960px !important; margin:0 auto !important; }}
+.block-container {{ padding:0 !important; max-width:1050px !important; margin:0 auto !important; }}
 [data-testid="stAppViewContainer"] {{ background:var(--arlo-dark2) !important; }}
 
 /* ── Sidebar ── */

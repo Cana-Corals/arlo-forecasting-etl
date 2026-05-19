@@ -74,11 +74,10 @@ def get_forecast():
 
 @st.cache_data
 def load_actuals():
-    df = pd.read_csv(
+    return pd.read_csv(
         BASE / "outputs" / "model_predictions_with_events.csv",
         parse_dates=["business_date"],
     )
-    return df[df["business_date"].dt.year == 2025].copy()
 
 @st.cache_data
 def load_rt():
@@ -135,12 +134,12 @@ if horizon == "Custom":
     _c1, _c2, _ = st.columns([2, 2, 5])
     with _c1:
         start = st.date_input("From", value=date(2026, 7, 1),
-                              min_value=date(2026, 1, 1), max_value=date(2026, 12, 31),
+                              min_value=date(2024, 1, 1), max_value=date(2026, 12, 31),
                               key="fc_start", format="MM/DD/YYYY",
                               label_visibility="collapsed")
     with _c2:
         end = st.date_input("To", value=date(2026, 9, 30),
-                            min_value=date(2026, 1, 1), max_value=date(2026, 12, 31),
+                            min_value=date(2024, 1, 1), max_value=date(2026, 12, 31),
                             key="fc_end", format="MM/DD/YYYY",
                             label_visibility="collapsed")
     if isinstance(start, date) and isinstance(end, date) and start > end:
@@ -151,11 +150,31 @@ else:
 s_ts, e_ts = pd.Timestamp(start), pd.Timestamp(end)
 
 # ── Slice forecast and prior-year actuals ─────────────────────────────────────
-fc = forecast[(forecast["business_date"] >= s_ts) & (forecast["business_date"] <= e_ts)].copy()
+# For 2026 dates: use ML forecast. For 2024-2025 dates: use historical actuals.
+all_actuals = load_actuals()
 
-py_start = pd.Timestamp(start.replace(year=2025))
-py_end   = pd.Timestamp(end.replace(year=2025))
-py = actuals25[(actuals25["business_date"] >= py_start) & (actuals25["business_date"] <= py_end)].copy()
+if start.year >= 2026:
+    fc = forecast[(forecast["business_date"] >= s_ts) & (forecast["business_date"] <= e_ts)].copy()
+    fc_rev_col, fc_occ_col, fc_adr_col, fc_rp_col = "pred_revenue", "pred_occupancy", "pred_adr", "pred_revpar"
+    fc_bar_label = "2026 Forecast"
+else:
+    fc = all_actuals[(all_actuals["business_date"] >= s_ts) & (all_actuals["business_date"] <= e_ts)].copy()
+    fc["pred_revenue"]   = fc["actual_revenue"]
+    fc["pred_occupancy"] = fc["actual_occupancy"]
+    fc["pred_adr"]       = fc["actual_adr"]
+    fc["pred_revpar"]    = fc["actual_revenue"] / 147
+    fc_bar_label = f"{start.year} Actual"
+
+py_year = start.year - 1
+try:
+    py_start = pd.Timestamp(start.replace(year=py_year))
+    py_end   = pd.Timestamp(end.replace(year=py_year))
+except ValueError:
+    py_start = pd.Timestamp(start.replace(year=py_year, day=28))
+    py_end   = pd.Timestamp(end.replace(year=py_year, day=28))
+
+py = all_actuals[(all_actuals["business_date"] >= py_start) & (all_actuals["business_date"] <= py_end)].copy()
+py_bar_label = f"{py_year} Actual"
 
 # ── Auto-granularity ──────────────────────────────────────────────────────────
 n_days   = (end - start).days + 1
@@ -215,7 +234,7 @@ st.markdown(f"""
     <div class="fc-kpi-val">${rev_fc/1e3:,.0f}k</div>
     <div class="fc-kpi-row">
       <span class="{rc}">{rd}</span>
-      <span class="fc-kpi-py">vs <span>${rev_py/1e3:,.0f}k</span> in 2025</span>
+      <span class="fc-kpi-py">vs <span>${rev_py/1e3:,.0f}k</span> in {py_year}</span>
     </div>
   </div>
   <div class="fc-kpi">
@@ -223,7 +242,7 @@ st.markdown(f"""
     <div class="fc-kpi-val">{occ_fc:.1f}%</div>
     <div class="fc-kpi-row">
       <span class="{oc}">{od}</span>
-      <span class="fc-kpi-py">vs <span>{occ_py:.1f}%</span> in 2025</span>
+      <span class="fc-kpi-py">vs <span>{occ_py:.1f}%</span> in {py_year}</span>
     </div>
   </div>
   <div class="fc-kpi">
@@ -231,7 +250,7 @@ st.markdown(f"""
     <div class="fc-kpi-val">${adr_fc:,.0f}</div>
     <div class="fc-kpi-row">
       <span class="{ac}">{ad}</span>
-      <span class="fc-kpi-py">vs <span>${adr_py:,.0f}</span> in 2025</span>
+      <span class="fc-kpi-py">vs <span>${adr_py:,.0f}</span> in {py_year}</span>
     </div>
   </div>
   <div class="fc-kpi">
@@ -239,7 +258,7 @@ st.markdown(f"""
     <div class="fc-kpi-val">${rp_fc:,.0f}</div>
     <div class="fc-kpi-row">
       <span class="{pc}">{pd_}</span>
-      <span class="fc-kpi-py">vs <span>${rp_py:,.0f}</span> in 2025</span>
+      <span class="fc-kpi-py">vs <span>${rp_py:,.0f}</span> in {py_year}</span>
     </div>
   </div>
 </div>
@@ -279,33 +298,38 @@ def chart_layout(h=280):
     )
 
 def build_bars(fc_df, py_df, val_col_fc, val_col_py, agg_fn,
-               color, color_faded, prefix="", suffix=""):
-    fc_a  = agg_fc(fc_df, val_col_fc, agg_fn)
-    py_df2 = py_df.copy()
-    py_df2["period"] = py_df2["business_date"].dt.to_period(
-        "D" if freq == "D" else ("W" if freq == "W" else "M"))
-    py_a = py_df2.groupby("period")[val_col_py].agg(agg_fn).reset_index()
+               color, color_faded, prefix="", suffix="",
+               fc_label="2026 Forecast", py_label="2025 Actual"):
+    freq_key = "D" if freq == "D" else ("W" if freq == "W" else "M")
 
+    # Aggregate forecast
+    fc_a = agg_fc(fc_df, val_col_fc, agg_fn)
     xlabels = period_labels(fc_a["period"])
-    py_vals = []
-    for p in fc_a["period"]:
-        match = py_a[py_a["period"] == p]
-        if not match.empty:
-            py_vals.append(float(match[val_col_py].iloc[0]))
-        else:
-            py_vals.append(0.0)
+
+    # Aggregate prior year — sort by period then align positionally
+    # (periods differ by year so equality matching always fails)
+    py_a = pd.Series(dtype=float)
+    if not py_df.empty:
+        py2 = py_df.copy()
+        py2["period"] = py2["business_date"].dt.to_period(freq_key)
+        py_agg = py2.groupby("period")[val_col_py].agg(agg_fn).sort_index()
+        py_a = py_agg.reset_index()[val_col_py]
+
+    n = len(xlabels)
+    py_vals = list(py_a.values) + [0.0] * n
+    py_vals = py_vals[:n]
 
     fig = go.Figure()
     fig.add_trace(go.Bar(
         x=xlabels, y=fc_a[val_col_fc],
-        name="2026 Forecast", marker_color=color,
-        hovertemplate=f"{prefix}%{{y:,.1f}}{suffix}<extra>2026 Forecast</extra>",
+        name=fc_label, marker_color=color,
+        hovertemplate=f"{prefix}%{{y:,.1f}}{suffix}<extra>{fc_label}</extra>",
     ))
     fig.add_trace(go.Bar(
         x=xlabels, y=py_vals,
-        name="2025 Actual", marker_color=color_faded,
+        name=py_label, marker_color=color_faded,
         marker_line=dict(color=color, width=1),
-        hovertemplate=f"{prefix}%{{y:,.1f}}{suffix}<extra>2025 Actual</extra>",
+        hovertemplate=f"{prefix}%{{y:,.1f}}{suffix}<extra>{py_label}</extra>",
     ))
     return fig
 
@@ -316,7 +340,8 @@ else:
     st.markdown('<div class="fc-section"><div class="fc-section-ttl">Revenue Forecast</div></div>',
                 unsafe_allow_html=True)
     fig_rev = build_bars(fc, py, "pred_revenue", "actual_revenue", "sum",
-                         ACCENT, ACCENT_F, prefix="$", suffix="")
+                         ACCENT, ACCENT_F, prefix="$", suffix="",
+                         fc_label=fc_bar_label, py_label=py_bar_label)
     fig_rev.update_layout(**chart_layout())
     fig_rev.update_yaxes(tickprefix="$", tickformat=",.0f")
     st.plotly_chart(fig_rev, use_container_width=True, config={"displayModeBar": False})
@@ -331,7 +356,8 @@ else:
     py_occ["actual_occ_pct"] = py_occ["actual_occupancy"] * 100
 
     fig_occ = build_bars(fc_occ, py_occ, "pred_occ_pct", "actual_occ_pct", "mean",
-                         GREEN, GREEN_F, prefix="", suffix="%")
+                         GREEN, GREEN_F, prefix="", suffix="%",
+                         fc_label=fc_bar_label, py_label=py_bar_label)
     fig_occ.update_layout(**chart_layout())
     fig_occ.update_yaxes(ticksuffix="%", range=[0, 105])
     st.plotly_chart(fig_occ, use_container_width=True, config={"displayModeBar": False})

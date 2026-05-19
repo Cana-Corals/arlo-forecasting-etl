@@ -130,6 +130,23 @@ section[data-testid="stSidebar"] .stButton:first-of-type > button:hover {{
     transition:width .22s ease; overflow:hidden; white-space:nowrap;
 }}
 
+/* ── Date input dark theme ── */
+.arlo-topbar-row {{ background:var(--arlo-dark); border-bottom:1px solid var(--arlo-border); }}
+.arlo-topbar-row [data-testid="stHorizontalBlock"] {{ gap:0 !important; }}
+.arlo-topbar-row [data-testid="column"] {{ padding:0 !important; }}
+.arlo-topbar-row .stDateInput > label {{ display:none !important; }}
+.arlo-topbar-row .stDateInput div[data-baseweb="input"] {{
+  background:rgba(255,255,255,.04) !important; border:1px solid var(--arlo-border2) !important;
+  border-radius:4px !important; height:30px !important;
+}}
+.arlo-topbar-row .stDateInput input {{
+  color:var(--arlo-muted2) !important; font-size:11px !important;
+  caret-color:var(--arlo-accent) !important;
+}}
+.arlo-topbar-row .stDateInput [data-baseweb="calendar"] {{
+  background:var(--arlo-dark3) !important; border:1px solid var(--arlo-border2) !important;
+}}
+
 /* ── Main content ── */
 .arlo-topbar {{
   background:var(--arlo-dark); border-bottom:1px solid var(--arlo-border);
@@ -295,14 +312,32 @@ str_df = load_str()
 latest_yr = int(master["business_date"].dt.year.max())
 prev_yr   = latest_yr - 1
 
-curr = master[master["business_date"].dt.year == latest_yr].copy()
-prev = master[master["business_date"].dt.year == prev_yr].copy()
+curr_all = master[master["business_date"].dt.year == latest_yr].copy()
+prev     = master[master["business_date"].dt.year == prev_yr].copy()
 
-# Same calendar period last year
-max_mo, max_dy = curr["business_date"].max().month, curr["business_date"].max().day
+_dr_default = (
+    pd.Timestamp(f"{latest_yr}-01-01").date(),
+    curr_all["business_date"].max().date(),
+)
+_dr = st.session_state.get("dr", _dr_default)
+_dr = _dr if (isinstance(_dr, (tuple, list)) and len(_dr) == 2) else _dr_default
+
+_start = pd.Timestamp(_dr[0])
+_end   = pd.Timestamp(_dr[1])
+
+curr = curr_all[
+    (curr_all["business_date"] >= _start) & (curr_all["business_date"] <= _end)
+].copy()
+
+try:
+    _start_prev = _start.replace(year=prev_yr)
+    _end_prev   = _end.replace(year=prev_yr)
+except ValueError:
+    _start_prev = _start.replace(year=prev_yr, day=28)
+    _end_prev   = _end.replace(year=prev_yr, day=28)
+
 prev_ytd = prev[
-    (prev["business_date"].dt.month < max_mo) |
-    ((prev["business_date"].dt.month == max_mo) & (prev["business_date"].dt.day <= max_dy))
+    (prev["business_date"] >= _start_prev) & (prev["business_date"] <= _end_prev)
 ]
 
 def pct(a, b):
@@ -525,17 +560,30 @@ with st.sidebar:
         ''', unsafe_allow_html=True)
 
 # ── Top bar ───────────────────────────────────────────────────────────────────
-st.html(f"""
-<div class="arlo-topbar">
-  <span class="arlo-top-title">Dashboard</span>
-  <div class="arlo-live-chip"><div class="arlo-live-dot"></div>Live</div>
-  <div style="flex:1;"></div>
-  <div class="arlo-date-pill"><i class="ti ti-calendar" style="font-size:10px;margin-right:5px;vertical-align:-1px;"></i>{date_str}</div>
-  <div class="arlo-top-btn"><i class="ti ti-adjustments-horizontal"></i></div>
-  <div class="arlo-top-btn"><i class="ti ti-bell"></i></div>
-</div>
-<div class="arlo-accent-rule"></div>
-""")
+st.markdown('<div class="arlo-topbar-row">', unsafe_allow_html=True)
+_tb_l, _tb_r = st.columns([5, 3])
+with _tb_l:
+    st.markdown(f"""
+    <div style="display:flex;align-items:center;gap:12px;height:52px;padding:0 20px;">
+      <span class="arlo-top-title">Dashboard</span>
+      <div class="arlo-live-chip"><div class="arlo-live-dot"></div>Live</div>
+    </div>""", unsafe_allow_html=True)
+with _tb_r:
+    st.markdown('<div style="display:flex;align-items:center;justify-content:flex-end;height:52px;padding-right:16px;">', unsafe_allow_html=True)
+    _dr_picked = st.date_input(
+        "Date range",
+        value=(_dr[0], _dr[1]),
+        min_value=master["business_date"].min().date(),
+        max_value=master["business_date"].max().date(),
+        key="dr",
+        label_visibility="collapsed",
+        format="MMM DD, YYYY",
+    )
+    if isinstance(_dr_picked, (tuple, list)) and len(_dr_picked) == 2:
+        if _dr_picked != tuple(_dr):
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div><div class="arlo-accent-rule"></div>', unsafe_allow_html=True)
 
 # ── AI Insight ────────────────────────────────────────────────────────────────
 trend_word = "ahead of" if rev_d > 0 else "behind"

@@ -610,7 +610,7 @@ def _delta_html(d, hero=False):
     sign = "+" if d >= 0 else ""
     cls  = "" if d >= 0 else " neg"
     accent = ' style="color:var(--arlo-accent)"' if hero else ""
-    return f'<div class="kpi-delta{cls}"{accent}><i class="ti {icon}" style="font-size:11px;"></i>{sign}{d:.1f}% STLY</div>'
+    return f'<div class="kpi-delta{cls}"{accent}><i class="ti {icon}" style="font-size:20px;"></i>{sign}{d:.1f}% STLY</div>'
 
 mpi_sub  = f"MPI {mpi_val:.2f} vs comp"  if mpi_val else "vs comp set"
 ari_sub  = f"ARI {ari_val:.2f} vs comp"  if ari_val else "vs comp set"

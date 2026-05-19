@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from components.nav import render_nav
+from components.sidebar import render_sidebar
 from components.forecast_engine import generate_future_predictions
 
 BASE = Path(__file__).resolve().parents[2]
@@ -29,7 +29,7 @@ st.markdown("""
 *, *::before, *::after { font-family:'Inter',system-ui,sans-serif !important; -webkit-font-smoothing:antialiased; box-sizing:border-box; }
 #MainMenu, footer, header { visibility:hidden; }
 [data-testid="collapsedControl"] { display:none; }
-section[data-testid="stSidebar"] { display:none; }
+/* sidebar rendered by render_sidebar() */
 .stApp { background:var(--dark2) !important; }
 .block-container { padding:0 !important; max-width:1300px !important; margin:0 auto !important; }
 [data-testid="stAppViewContainer"] { background:var(--dark2) !important; }
@@ -89,6 +89,7 @@ def load_src():
     return pd.read_csv(BASE / "data" / "processed" / "daily_stats_source.csv",
                        parse_dates=["business_date"])
 
+render_sidebar(active="forecast")
 forecast  = get_forecast()   # 2026 ML predictions
 actuals25 = load_actuals()   # 2025 true actuals
 rt_df     = load_rt()
@@ -447,4 +448,3 @@ else:
     st.info("No source data for this period.")
 
 st.markdown("<div style='height:32px'></div>", unsafe_allow_html=True)
-render_nav()

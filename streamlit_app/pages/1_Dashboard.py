@@ -533,7 +533,7 @@ with st.sidebar:
         <div class="sb-footer-fixed" style="display:flex;justify-content:center;align-items:center;padding:12px 0;">
           <div style="width:28px;height:28px;border-radius:50%;background:rgba(232,133,74,.15);
                       border:1px solid rgba(232,133,74,.3);display:flex;align-items:center;
-                      justify-content:center;font-size:100px;font-weight:600;color:#e8854a;">{initials}</div>
+                      justify-content:center;font-size:12px;font-weight:600;color:#e8854a;">{initials}</div>
         </div>
         ''', unsafe_allow_html=True)
     else:

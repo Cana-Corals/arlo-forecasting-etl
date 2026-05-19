@@ -68,9 +68,15 @@ def load_source():
     return pd.read_csv(BASE / "data" / "processed" / "daily_stats_source.csv",
                        parse_dates=["business_date"])
 
+@st.cache_data
+def load_master():
+    return pd.read_csv(BASE / "data" / "final" / "hotel_daily_master.csv",
+                       parse_dates=["business_date"])
+
 res     = load_res()
 ready   = load_ready()
 src_df  = load_source()
+master  = load_master()
 
 # ── Topbar ────────────────────────────────────────────────────────────────────
 st.markdown("""
@@ -423,5 +429,186 @@ with _c4:
     can_lay["xaxis"]["tickangle"] = -30
     fig_can.update_layout(**can_lay)
     st.plotly_chart(fig_can, use_container_width=True, config={"displayModeBar": False})
+
+# ── Sellout Nights ───────────────────────────────────────────────────────────
+st.markdown('<div class="dm-section"><div class="dm-section-ttl">Sellout Nights — 100% Capacity Days</div></div>',
+            unsafe_allow_html=True)
+
+# Use full master data (all years) for the historical sellout analysis
+master["occ_pct"]  = master["occupancy_rate"] * 100
+master["is_full"]  = master["occupancy_rate"] >= 0.99
+master["year"]     = master["business_date"].dt.year
+master["month"]    = master["business_date"].dt.month
+
+_cs1, _cs2 = st.columns(2)
+
+DOW_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+with _cs1:
+    # % of days per DOW that hit 100%, split by year
+    dow_stats = (master.groupby(["year", "day_of_week"])
+                 .apply(lambda g: g["is_full"].sum() / len(g) * 100, include_groups=False)
+                 .reset_index(name="pct_full"))
+
+    fig_dow = go.Figure()
+    for yr, color in [(2024, SLATE), (2025, ACCENT)]:
+        d = dow_stats[dow_stats["year"] == yr].sort_values("day_of_week")
+        fig_dow.add_trace(go.Bar(
+            x=[DOW_LABELS[i] for i in d["day_of_week"]],
+            y=d["pct_full"],
+            name=str(yr),
+            marker_color=color if yr == 2025 else SLATE_F,
+            marker_line=dict(color=SLATE, width=1) if yr == 2024 else dict(width=0),
+            hovertemplate="%{x}: %{y:.1f}% sellout<extra>" + str(yr) + "</extra>",
+        ))
+    dow_lay = base_layout(h=260, ysuffix="%")
+    dow_lay["title"] = dict(text="Sellout Rate by Day of Week",
+                            font=dict(size=11, color="rgba(245,245,240,0.7)"),
+                            x=0, xanchor="left", pad=dict(l=4))
+    dow_lay["barmode"]  = "group"
+    dow_lay["bargap"]   = 0.2
+    dow_lay["xaxis"]["tickangle"] = 0
+    fig_dow.update_layout(**dow_lay)
+    st.plotly_chart(fig_dow, use_container_width=True, config={"displayModeBar": False})
+
+with _cs2:
+    # Full-cap days per month (stacked by year)
+    month_stats = (master.groupby(["year", "month"])["is_full"]
+                   .sum().reset_index(name="full_days"))
+    MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+    fig_mon = go.Figure()
+    for yr, color in [(2024, SLATE_F), (2025, ACCENT)]:
+        d = month_stats[month_stats["year"] == yr].sort_values("month")
+        fig_mon.add_trace(go.Bar(
+            x=[MONTH_LABELS[m - 1] for m in d["month"]],
+            y=d["full_days"],
+            name=str(yr),
+            marker_color=color,
+            marker_line=dict(color=SLATE, width=1) if yr == 2024 else dict(width=0),
+            hovertemplate="%{x}: %{y} sellout days<extra>" + str(yr) + "</extra>",
+        ))
+    mon_lay = base_layout(h=260)
+    mon_lay["title"] = dict(text="Sellout Days by Month",
+                            font=dict(size=11, color="rgba(245,245,240,0.7)"),
+                            x=0, xanchor="left", pad=dict(l=4))
+    mon_lay["barmode"] = "group"
+    mon_lay["bargap"]  = 0.15
+    mon_lay["xaxis"]["tickangle"] = -30
+    fig_mon.update_layout(**mon_lay)
+    st.plotly_chart(fig_mon, use_container_width=True, config={"displayModeBar": False})
+
+# Sellout insight cards
+full_total   = int(master["is_full"].sum())
+full_sat     = int(master[master["day_of_week"] == 5]["is_full"].sum())
+sat_total    = int((master["day_of_week"] == 5).sum())
+sat_pct      = full_sat / sat_total * 100
+peak_month   = master.groupby("month")["is_full"].sum().idxmax()
+peak_month_n = MONTH_LABELS[peak_month - 1]
+
+st.markdown(f"""
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 20px 0;">
+  <div class="dm-kpi">
+    <div class="dm-kpi-lbl">Total Sellout Days</div>
+    <div class="dm-kpi-val">{full_total}</div>
+    <div class="dm-kpi-sub">Across 2024–2025 ({full_total/730*100:.0f}% of all nights)</div>
+  </div>
+  <div class="dm-kpi">
+    <div class="dm-kpi-lbl">Saturday Sellout Rate</div>
+    <div class="dm-kpi-val">{sat_pct:.0f}%</div>
+    <div class="dm-kpi-sub">Highest of any day of week</div>
+  </div>
+  <div class="dm-kpi">
+    <div class="dm-kpi-lbl">Peak Month for Sellouts</div>
+    <div class="dm-kpi-val">{peak_month_n}</div>
+    <div class="dm-kpi-sub">{int(master.groupby("month")["is_full"].sum()[peak_month])} sellout days in {peak_month_n} (combined)</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Event Impact Analysis ─────────────────────────────────────────────────────
+st.markdown('<div class="dm-section" style="padding-top:24px;"><div class="dm-section-ttl">Event Impact on Occupancy</div></div>',
+            unsafe_allow_html=True)
+
+_ce1, _ce2 = st.columns([3, 2])
+
+EVENT_LABELS = {
+    "is_us_open_event":        "US Open Tennis",
+    "is_major_event_day":      "Any Major Event",
+    "is_major_sports_event":   "Major Sports",
+    "is_msg_event":            "Madison Sq. Garden",
+    "is_barclays_event":       "Barclays Center",
+}
+
+with _ce1:
+    # Avg occupancy: event day vs non-event day for each event type
+    rows = []
+    for col, label in EVENT_LABELS.items():
+        if col not in master.columns:
+            continue
+        event_days    = master[master[col].astype(bool)]
+        non_event     = master[~master[col].astype(bool)]
+        n_event       = len(event_days)
+        if n_event == 0:
+            continue
+        avg_ev  = event_days["occ_pct"].mean()
+        avg_no  = non_event["occ_pct"].mean()
+        lift    = avg_ev - avg_no
+        rows.append({"label": label, "event_occ": avg_ev,
+                     "base_occ": avg_no, "lift": lift, "n": n_event})
+
+    df_ev = pd.DataFrame(rows).sort_values("lift")
+
+    # Grouped bar: event vs no-event avg occupancy
+    fig_ev = go.Figure()
+    fig_ev.add_trace(go.Bar(
+        y=df_ev["label"],
+        x=df_ev["base_occ"],
+        name="Non-event days",
+        orientation="h",
+        marker_color=SLATE_F,
+        marker_line=dict(color=SLATE, width=1),
+        hovertemplate="%{y}<br>No event: %{x:.1f}%<extra></extra>",
+    ))
+    fig_ev.add_trace(go.Bar(
+        y=df_ev["label"],
+        x=df_ev["event_occ"],
+        name="Event days",
+        orientation="h",
+        marker_color=[ACCENT if v >= 0 else "#e05252" for v in df_ev["lift"]],
+        hovertemplate="%{y}<br>Event day: %{x:.1f}%<extra></extra>",
+    ))
+    ev_lay = base_layout(h=300)
+    ev_lay["title"] = dict(text="Avg Occupancy: Event Days vs Non-Event Days",
+                           font=dict(size=11, color="rgba(245,245,240,0.7)"),
+                           x=0, xanchor="left", pad=dict(l=4))
+    ev_lay["barmode"]     = "overlay"
+    ev_lay["bargap"]      = 0.3
+    ev_lay["margin"]["l"] = 160
+    ev_lay["xaxis"].update({"ticksuffix": "%", "range": [60, 100]})
+    fig_ev.update_layout(**ev_lay)
+    st.plotly_chart(fig_ev, use_container_width=True, config={"displayModeBar": False})
+
+with _ce2:
+    # Insight cards per event type showing lift
+    cards = ""
+    for _, row in df_ev.sort_values("lift", ascending=False).iterrows():
+        lift_v  = row["lift"]
+        color   = "#3ecf8e" if lift_v > 0 else "#e05252"
+        sym     = "▲" if lift_v > 0 else "▼"
+        note    = ("Positive demand signal" if lift_v > 1
+                   else "Minimal impact" if abs(lift_v) <= 1
+                   else "Crowd displacement — fans don't stay nearby")
+        cards += f"""
+        <div class="dm-kpi" style="margin-bottom:8px;">
+          <div class="dm-kpi-lbl">{row["label"]}</div>
+          <div style="display:flex;align-items:baseline;gap:8px;">
+            <span style="font-size:18px;font-weight:600;color:{color};">{sym} {abs(lift_v):.1f}pp</span>
+            <span style="font-size:10px;color:rgba(245,245,240,0.4);">vs baseline</span>
+          </div>
+          <div class="dm-kpi-sub" style="margin-top:4px;">{note} ({row['n']:,} days)</div>
+        </div>"""
+    st.markdown(f'<div style="padding:0 0 0 8px;">{cards}</div>', unsafe_allow_html=True)
 
 st.markdown("<div style='height:32px'></div>", unsafe_allow_html=True)

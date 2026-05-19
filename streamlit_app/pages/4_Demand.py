@@ -69,6 +69,11 @@ def load_source():
                        parse_dates=["business_date"])
 
 @st.cache_data
+def load_room_types():
+    return pd.read_csv(BASE / "data" / "processed" / "daily_stats_room_type.csv",
+                       parse_dates=["business_date"])
+
+@st.cache_data
 def load_master():
     return pd.read_csv(BASE / "data" / "final" / "hotel_daily_master.csv",
                        parse_dates=["business_date"])
@@ -77,6 +82,7 @@ res     = load_res()
 ready   = load_ready()
 src_df  = load_source()
 master  = load_master()
+rt_df   = load_room_types()
 
 # ── Topbar ────────────────────────────────────────────────────────────────────
 st.markdown("""
@@ -526,6 +532,102 @@ st.markdown(f"""
   </div>
 </div>
 """, unsafe_allow_html=True)
+
+# ── Top 5 Most Sold-Out Room Types ────────────────────────────────────────────
+st.markdown('<div class="dm-section" style="padding-top:20px;"><div class="dm-section-ttl">Most Sold-Out Room Types</div></div>',
+            unsafe_allow_html=True)
+
+ROOM_TYPE_NAMES = {
+    "LS":   "Loft Suite",
+    "SS":   "Studio Suite",
+    "SSRS": "Studio Suite — River/Skyline View",
+    "PLS":  "Premium Loft Suite",
+    "PSS":  "Premium Studio Suite",
+    "CVQ":  "City View Queen",
+    "Q":    "Standard Queen",
+    "QT":   "Queen Terrace",
+    "QTRS": "Queen Terrace — River/Skyline",
+    "SKT":  "Skyline King Terrace",
+    "PKT":  "Premium King Terrace",
+    "PQT":  "Premium Queen Terrace",
+}
+
+rt_df["available"] = rt_df["total_physical_rooms"] - rt_df["ooo_rooms"]
+rt_df["is_full"]   = (rt_df["available"] > 0) & (rt_df["room_nights"] >= rt_df["available"])
+
+rt_stats = (rt_df[rt_df["available"] > 0]
+            .groupby("room_type")
+            .agg(sellout_days=("is_full", "sum"),
+                 total_days=("is_full", "count"),
+                 n_rooms=("total_physical_rooms", "first"),
+                 avg_adr=("adr", "mean"))
+            .reset_index())
+rt_stats["sellout_pct"] = rt_stats["sellout_days"] / rt_stats["total_days"] * 100
+rt_stats["label"]       = rt_stats["room_type"].map(ROOM_TYPE_NAMES).fillna(rt_stats["room_type"])
+rt_stats                = rt_stats.sort_values("sellout_days", ascending=False).reset_index(drop=True)
+
+# Add total revenue per room type
+rt_rev = rt_df.groupby("room_type")["total_revenue"].sum()
+rt_stats["total_revenue"] = rt_stats["room_type"].map(rt_rev)
+
+_cr1, _cr2 = st.columns([3, 2])
+
+with _cr1:
+    all_rt = rt_stats.sort_values("sellout_days")  # ascending for horizontal bar (bottom = highest)
+    colors = [ACCENT] * len(all_rt)
+
+    fig_rt = go.Figure()
+    fig_rt.add_trace(go.Bar(
+        y=all_rt["label"],
+        x=all_rt["sellout_days"],
+        orientation="h",
+        marker_color=colors,
+        customdata=list(zip(
+            all_rt["sellout_pct"],
+            all_rt["total_days"],
+            all_rt["n_rooms"],
+            all_rt["avg_adr"],
+            all_rt["total_revenue"],
+        )),
+        hovertemplate=(
+            "%{y}<br>"
+            "Nights sold out: <b>%{x}</b> / %{customdata[1]}<br>"
+            "Sellout rate: %{customdata[0]:.1f}%<br>"
+            "Room count: %{customdata[2]}<br>"
+            "Avg ADR: $%{customdata[3]:,.0f}<br>"
+            "Total revenue: $%{customdata[4]:,.0f}<extra></extra>"
+        ),
+    ))
+    rt_lay = base_layout(h=340)
+    rt_lay["title"] = dict(text="Sellout Nights by Room Type — sorted by total days sold out",
+                           font=dict(size=11, color="rgba(245,245,240,0.7)"),
+                           x=0, xanchor="left", pad=dict(l=4))
+    rt_lay["margin"]["l"] = 220
+    rt_lay["xaxis"]["title"] = "Sellout Days"
+    rt_lay["bargap"] = 0.22
+    fig_rt.update_layout(**rt_lay)
+    st.plotly_chart(fig_rt, use_container_width=True, config={"displayModeBar": False})
+
+with _cr2:
+    cards = ""
+    medals = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩", "⑪", "⑫"]
+    for idx, (_, row) in enumerate(rt_stats.iterrows()):
+        cards += f"""
+        <div class="dm-kpi" style="margin-bottom:7px;padding:10px 14px;">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;">
+            <span style="font-size:12px;color:var(--accent);flex-shrink:0;">{medals[idx]}</span>
+            <span class="dm-kpi-lbl" style="margin:0;">{row['room_type']} — {row['label']}</span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:8px;">
+            <span style="font-size:17px;font-weight:600;color:var(--white);">{int(row['sellout_days'])} nights</span>
+            <span style="font-size:10px;color:var(--muted2);">{row['sellout_pct']:.0f}% rate</span>
+          </div>
+          <div class="dm-kpi-sub" style="margin-top:3px;">
+            {int(row['n_rooms'])} room{'s' if row['n_rooms']>1 else ''} · ${row['avg_adr']:,.0f} ADR · ${row['total_revenue']/1e3:,.0f}k revenue
+          </div>
+        </div>"""
+    st.markdown(f'<div style="padding:0;max-height:440px;overflow-y:auto;">{cards}</div>',
+                unsafe_allow_html=True)
 
 # ── Event Impact Analysis ─────────────────────────────────────────────────────
 st.markdown('<div class="dm-section" style="padding-top:24px;"><div class="dm-section-ttl">Event Impact on Occupancy</div></div>',

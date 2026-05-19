@@ -18,6 +18,7 @@ _nav = st.query_params.get("nav")
 if _nav:
     st.query_params.clear()
     _nav_pages = {
+        "home":          "Home.py",
         "forecast":      "pages/2_Forecast.py",
         "performance":   "pages/3_Performance.py",
         "demand":        "pages/4_Demand.py",
@@ -450,6 +451,11 @@ with st.sidebar:
         _ic = "font-size:16px;color:rgba(245,245,240,.55);"
         st.markdown(f"""
         <div style="padding:6px 0;display:flex;flex-direction:column;gap:2px;">
+          <div onclick="window.location.search='?nav=home'" style="{_is}"
+               onmouseover="this.style.background='rgba(232,133,74,.12)'"
+               onmouseout="this.style.background='transparent'">
+            <i class="ti ti-sparkles" style="font-size:16px;color:rgba(232,133,74,.7);"></i></div>
+          <div style="height:1px;background:rgba(255,255,255,.06);margin:4px 10px;"></div>
           <div onclick="window.location.search='?nav=forecast'" style="{_is}"
                onmouseover="this.style.background='rgba(255,255,255,.06)'"
                onmouseout="this.style.background='transparent'">
@@ -474,7 +480,10 @@ with st.sidebar:
         </div>
         """, unsafe_allow_html=True)
     else:
-        st.markdown('<div style="padding:21px 16px 14px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Analytics</div>', unsafe_allow_html=True)
+        if st.button("✦  AI Assistant", key="nav_ai", use_container_width=True):
+            st.switch_page("Home.py")
+        st.markdown('<div style="height:1px;background:rgba(255,255,255,.06);margin:6px 10px 2px;"></div>', unsafe_allow_html=True)
+        st.markdown('<div style="padding:14px 16px 14px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Analytics</div>', unsafe_allow_html=True)
         for lbl, path in [("Forecast","pages/2_Forecast.py"),("Performance","pages/3_Performance.py"),("Demand","pages/4_Demand.py")]:
             if st.button(lbl, key=f"nav_{lbl}", use_container_width=True):
                 st.switch_page(path)

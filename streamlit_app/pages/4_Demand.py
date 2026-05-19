@@ -303,17 +303,14 @@ SORT_OPTIONS = {
     "Lost Revenue":  "lost_revenue",
 }
 
-_sa, _sb = st.columns([3, 5])
-with _sa:
-    sort_by = st.segmented_control(
-        "Sort by", list(SORT_OPTIONS.keys()),
-        default=st.session_state.get("rt_sort", "Revenue"),
-        key="rt_sort_ctrl", label_visibility="collapsed",
-    )
-    if sort_by:
-        st.session_state["rt_sort"] = sort_by
+sort_by = st.segmented_control(
+    "Sort by", list(SORT_OPTIONS.keys()),
+    default="Revenue",
+    key="rt_sort",
+    label_visibility="collapsed",
+)
 
-sort_col = SORT_OPTIONS.get(st.session_state.get("rt_sort", "Revenue"), "total_revenue")
+sort_col = SORT_OPTIONS.get(sort_by or "Revenue", "total_revenue")
 rt_stats = rt_stats.sort_values(sort_col, ascending=False).reset_index(drop=True)
 
 def bar_html(pct, color):

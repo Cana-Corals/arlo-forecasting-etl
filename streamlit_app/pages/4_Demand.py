@@ -341,12 +341,10 @@ for _, row in rt_stats.iterrows():
     <span style="color:rgba(245,245,240,0.35);font-size:10px;margin-left:4px;">({row["sellout_pct"]:.0f}%)</span>
   </td>
   <td style="text-align:right;padding:8px;">
-    <span style="color:#e05252;font-weight:500;">{int(row["days_any_ooo"])}</span>
-    <span style="color:rgba(245,245,240,0.35);font-size:10px;margin-left:3px;">({int(row["ooo_room_nights"])} rm-nts)</span>
+    <span style="color:#e05252;font-weight:500;">{int(row["ooo_room_nights"])}</span>
   </td>
   <td style="text-align:right;padding:8px;">
     <span style="color:#e05252;">{row["ooo_pct"]:.1f}%</span>
-    {bar_html(row["ooo_pct"], "#e05252")}
   </td>
   <td style="text-align:right;padding:8px;">
     <span style="color:#e05252;font-weight:500;">${row["lost_revenue"]/1e3:,.0f}k</span>

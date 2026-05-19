@@ -446,7 +446,7 @@ with st.sidebar:
             st.switch_page(path)
 
     if not COLLAPSED:
-        st.markdown('<div style="padding:10px 16px 10px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Intelligence</div>', unsafe_allow_html=True)
+        st.markdown('<div style="padding:21px 16px 14px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Intelligence</div>', unsafe_allow_html=True)
 
     _intelligence = [
         (":material/storefront:",  "Competitive",    "pages/5_Competitive.py"),

@@ -533,8 +533,8 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ── Top 5 Most Sold-Out Room Types ────────────────────────────────────────────
-st.markdown('<div class="dm-section" style="padding-top:20px;"><div class="dm-section-ttl">Most Sold-Out Room Types</div></div>',
+# ── Room Type Performance Table ───────────────────────────────────────────────
+st.markdown('<div class="dm-section" style="padding-top:20px;"><div class="dm-section-ttl">Room Type Performance</div></div>',
             unsafe_allow_html=True)
 
 ROOM_TYPE_NAMES = {
@@ -552,82 +552,82 @@ ROOM_TYPE_NAMES = {
     "PQT":  "Premium Queen Terrace",
 }
 
-rt_df["available"] = rt_df["total_physical_rooms"] - rt_df["ooo_rooms"]
-rt_df["is_full"]   = (rt_df["available"] > 0) & (rt_df["room_nights"] >= rt_df["available"])
+# Filter by selected period
+rt_f = rt_df[(rt_df["business_date"] >= s_ts) & (rt_df["business_date"] <= e_ts)].copy()
+rt_f["available"] = rt_f["total_physical_rooms"] - rt_f["ooo_rooms"]
+rt_f["is_full"]   = (rt_f["available"] > 0) & (rt_f["room_nights"] >= rt_f["available"])
+rt_f["occupancy"] = rt_f.apply(
+    lambda r: r["room_nights"] / r["available"] if r["available"] > 0 else None, axis=1
+)
 
-rt_stats = (rt_df[rt_df["available"] > 0]
+rt_stats = (rt_f[rt_f["available"] > 0]
             .groupby("room_type")
-            .agg(sellout_days=("is_full", "sum"),
-                 total_days=("is_full", "count"),
-                 n_rooms=("total_physical_rooms", "first"),
-                 avg_adr=("adr", "mean"))
+            .agg(
+                n_rooms       = ("total_physical_rooms", "first"),
+                room_nights   = ("room_nights",          "sum"),
+                room_revenue  = ("room_revenue",         "sum"),
+                total_revenue = ("total_revenue",        "sum"),
+                avg_adr       = ("adr",                  "mean"),
+                avg_occ       = ("occupancy",            "mean"),
+                sellout_days  = ("is_full",              "sum"),
+                total_days    = ("is_full",              "count"),
+                cancelled     = ("cancelled_rooms",      "sum"),
+            )
             .reset_index())
+
 rt_stats["sellout_pct"] = rt_stats["sellout_days"] / rt_stats["total_days"] * 100
+n_days_period           = (e_ts - s_ts).days + 1
+rt_stats["revpar"]      = rt_stats["room_revenue"] / (rt_stats["n_rooms"] * n_days_period)
 rt_stats["label"]       = rt_stats["room_type"].map(ROOM_TYPE_NAMES).fillna(rt_stats["room_type"])
-rt_stats                = rt_stats.sort_values("sellout_days", ascending=False).reset_index(drop=True)
+rt_stats                = rt_stats.sort_values("total_revenue", ascending=False).reset_index(drop=True)
 
-# Add total revenue per room type
-rt_rev = rt_df.groupby("room_type")["total_revenue"].sum()
-rt_stats["total_revenue"] = rt_stats["room_type"].map(rt_rev)
+# Styled HTML table
+def bar_html(pct, color):
+    pct = min(max(float(pct), 0), 100)
+    return (f'<div style="background:rgba(255,255,255,0.06);border-radius:2px;height:4px;width:100%;margin-top:3px;">'
+            f'<div style="background:{color};border-radius:2px;height:4px;width:{pct:.0f}%;"></div></div>')
 
-_cr1, _cr2 = st.columns([3, 2])
+tbl  = '<div style="padding:0 20px 0;">'
+tbl += '<table style="width:100%;border-collapse:collapse;font-size:11px;">'
+tbl += '''<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+  <th style="text-align:left;padding:6px 10px 6px 0;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Room Type</th>
+  <th style="text-align:center;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Rooms</th>
+  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Nights Sold</th>
+  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Occupancy</th>
+  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">ADR</th>
+  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">RevPAR</th>
+  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Revenue</th>
+  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Sellout</th>
+</tr></thead><tbody>'''
 
-with _cr1:
-    all_rt = rt_stats.sort_values("sellout_days")  # ascending for horizontal bar (bottom = highest)
-    colors = [ACCENT] * len(all_rt)
+for _, row in rt_stats.iterrows():
+    occ_pct  = row["avg_occ"] * 100
+    rev_bar  = row["total_revenue"] / rt_stats["total_revenue"].max() * 100 if rt_stats["total_revenue"].max() > 0 else 0
+    tbl += f'''<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+  <td style="padding:8px 10px 8px 0;">
+    <span style="font-weight:600;color:#f5f5f0;">{row["room_type"]}</span>
+    <span style="color:rgba(245,245,240,0.38);font-size:10px;margin-left:6px;">{row["label"]}</span>
+  </td>
+  <td style="text-align:center;padding:8px;color:rgba(245,245,240,0.6);">{int(row["n_rooms"])}</td>
+  <td style="text-align:right;padding:8px;color:rgba(245,245,240,0.8);">{int(row["room_nights"]):,}</td>
+  <td style="text-align:right;padding:8px;">
+    <span style="color:#f5f5f0;">{occ_pct:.1f}%</span>
+    {bar_html(occ_pct, "#3ecf8e")}
+  </td>
+  <td style="text-align:right;padding:8px;color:#f5f5f0;font-weight:500;">${row["avg_adr"]:,.0f}</td>
+  <td style="text-align:right;padding:8px;color:rgba(245,245,240,0.8);">${row["revpar"]:,.0f}</td>
+  <td style="text-align:right;padding:8px;">
+    <span style="color:#f5f5f0;font-weight:500;">${row["total_revenue"]/1e3:,.0f}k</span>
+    {bar_html(rev_bar, "#e8854a")}
+  </td>
+  <td style="text-align:right;padding:8px;">
+    <span style="color:rgba(245,245,240,0.8);">{int(row["sellout_days"])}d</span>
+    <span style="color:rgba(245,245,240,0.35);font-size:10px;margin-left:4px;">({row["sellout_pct"]:.0f}%)</span>
+  </td>
+</tr>'''
 
-    fig_rt = go.Figure()
-    fig_rt.add_trace(go.Bar(
-        y=all_rt["label"],
-        x=all_rt["sellout_days"],
-        orientation="h",
-        marker_color=colors,
-        customdata=list(zip(
-            all_rt["sellout_pct"],
-            all_rt["total_days"],
-            all_rt["n_rooms"],
-            all_rt["avg_adr"],
-            all_rt["total_revenue"],
-        )),
-        hovertemplate=(
-            "%{y}<br>"
-            "Nights sold out: <b>%{x}</b> / %{customdata[1]}<br>"
-            "Sellout rate: %{customdata[0]:.1f}%<br>"
-            "Room count: %{customdata[2]}<br>"
-            "Avg ADR: $%{customdata[3]:,.0f}<br>"
-            "Total revenue: $%{customdata[4]:,.0f}<extra></extra>"
-        ),
-    ))
-    rt_lay = base_layout(h=340)
-    rt_lay["title"] = dict(text="Sellout Nights by Room Type — sorted by total days sold out",
-                           font=dict(size=11, color="rgba(245,245,240,0.7)"),
-                           x=0, xanchor="left", pad=dict(l=4))
-    rt_lay["margin"]["l"] = 220
-    rt_lay["xaxis"]["title"] = "Sellout Days"
-    rt_lay["bargap"] = 0.22
-    fig_rt.update_layout(**rt_lay)
-    st.plotly_chart(fig_rt, use_container_width=True, config={"displayModeBar": False})
-
-with _cr2:
-    cards = ""
-    medals = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩", "⑪", "⑫"]
-    for idx, (_, row) in enumerate(rt_stats.iterrows()):
-        cards += f"""
-        <div class="dm-kpi" style="margin-bottom:7px;padding:10px 14px;">
-          <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;">
-            <span style="font-size:12px;color:var(--accent);flex-shrink:0;">{medals[idx]}</span>
-            <span class="dm-kpi-lbl" style="margin:0;">{row['room_type']} — {row['label']}</span>
-          </div>
-          <div style="display:flex;align-items:baseline;gap:8px;">
-            <span style="font-size:17px;font-weight:600;color:var(--white);">{int(row['sellout_days'])} nights</span>
-            <span style="font-size:10px;color:var(--muted2);">{row['sellout_pct']:.0f}% rate</span>
-          </div>
-          <div class="dm-kpi-sub" style="margin-top:3px;">
-            {int(row['n_rooms'])} room{'s' if row['n_rooms']>1 else ''} · ${row['avg_adr']:,.0f} ADR · ${row['total_revenue']/1e3:,.0f}k revenue
-          </div>
-        </div>"""
-    st.markdown(f'<div style="padding:0;max-height:440px;overflow-y:auto;">{cards}</div>',
-                unsafe_allow_html=True)
+tbl += '</tbody></table></div>'
+st.markdown(tbl, unsafe_allow_html=True)
 
 # ── Event Impact Analysis ─────────────────────────────────────────────────────
 st.markdown('<div class="dm-section" style="padding-top:24px;"><div class="dm-section-ttl">Event Impact on Occupancy</div></div>',

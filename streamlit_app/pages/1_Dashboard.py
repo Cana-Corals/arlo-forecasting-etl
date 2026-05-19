@@ -12,10 +12,20 @@ if "sb_collapsed" not in st.session_state:
     st.session_state["sb_collapsed"] = False
 COLLAPSED = st.session_state["sb_collapsed"]
 SB_W      = "52px" if COLLAPSED else "220px"
-_sb_icon_css = (
-    "section[data-testid='stSidebar'] .stButton > button {"
-    "text-align:center !important;justify-content:center !important;padding:8px 4px !important;}"
-) if COLLAPSED else ""
+
+# ── Collapsed-sidebar nav routing (query param → st.switch_page) ─────────────
+_nav = st.query_params.get("nav")
+if _nav:
+    st.query_params.clear()
+    _nav_pages = {
+        "forecast":      "pages/2_Forecast.py",
+        "performance":   "pages/3_Performance.py",
+        "demand":        "pages/4_Demand.py",
+        "competitive":   "pages/5_Competitive.py",
+        "model_insights":"pages/6_Model_Insights.py",
+    }
+    if _nav in _nav_pages:
+        st.switch_page(_nav_pages[_nav])
 
 # ── CDN: Inter font + Tabler Icons ────────────────────────────────────────────
 st.markdown("""
@@ -110,7 +120,6 @@ section[data-testid="stSidebar"] .stButton:first-of-type > button {{
 section[data-testid="stSidebar"] .stButton:first-of-type > button:hover {{
     background:rgba(255,255,255,.04) !important; color:rgba(245,245,240,.65) !important;
 }}
-{_sb_icon_css}
 /* Pinned user footer at sidebar bottom */
 .sb-footer-fixed {{
     position:fixed; bottom:0; left:0; width:{SB_W};
@@ -432,31 +441,56 @@ with st.sidebar:
                 st.rerun()
         st.markdown('<div style="height:1px;background:rgba(255,255,255,.08);margin:0;"></div>', unsafe_allow_html=True)
 
-    # ── Analytics section ─────────────────────────────────────────────────────
-    if not COLLAPSED:
+    # ── Nav ───────────────────────────────────────────────────────────────────
+    if COLLAPSED:
+        # Tabler icon buttons — onclick sets ?nav= query param, Python catches it above
+        _icon_style = ("display:flex;justify-content:center;align-items:center;"
+                       "height:36px;cursor:pointer;border-radius:4px;margin:1px 5px;")
+        _icon_css   = "font-size:16px;color:rgba(245,245,240,.55);"
+        st.html(f"""
+        <div style="padding:6px 0;display:flex;flex-direction:column;gap:2px;">
+          <div onclick="window.location.search='?nav=forecast'"
+               style="{_icon_style}"
+               onmouseover="this.style.background='rgba(255,255,255,.06)'"
+               onmouseout="this.style.background='transparent'">
+            <i class="ti ti-trending-up" style="{_icon_css}"></i>
+          </div>
+          <div onclick="window.location.search='?nav=performance'"
+               style="{_icon_style}"
+               onmouseover="this.style.background='rgba(255,255,255,.06)'"
+               onmouseout="this.style.background='transparent'">
+            <i class="ti ti-chart-bar" style="{_icon_css}"></i>
+          </div>
+          <div onclick="window.location.search='?nav=demand'"
+               style="{_icon_style}"
+               onmouseover="this.style.background='rgba(255,255,255,.06)'"
+               onmouseout="this.style.background='transparent'">
+            <i class="ti ti-calendar-event" style="{_icon_css}"></i>
+          </div>
+          <div style="height:1px;background:rgba(255,255,255,.06);margin:4px 10px;"></div>
+          <div onclick="window.location.search='?nav=competitive'"
+               style="{_icon_style}"
+               onmouseover="this.style.background='rgba(255,255,255,.06)'"
+               onmouseout="this.style.background='transparent'">
+            <i class="ti ti-building-store" style="{_icon_css}"></i>
+          </div>
+          <div onclick="window.location.search='?nav=model_insights'"
+               style="{_icon_style}"
+               onmouseover="this.style.background='rgba(255,255,255,.06)'"
+               onmouseout="this.style.background='transparent'">
+            <i class="ti ti-brain" style="{_icon_css}"></i>
+          </div>
+        </div>
+        """)
+    else:
         st.markdown('<div style="padding:21px 16px 14px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Analytics</div>', unsafe_allow_html=True)
-
-    _analytics = [
-        (":material/trending_up:", "Forecast",    "pages/2_Forecast.py"),
-        (":material/bar_chart:",   "Performance", "pages/3_Performance.py"),
-        (":material/event:",       "Demand",      "pages/4_Demand.py"),
-    ]
-    for icon, lbl, path in _analytics:
-        btn_lbl = lbl if not COLLAPSED else icon
-        if st.button(btn_lbl, key=f"nav_{lbl}", use_container_width=True):
-            st.switch_page(path)
-
-    if not COLLAPSED:
-        st.markdown('<div style="padding:21px 16px 14px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Intelligence</div>', unsafe_allow_html=True)
-
-    _intelligence = [
-        (":material/storefront:",  "Competitive",    "pages/5_Competitive.py"),
-        (":material/psychology:",  "Model Insights", "pages/6_Model_Insights.py"),
-    ]
-    for icon, lbl, path in _intelligence:
-        btn_lbl = lbl if not COLLAPSED else icon
-        if st.button(btn_lbl, key=f"nav_{lbl.replace(' ','_')}", use_container_width=True):
-            st.switch_page(path)
+        for lbl, path in [("Forecast","pages/2_Forecast.py"),("Performance","pages/3_Performance.py"),("Demand","pages/4_Demand.py")]:
+            if st.button(lbl, key=f"nav_{lbl}", use_container_width=True):
+                st.switch_page(path)
+        st.markdown('<div style="padding:10px 16px 5px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Intelligence</div>', unsafe_allow_html=True)
+        for lbl, path in [("Competitive","pages/5_Competitive.py"),("Model Insights","pages/6_Model_Insights.py")]:
+            if st.button(lbl, key=f"nav_{lbl.replace(' ','_')}", use_container_width=True):
+                st.switch_page(path)
 
     # User footer — fixed at sidebar bottom (includes Logout above user info)
     if COLLAPSED:

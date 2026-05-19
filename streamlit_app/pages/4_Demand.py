@@ -293,7 +293,28 @@ rt_stats["sellout_pct"] = rt_stats["sellout_days"] / rt_stats["total_days"] * 10
 n_days_period           = (e_ts - s_ts).days + 1
 rt_stats["revpar"]      = rt_stats["room_revenue"] / (rt_stats["n_rooms"] * n_days_period)
 rt_stats["label"]       = rt_stats["room_type"].map(ROOM_TYPE_NAMES).fillna(rt_stats["room_type"])
-rt_stats                = rt_stats.sort_values("total_revenue", ascending=False).reset_index(drop=True)
+
+SORT_OPTIONS = {
+    "Revenue":       "total_revenue",
+    "Nights Sold":   "room_nights",
+    "Occupancy":     "avg_occ",
+    "Sold Out":      "sellout_days",
+    "OOO Nights":    "ooo_room_nights",
+    "Lost Revenue":  "lost_revenue",
+}
+
+_sa, _sb = st.columns([3, 5])
+with _sa:
+    sort_by = st.segmented_control(
+        "Sort by", list(SORT_OPTIONS.keys()),
+        default=st.session_state.get("rt_sort", "Revenue"),
+        key="rt_sort_ctrl", label_visibility="collapsed",
+    )
+    if sort_by:
+        st.session_state["rt_sort"] = sort_by
+
+sort_col = SORT_OPTIONS.get(st.session_state.get("rt_sort", "Revenue"), "total_revenue")
+rt_stats = rt_stats.sort_values(sort_col, ascending=False).reset_index(drop=True)
 
 def bar_html(pct, color):
     pct = min(max(float(pct), 0), 100)

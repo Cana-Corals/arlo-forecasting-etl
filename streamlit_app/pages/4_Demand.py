@@ -295,22 +295,22 @@ rt_stats["revpar"]      = rt_stats["room_revenue"] / (rt_stats["n_rooms"] * n_da
 rt_stats["label"]       = rt_stats["room_type"].map(ROOM_TYPE_NAMES).fillna(rt_stats["room_type"])
 
 SORT_OPTIONS = {
-    "Revenue":       "total_revenue",
-    "Nights Sold":   "room_nights",
-    "Occupancy":     "avg_occ",
-    "Sold Out":      "sellout_days",
-    "OOO Nights":    "ooo_room_nights",
-    "Lost Revenue":  "lost_revenue",
+    "Revenue":      "total_revenue",
+    "Nights Sold":  "room_nights",
+    "Occupancy":    "avg_occ",
+    "Sold Out":     "sellout_days",
+    "OOO Nights":   "ooo_room_nights",
+    "Lost Revenue": "lost_revenue",
 }
 
-sort_by = st.segmented_control(
-    "Sort by", list(SORT_OPTIONS.keys()),
-    default="Revenue",
-    key="rt_sort",
-    label_visibility="collapsed",
-)
+_s1, _s2 = st.columns([2, 6])
+with _s1:
+    sort_by = st.selectbox(
+        "Sort by", list(SORT_OPTIONS.keys()),
+        index=0, key="rt_sort",
+    )
 
-sort_col = SORT_OPTIONS.get(sort_by or "Revenue", "total_revenue")
+sort_col = SORT_OPTIONS[sort_by]
 rt_stats = rt_stats.sort_values(sort_col, ascending=False).reset_index(drop=True)
 
 def bar_html(pct, color):

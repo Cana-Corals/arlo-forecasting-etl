@@ -229,6 +229,100 @@ def base_layout(h=280, ytitle="", yprefix="", ysuffix=""):
         hovermode="x unified",
     )
 
+# ── Room Type Performance Table ───────────────────────────────────────────────
+st.markdown('<div class="dm-section"><div class="dm-section-ttl">Room Type Performance</div></div>',
+            unsafe_allow_html=True)
+
+ROOM_TYPE_NAMES = {
+    "LS":   "Loft Suite",
+    "SS":   "Studio Suite",
+    "SSRS": "Studio Suite — River/Skyline View",
+    "PLS":  "Premium Loft Suite",
+    "PSS":  "Premium Studio Suite",
+    "CVQ":  "City View Queen",
+    "Q":    "Standard Queen",
+    "QT":   "Queen Terrace",
+    "QTRS": "Queen Terrace — River/Skyline",
+    "SKT":  "Skyline King Terrace",
+    "PKT":  "Premium King Terrace",
+    "PQT":  "Premium Queen Terrace",
+}
+
+rt_f = rt_df[(rt_df["business_date"] >= s_ts) & (rt_df["business_date"] <= e_ts)].copy()
+rt_f["available"] = rt_f["total_physical_rooms"] - rt_f["ooo_rooms"]
+rt_f["is_full"]   = (rt_f["available"] > 0) & (rt_f["room_nights"] >= rt_f["available"])
+rt_f["occupancy"] = rt_f.apply(
+    lambda r: r["room_nights"] / r["available"] if r["available"] > 0 else None, axis=1
+)
+
+rt_stats = (rt_f[rt_f["available"] > 0]
+            .groupby("room_type")
+            .agg(
+                n_rooms       = ("total_physical_rooms", "first"),
+                room_nights   = ("room_nights",          "sum"),
+                room_revenue  = ("room_revenue",         "sum"),
+                total_revenue = ("total_revenue",        "sum"),
+                avg_adr       = ("adr",                  "mean"),
+                avg_occ       = ("occupancy",            "mean"),
+                sellout_days  = ("is_full",              "sum"),
+                total_days    = ("is_full",              "count"),
+                cancelled     = ("cancelled_rooms",      "sum"),
+            )
+            .reset_index())
+
+rt_stats["sellout_pct"] = rt_stats["sellout_days"] / rt_stats["total_days"] * 100
+n_days_period           = (e_ts - s_ts).days + 1
+rt_stats["revpar"]      = rt_stats["room_revenue"] / (rt_stats["n_rooms"] * n_days_period)
+rt_stats["label"]       = rt_stats["room_type"].map(ROOM_TYPE_NAMES).fillna(rt_stats["room_type"])
+rt_stats                = rt_stats.sort_values("total_revenue", ascending=False).reset_index(drop=True)
+
+def bar_html(pct, color):
+    pct = min(max(float(pct), 0), 100)
+    return (f'<div style="background:rgba(255,255,255,0.06);border-radius:2px;height:4px;width:100%;margin-top:3px;">'
+            f'<div style="background:{color};border-radius:2px;height:4px;width:{pct:.0f}%;"></div></div>')
+
+tbl  = '<div style="padding:0 20px 0;">'
+tbl += '<table style="width:100%;border-collapse:collapse;font-size:11px;">'
+tbl += '''<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+  <th style="text-align:left;padding:6px 10px 6px 0;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Room Type</th>
+  <th style="text-align:center;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Rooms</th>
+  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Nights Sold</th>
+  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Occupancy</th>
+  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">ADR</th>
+  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">RevPAR</th>
+  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Revenue</th>
+  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Sellout</th>
+</tr></thead><tbody>'''
+
+for _, row in rt_stats.iterrows():
+    occ_pct = row["avg_occ"] * 100
+    rev_bar = row["total_revenue"] / rt_stats["total_revenue"].max() * 100 if rt_stats["total_revenue"].max() > 0 else 0
+    tbl += f'''<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+  <td style="padding:8px 10px 8px 0;">
+    <span style="font-weight:600;color:#f5f5f0;">{row["room_type"]}</span>
+    <span style="color:rgba(245,245,240,0.38);font-size:10px;margin-left:6px;">{row["label"]}</span>
+  </td>
+  <td style="text-align:center;padding:8px;color:rgba(245,245,240,0.6);">{int(row["n_rooms"])}</td>
+  <td style="text-align:right;padding:8px;color:rgba(245,245,240,0.8);">{int(row["room_nights"]):,}</td>
+  <td style="text-align:right;padding:8px;">
+    <span style="color:#f5f5f0;">{occ_pct:.1f}%</span>
+    {bar_html(occ_pct, "#3ecf8e")}
+  </td>
+  <td style="text-align:right;padding:8px;color:#f5f5f0;font-weight:500;">${row["avg_adr"]:,.0f}</td>
+  <td style="text-align:right;padding:8px;color:rgba(245,245,240,0.8);">${row["revpar"]:,.0f}</td>
+  <td style="text-align:right;padding:8px;">
+    <span style="color:#f5f5f0;font-weight:500;">${row["total_revenue"]/1e3:,.0f}k</span>
+    {bar_html(rev_bar, "#e8854a")}
+  </td>
+  <td style="text-align:right;padding:8px;">
+    <span style="color:rgba(245,245,240,0.8);">{int(row["sellout_days"])}d</span>
+    <span style="color:rgba(245,245,240,0.35);font-size:10px;margin-left:4px;">({row["sellout_pct"]:.0f}%)</span>
+  </td>
+</tr>'''
+
+tbl += '</tbody></table></div>'
+st.markdown(tbl, unsafe_allow_html=True)
+
 # ── Booking Window & Length of Stay ──────────────────────────────────────────
 st.markdown('<div class="dm-section"><div class="dm-section-ttl">Booking Behavior</div></div>',
             unsafe_allow_html=True)
@@ -532,102 +626,6 @@ st.markdown(f"""
   </div>
 </div>
 """, unsafe_allow_html=True)
-
-# ── Room Type Performance Table ───────────────────────────────────────────────
-st.markdown('<div class="dm-section" style="padding-top:20px;"><div class="dm-section-ttl">Room Type Performance</div></div>',
-            unsafe_allow_html=True)
-
-ROOM_TYPE_NAMES = {
-    "LS":   "Loft Suite",
-    "SS":   "Studio Suite",
-    "SSRS": "Studio Suite — River/Skyline View",
-    "PLS":  "Premium Loft Suite",
-    "PSS":  "Premium Studio Suite",
-    "CVQ":  "City View Queen",
-    "Q":    "Standard Queen",
-    "QT":   "Queen Terrace",
-    "QTRS": "Queen Terrace — River/Skyline",
-    "SKT":  "Skyline King Terrace",
-    "PKT":  "Premium King Terrace",
-    "PQT":  "Premium Queen Terrace",
-}
-
-# Filter by selected period
-rt_f = rt_df[(rt_df["business_date"] >= s_ts) & (rt_df["business_date"] <= e_ts)].copy()
-rt_f["available"] = rt_f["total_physical_rooms"] - rt_f["ooo_rooms"]
-rt_f["is_full"]   = (rt_f["available"] > 0) & (rt_f["room_nights"] >= rt_f["available"])
-rt_f["occupancy"] = rt_f.apply(
-    lambda r: r["room_nights"] / r["available"] if r["available"] > 0 else None, axis=1
-)
-
-rt_stats = (rt_f[rt_f["available"] > 0]
-            .groupby("room_type")
-            .agg(
-                n_rooms       = ("total_physical_rooms", "first"),
-                room_nights   = ("room_nights",          "sum"),
-                room_revenue  = ("room_revenue",         "sum"),
-                total_revenue = ("total_revenue",        "sum"),
-                avg_adr       = ("adr",                  "mean"),
-                avg_occ       = ("occupancy",            "mean"),
-                sellout_days  = ("is_full",              "sum"),
-                total_days    = ("is_full",              "count"),
-                cancelled     = ("cancelled_rooms",      "sum"),
-            )
-            .reset_index())
-
-rt_stats["sellout_pct"] = rt_stats["sellout_days"] / rt_stats["total_days"] * 100
-n_days_period           = (e_ts - s_ts).days + 1
-rt_stats["revpar"]      = rt_stats["room_revenue"] / (rt_stats["n_rooms"] * n_days_period)
-rt_stats["label"]       = rt_stats["room_type"].map(ROOM_TYPE_NAMES).fillna(rt_stats["room_type"])
-rt_stats                = rt_stats.sort_values("total_revenue", ascending=False).reset_index(drop=True)
-
-# Styled HTML table
-def bar_html(pct, color):
-    pct = min(max(float(pct), 0), 100)
-    return (f'<div style="background:rgba(255,255,255,0.06);border-radius:2px;height:4px;width:100%;margin-top:3px;">'
-            f'<div style="background:{color};border-radius:2px;height:4px;width:{pct:.0f}%;"></div></div>')
-
-tbl  = '<div style="padding:0 20px 0;">'
-tbl += '<table style="width:100%;border-collapse:collapse;font-size:11px;">'
-tbl += '''<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
-  <th style="text-align:left;padding:6px 10px 6px 0;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Room Type</th>
-  <th style="text-align:center;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Rooms</th>
-  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Nights Sold</th>
-  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Occupancy</th>
-  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">ADR</th>
-  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">RevPAR</th>
-  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Revenue</th>
-  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Sellout</th>
-</tr></thead><tbody>'''
-
-for _, row in rt_stats.iterrows():
-    occ_pct  = row["avg_occ"] * 100
-    rev_bar  = row["total_revenue"] / rt_stats["total_revenue"].max() * 100 if rt_stats["total_revenue"].max() > 0 else 0
-    tbl += f'''<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-  <td style="padding:8px 10px 8px 0;">
-    <span style="font-weight:600;color:#f5f5f0;">{row["room_type"]}</span>
-    <span style="color:rgba(245,245,240,0.38);font-size:10px;margin-left:6px;">{row["label"]}</span>
-  </td>
-  <td style="text-align:center;padding:8px;color:rgba(245,245,240,0.6);">{int(row["n_rooms"])}</td>
-  <td style="text-align:right;padding:8px;color:rgba(245,245,240,0.8);">{int(row["room_nights"]):,}</td>
-  <td style="text-align:right;padding:8px;">
-    <span style="color:#f5f5f0;">{occ_pct:.1f}%</span>
-    {bar_html(occ_pct, "#3ecf8e")}
-  </td>
-  <td style="text-align:right;padding:8px;color:#f5f5f0;font-weight:500;">${row["avg_adr"]:,.0f}</td>
-  <td style="text-align:right;padding:8px;color:rgba(245,245,240,0.8);">${row["revpar"]:,.0f}</td>
-  <td style="text-align:right;padding:8px;">
-    <span style="color:#f5f5f0;font-weight:500;">${row["total_revenue"]/1e3:,.0f}k</span>
-    {bar_html(rev_bar, "#e8854a")}
-  </td>
-  <td style="text-align:right;padding:8px;">
-    <span style="color:rgba(245,245,240,0.8);">{int(row["sellout_days"])}d</span>
-    <span style="color:rgba(245,245,240,0.35);font-size:10px;margin-left:4px;">({row["sellout_pct"]:.0f}%)</span>
-  </td>
-</tr>'''
-
-tbl += '</tbody></table></div>'
-st.markdown(tbl, unsafe_allow_html=True)
 
 # ── Event Impact Analysis ─────────────────────────────────────────────────────
 st.markdown('<div class="dm-section" style="padding-top:24px;"><div class="dm-section-ttl">Event Impact on Occupancy</div></div>',

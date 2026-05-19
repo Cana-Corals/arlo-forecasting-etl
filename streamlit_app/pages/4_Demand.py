@@ -255,6 +255,21 @@ rt_f["occupancy"] = rt_f.apply(
     lambda r: r["room_nights"] / r["available"] if r["available"] > 0 else None, axis=1
 )
 
+# include all rows (not just available>0) for OOO calc, then filter for main stats
+rt_f["lost_revenue_est"] = rt_f["ooo_rooms"] * rt_f["adr"].fillna(0)
+
+ooo_stats = (rt_f.groupby("room_type")
+             .agg(
+                 ooo_room_nights = ("ooo_rooms",         "sum"),
+                 days_any_ooo    = ("ooo_rooms",         lambda x: (x > 0).sum()),
+                 lost_revenue    = ("lost_revenue_est",  "sum"),
+                 _n_rooms        = ("total_physical_rooms", "first"),
+                 _total_days     = ("business_date",     "count"),
+             )
+             .reset_index())
+ooo_stats["total_room_nights_possible"] = ooo_stats["_n_rooms"] * ooo_stats["_total_days"]
+ooo_stats["ooo_pct"] = ooo_stats["ooo_room_nights"] / ooo_stats["total_room_nights_possible"] * 100
+
 rt_stats = (rt_f[rt_f["available"] > 0]
             .groupby("room_type")
             .agg(
@@ -266,9 +281,13 @@ rt_stats = (rt_f[rt_f["available"] > 0]
                 avg_occ       = ("occupancy",            "mean"),
                 sellout_days  = ("is_full",              "sum"),
                 total_days    = ("is_full",              "count"),
-                cancelled     = ("cancelled_rooms",      "sum"),
             )
             .reset_index())
+
+rt_stats = rt_stats.merge(
+    ooo_stats[["room_type", "ooo_room_nights", "days_any_ooo", "ooo_pct", "lost_revenue"]],
+    on="room_type", how="left"
+).fillna(0)
 
 rt_stats["sellout_pct"] = rt_stats["sellout_days"] / rt_stats["total_days"] * 100
 n_days_period           = (e_ts - s_ts).days + 1
@@ -292,6 +311,9 @@ tbl += '''<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
   <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">RevPAR</th>
   <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Revenue</th>
   <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Sellout</th>
+  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">OOO Days</th>
+  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">OOO %</th>
+  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Lost Revenue</th>
 </tr></thead><tbody>'''
 
 for _, row in rt_stats.iterrows():
@@ -317,6 +339,18 @@ for _, row in rt_stats.iterrows():
   <td style="text-align:right;padding:8px;">
     <span style="color:rgba(245,245,240,0.8);">{int(row["sellout_days"])}d</span>
     <span style="color:rgba(245,245,240,0.35);font-size:10px;margin-left:4px;">({row["sellout_pct"]:.0f}%)</span>
+  </td>
+  <td style="text-align:right;padding:8px;">
+    <span style="color:#e05252;font-weight:500;">{int(row["days_any_ooo"])}</span>
+    <span style="color:rgba(245,245,240,0.35);font-size:10px;margin-left:3px;">({int(row["ooo_room_nights"])} rm-nts)</span>
+  </td>
+  <td style="text-align:right;padding:8px;">
+    <span style="color:#e05252;">{row["ooo_pct"]:.1f}%</span>
+    {bar_html(row["ooo_pct"], "#e05252")}
+  </td>
+  <td style="text-align:right;padding:8px;">
+    <span style="color:#e05252;font-weight:500;">${row["lost_revenue"]/1e3:,.0f}k</span>
+    <span style="color:rgba(245,245,240,0.3);font-size:9px;display:block;">est. @ nightly ADR</span>
   </td>
 </tr>'''
 

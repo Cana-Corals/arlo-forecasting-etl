@@ -577,7 +577,7 @@ with _tb_r:
         max_value=master["business_date"].max().date(),
         key="dr",
         label_visibility="collapsed",
-        format="MMM DD, YYYY",
+        format="MM/DD/YYYY",
     )
     if isinstance(_dr_picked, (tuple, list)) and len(_dr_picked) == 2:
         if _dr_picked != tuple(_dr):

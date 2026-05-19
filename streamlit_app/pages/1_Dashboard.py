@@ -444,44 +444,34 @@ with st.sidebar:
     # ── Nav ───────────────────────────────────────────────────────────────────
     if COLLAPSED:
         # Tabler icon buttons — onclick sets ?nav= query param, Python catches it above
-        _icon_style = ("display:flex;justify-content:center;align-items:center;"
-                       "height:36px;cursor:pointer;border-radius:4px;margin:1px 5px;")
-        _icon_css   = "font-size:16px;color:rgba(245,245,240,.55);"
-        st.html(f"""
+        _is = ("display:flex;justify-content:center;align-items:center;"
+               "height:36px;cursor:pointer;border-radius:4px;margin:1px 5px;")
+        _ic = "font-size:16px;color:rgba(245,245,240,.55);"
+        st.markdown(f"""
         <div style="padding:6px 0;display:flex;flex-direction:column;gap:2px;">
-          <div onclick="window.location.search='?nav=forecast'"
-               style="{_icon_style}"
+          <div onclick="window.location.search='?nav=forecast'" style="{_is}"
                onmouseover="this.style.background='rgba(255,255,255,.06)'"
                onmouseout="this.style.background='transparent'">
-            <i class="ti ti-trending-up" style="{_icon_css}"></i>
-          </div>
-          <div onclick="window.location.search='?nav=performance'"
-               style="{_icon_style}"
+            <i class="ti ti-trending-up" style="{_ic}"></i></div>
+          <div onclick="window.location.search='?nav=performance'" style="{_is}"
                onmouseover="this.style.background='rgba(255,255,255,.06)'"
                onmouseout="this.style.background='transparent'">
-            <i class="ti ti-chart-bar" style="{_icon_css}"></i>
-          </div>
-          <div onclick="window.location.search='?nav=demand'"
-               style="{_icon_style}"
+            <i class="ti ti-chart-bar" style="{_ic}"></i></div>
+          <div onclick="window.location.search='?nav=demand'" style="{_is}"
                onmouseover="this.style.background='rgba(255,255,255,.06)'"
                onmouseout="this.style.background='transparent'">
-            <i class="ti ti-calendar-event" style="{_icon_css}"></i>
-          </div>
+            <i class="ti ti-calendar-event" style="{_ic}"></i></div>
           <div style="height:1px;background:rgba(255,255,255,.06);margin:4px 10px;"></div>
-          <div onclick="window.location.search='?nav=competitive'"
-               style="{_icon_style}"
+          <div onclick="window.location.search='?nav=competitive'" style="{_is}"
                onmouseover="this.style.background='rgba(255,255,255,.06)'"
                onmouseout="this.style.background='transparent'">
-            <i class="ti ti-building-store" style="{_icon_css}"></i>
-          </div>
-          <div onclick="window.location.search='?nav=model_insights'"
-               style="{_icon_style}"
+            <i class="ti ti-building-store" style="{_ic}"></i></div>
+          <div onclick="window.location.search='?nav=model_insights'" style="{_is}"
                onmouseover="this.style.background='rgba(255,255,255,.06)'"
                onmouseout="this.style.background='transparent'">
-            <i class="ti ti-brain" style="{_icon_css}"></i>
-          </div>
+            <i class="ti ti-brain" style="{_ic}"></i></div>
         </div>
-        """)
+        """, unsafe_allow_html=True)
     else:
         st.markdown('<div style="padding:21px 16px 14px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Analytics</div>', unsafe_allow_html=True)
         for lbl, path in [("Forecast","pages/2_Forecast.py"),("Performance","pages/3_Performance.py"),("Demand","pages/4_Demand.py")]:

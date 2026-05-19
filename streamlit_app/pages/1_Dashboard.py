@@ -60,6 +60,7 @@ st.markdown(f"""
 section[data-testid="stSidebar"] {{
     background:var(--arlo-dark) !important;
     width:{SB_W} !important; min-width:{SB_W} !important;
+    transform:none !important; left:0 !important;
     transition:width .22s ease; overflow:hidden;
 }}
 section[data-testid="stSidebar"] > div:first-child {{

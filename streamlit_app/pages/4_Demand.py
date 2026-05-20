@@ -294,82 +294,35 @@ n_days_period           = (e_ts - s_ts).days + 1
 rt_stats["revpar"]      = rt_stats["room_revenue"] / (rt_stats["n_rooms"] * n_days_period)
 rt_stats["label"]       = rt_stats["room_type"].map(ROOM_TYPE_NAMES).fillna(rt_stats["room_type"])
 
-SORT_OPTIONS = {
-    "Revenue":      "total_revenue",
-    "Nights Sold":  "room_nights",
-    "Occupancy":    "avg_occ",
-    "Sold Out":     "sellout_days",
-    "OOO Nights":   "ooo_room_nights",
-    "Lost Revenue": "lost_revenue",
-}
 
-sort_by = st.radio(
-    "Sort table by",
-    list(SORT_OPTIONS.keys()),
-    index=0,
-    horizontal=True,
-    key="rt_sort",
-    label_visibility="collapsed",
+display_df = rt_stats[[
+    "room_type", "label", "n_rooms", "room_nights",
+    "avg_occ", "avg_adr", "revpar", "total_revenue",
+    "sellout_days", "sellout_pct",
+    "ooo_room_nights", "ooo_pct", "lost_revenue",
+]].copy()
+display_df["avg_occ"] = display_df["avg_occ"] * 100
+
+st.dataframe(
+    display_df,
+    use_container_width=True,
+    hide_index=True,
+    column_config={
+        "room_type":      st.column_config.TextColumn("Code"),
+        "label":          st.column_config.TextColumn("Room Type"),
+        "n_rooms":        st.column_config.NumberColumn("Rooms", format="%d"),
+        "room_nights":    st.column_config.NumberColumn("Nights Sold", format="%d"),
+        "avg_occ":        st.column_config.NumberColumn("Occupancy %", format="%.1f%%"),
+        "avg_adr":        st.column_config.NumberColumn("ADR", format="$%.0f"),
+        "revpar":         st.column_config.NumberColumn("RevPAR", format="$%.0f"),
+        "total_revenue":  st.column_config.NumberColumn("Revenue", format="$%,.0f"),
+        "sellout_days":   st.column_config.NumberColumn("Sellout Nights", format="%d"),
+        "sellout_pct":    st.column_config.NumberColumn("Sellout %", format="%.0f%%"),
+        "ooo_room_nights":st.column_config.NumberColumn("OOO Nights", format="%d"),
+        "ooo_pct":        st.column_config.NumberColumn("OOO %", format="%.1f%%"),
+        "lost_revenue":   st.column_config.NumberColumn("Lost Revenue", format="$%,.0f"),
+    },
 )
-
-sort_col = SORT_OPTIONS[sort_by]
-rt_stats = rt_stats.sort_values(sort_col, ascending=False).reset_index(drop=True)
-
-def bar_html(pct, color):
-    pct = min(max(float(pct), 0), 100)
-    return (f'<div style="background:rgba(255,255,255,0.06);border-radius:2px;height:4px;width:100%;margin-top:3px;">'
-            f'<div style="background:{color};border-radius:2px;height:4px;width:{pct:.0f}%;"></div></div>')
-
-tbl  = '<div style="padding:0 20px 0;">'
-tbl += '<table style="width:100%;border-collapse:collapse;font-size:11px;">'
-tbl += '''<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
-  <th style="text-align:left;padding:6px 10px 6px 0;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Room Type</th>
-  <th style="text-align:center;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Rooms</th>
-  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Nights Sold</th>
-  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Occupancy</th>
-  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">ADR</th>
-  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">RevPAR</th>
-  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Revenue</th>
-  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Sellout</th>
-  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">OOO Days</th>
-  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">OOO %</th>
-  <th style="text-align:right;padding:6px 8px;color:rgba(245,245,240,0.35);font-weight:600;letter-spacing:.1em;font-size:9px;text-transform:uppercase;">Lost Revenue</th>
-</tr></thead><tbody>'''
-
-for _, row in rt_stats.iterrows():
-    occ_pct = row["avg_occ"] * 100
-    tbl += f'''<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-  <td style="padding:8px 10px 8px 0;">
-    <span style="font-weight:600;color:#f5f5f0;">{row["room_type"]}</span>
-    <span style="color:rgba(245,245,240,0.38);font-size:10px;margin-left:6px;">{row["label"]}</span>
-  </td>
-  <td style="text-align:center;padding:8px;color:rgba(245,245,240,0.6);">{int(row["n_rooms"])}</td>
-  <td style="text-align:right;padding:8px;color:rgba(245,245,240,0.8);">{int(row["room_nights"]):,}</td>
-  <td style="text-align:right;padding:8px;">
-    <span style="color:#f5f5f0;">{occ_pct:.1f}%</span>
-    {bar_html(occ_pct, "#3ecf8e")}
-  </td>
-  <td style="text-align:right;padding:8px;color:#f5f5f0;font-weight:500;">${row["avg_adr"]:,.0f}</td>
-  <td style="text-align:right;padding:8px;color:rgba(245,245,240,0.8);">${row["revpar"]:,.0f}</td>
-  <td style="text-align:right;padding:8px;color:#f5f5f0;font-weight:500;">${row["total_revenue"]/1e3:,.0f}k</td>
-  <td style="text-align:right;padding:8px;">
-    <span style="color:rgba(245,245,240,0.8);">{int(row["sellout_days"])}d</span>
-    <span style="color:rgba(245,245,240,0.35);font-size:10px;margin-left:4px;">({row["sellout_pct"]:.0f}%)</span>
-  </td>
-  <td style="text-align:right;padding:8px;">
-    <span style="color:#e05252;font-weight:500;">{int(row["ooo_room_nights"])}</span>
-  </td>
-  <td style="text-align:right;padding:8px;">
-    <span style="color:#e05252;">{row["ooo_pct"]:.1f}%</span>
-  </td>
-  <td style="text-align:right;padding:8px;">
-    <span style="color:#e05252;font-weight:500;">${row["lost_revenue"]/1e3:,.0f}k</span>
-    <span style="color:rgba(245,245,240,0.3);font-size:9px;display:block;">est. @ nightly ADR</span>
-  </td>
-</tr>'''
-
-tbl += '</tbody></table></div>'
-st.markdown(tbl, unsafe_allow_html=True)
 
 # ── Booking Window & Length of Stay ──────────────────────────────────────────
 st.markdown('<div class="dm-section"><div class="dm-section-ttl">Booking Behavior</div></div>',

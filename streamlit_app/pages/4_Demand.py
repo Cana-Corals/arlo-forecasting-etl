@@ -336,7 +336,6 @@ tbl += '''<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
 
 for _, row in rt_stats.iterrows():
     occ_pct = row["avg_occ"] * 100
-    rev_bar = row["total_revenue"] / rt_stats["total_revenue"].max() * 100 if rt_stats["total_revenue"].max() > 0 else 0
     tbl += f'''<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
   <td style="padding:8px 10px 8px 0;">
     <span style="font-weight:600;color:#f5f5f0;">{row["room_type"]}</span>
@@ -350,10 +349,7 @@ for _, row in rt_stats.iterrows():
   </td>
   <td style="text-align:right;padding:8px;color:#f5f5f0;font-weight:500;">${row["avg_adr"]:,.0f}</td>
   <td style="text-align:right;padding:8px;color:rgba(245,245,240,0.8);">${row["revpar"]:,.0f}</td>
-  <td style="text-align:right;padding:8px;">
-    <span style="color:#f5f5f0;font-weight:500;">${row["total_revenue"]/1e3:,.0f}k</span>
-    {bar_html(rev_bar, "#e8854a")}
-  </td>
+  <td style="text-align:right;padding:8px;color:#f5f5f0;font-weight:500;">${row["total_revenue"]/1e3:,.0f}k</td>
   <td style="text-align:right;padding:8px;">
     <span style="color:rgba(245,245,240,0.8);">{int(row["sellout_days"])}d</span>
     <span style="color:rgba(245,245,240,0.35);font-size:10px;margin-left:4px;">({row["sellout_pct"]:.0f}%)</span>

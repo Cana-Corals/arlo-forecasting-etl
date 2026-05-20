@@ -430,6 +430,7 @@ def home_page():
             "answer_raw": raw,
             "segments":   segments,
         })
+        st.rerun()  # Fresh render so chart appears inside the container, not mid-script
 
     name     = st.session_state.get("name", "")
     today    = date.today()
@@ -470,14 +471,15 @@ def home_page():
                 label_visibility="collapsed",
                 key="home_question",
             )
-            st.form_submit_button("Ask", use_container_width=True, type="primary")
+            submitted = st.form_submit_button("Ask", use_container_width=True, type="primary")
 
         st.markdown(
-            '<div class="search-hint">Press Enter to ask · Powered by Claude AI · Charts supported</div>',
+            '<div class="search-hint">Press Enter to ask · Powered by Claude AI</div>',
             unsafe_allow_html=True,
         )
 
-        if question and question.strip():
+        # Only trigger on actual form submission — not on reruns after processing
+        if submitted and question.strip():
             st.session_state["pending_q"] = question.strip()
             st.rerun()
 

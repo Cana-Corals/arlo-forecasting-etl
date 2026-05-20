@@ -131,75 +131,61 @@ def _load_forecast() -> pd.DataFrame:
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def _build_hotel_context() -> str:
+    """Compact single-line-per-month format. ~500 tokens vs ~3600 previously."""
     master = _load_master()
-    month_names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-    lines = ["## Arlo Williamsburg Hotel Data\n", "**Property**: 147 rooms, Brooklyn NY\n\n"]
+    mn  = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    out = ["Arlo Williamsburg | 147 rooms | Brooklyn NY\n"]
+
     for year in [2024, 2025]:
         df_y = master[master["business_date"].dt.year == year]
         if df_y.empty:
             continue
-        lines.append(f"### {year} Full Year\n")
-        lines.append(f"- Revenue: ${df_y['room_revenue'].sum():,.0f}\n")
-        lines.append(f"- Avg Occ: {df_y['occupancy_rate'].mean()*100:.1f}%\n")
-        lines.append(f"- Avg ADR: ${df_y['adr'].mean():.0f}\n")
-        lines.append(f"- Avg RevPAR: ${df_y['revpar'].mean():.0f}\n\n")
-        monthly = df_y.groupby(df_y["business_date"].dt.month).agg(
-            occ=("occupancy_rate","mean"), adr=("adr","mean"),
-            revpar=("revpar","mean"), revenue=("room_revenue","sum"),
+        out.append(
+            f"{year}: Rev ${df_y['room_revenue'].sum()/1e6:.2f}M | "
+            f"Occ {df_y['occupancy_rate'].mean()*100:.1f}% | "
+            f"ADR ${df_y['adr'].mean():.0f} | RevPAR ${df_y['revpar'].mean():.0f}\n"
         )
-        lines.append(f"#### {year} Monthly\n| Month | Occ% | ADR | RevPAR | Revenue |\n|---|---|---|---|---|\n")
-        for m, r in monthly.iterrows():
-            lines.append(f"| {month_names[m-1]} | {r['occ']*100:.1f}% | ${r['adr']:.0f} | ${r['revpar']:.0f} | ${r['revenue']:,.0f} |\n")
-        lines.append("\n")
+        agg = df_y.groupby(df_y["business_date"].dt.month).agg(
+            occ=("occupancy_rate","mean"), adr=("adr","mean"), rev=("room_revenue","sum")
+        )
+        out.append(f"{year} by month: " + " | ".join(
+            f"{mn[m-1]} {r['occ']*100:.0f}%/${r['adr']:.0f}/${r['rev']/1e3:.0f}K"
+            for m, r in agg.iterrows()
+        ) + "\n")
+
     df24 = master[master["business_date"].dt.year == 2024]
     df25 = master[master["business_date"].dt.year == 2025]
     if not df24.empty and not df25.empty:
-        lines.append("### YoY 2024→2025\n")
-        lines.append(f"- Revenue: {(df25['room_revenue'].sum()/df24['room_revenue'].sum()-1)*100:+.1f}%\n")
-        lines.append(f"- Occ: {(df25['occupancy_rate'].mean()/df24['occupancy_rate'].mean()-1)*100:+.1f}pp\n")
-        lines.append(f"- ADR: {(df25['adr'].mean()/df24['adr'].mean()-1)*100:+.1f}%\n\n")
+        out.append(
+            f"YoY: Rev {(df25['room_revenue'].sum()/df24['room_revenue'].sum()-1)*100:+.1f}% | "
+            f"Occ {(df25['occupancy_rate'].mean()-df24['occupancy_rate'].mean())*100:+.1f}pp | "
+            f"ADR {(df25['adr'].mean()/df24['adr'].mean()-1)*100:+.1f}%\n"
+        )
     try:
         fc = _load_forecast()
         if not fc.empty:
-            lines.append("### 2026 ML Forecast\n")
-            lines.append(f"- Projected Revenue: ${fc['pred_revenue'].sum():,.0f}\n")
-            lines.append(f"- Projected Occ: {fc['pred_occupancy'].mean()*100:.1f}%\n")
-            lines.append(f"- Projected ADR: ${fc['pred_adr'].mean():.0f}\n")
+            out.append(
+                f"2026 forecast: Rev ${fc['pred_revenue'].sum()/1e6:.2f}M | "
+                f"Occ {fc['pred_occupancy'].mean()*100:.1f}% | ADR ${fc['pred_adr'].mean():.0f}\n"
+            )
+            fc_m = fc.groupby(fc["business_date"].dt.month).agg(
+                occ=("pred_occupancy","mean"), adr=("pred_adr","mean"), rev=("pred_revenue","sum")
+            )
+            out.append("2026 by month: " + " | ".join(
+                f"{mn[m-1]} {r['occ']*100:.0f}%/${r['adr']:.0f}/${r['rev']/1e3:.0f}K"
+                for m, r in fc_m.iterrows()
+            ) + "\n")
     except Exception:
         pass
-    return "".join(lines)
+    return "".join(out)
 
 # ── Claude call ───────────────────────────────────────────────────────────────
-_SYSTEM = """You are a hotel revenue intelligence assistant for Arlo Williamsburg (147 rooms, Brooklyn NY).
+_SYSTEM = """Hotel revenue assistant for Arlo Williamsburg (147 rooms, Brooklyn NY).
+Be brief and direct. 2-4 bullet points max for text answers. Bold key numbers.
 
-Answer questions concisely using the data provided. Use markdown formatting (bold key numbers, bullet lists).
-
-CHARTS: When a visualization would make the answer clearer, include Plotly code inside <chart></chart> tags. The code must assign a Plotly figure to a variable named `fig`. You can include text before and/or after the chart tags.
-
-Available variables inside chart code:
-- `master` (DataFrame, 2024–2025 daily): business_date, room_revenue, occupancy_rate (0–1), adr, revpar, room_nights, ooo_rooms, available_rooms, temp_mean_f, had_precipitation, is_federal_holiday, is_major_event_day, is_barclays_event, is_msg_event, is_yankees_game, is_us_open_event, pickup_7d, pickup_14d, pickup_30d, total_rooms_on_books, avg_booked_rate, medallia_overall_satisfaction
-- `forecast` (DataFrame, 2026 ML predictions): business_date, pred_revenue, pred_occupancy (0–1), pred_adr, pred_revpar
-- `go`, `px`, `pd`, `np`
-- `apply_dark(fig)` — call this on every chart to apply the dark theme (handles colors, grid, axes). Do NOT use `fig.update_layout(**DARK_LAYOUT)` directly — use `apply_dark(fig)` instead.
-- `ACCENT="#e8854a"` (orange), `GREEN="#3ecf8e"`, `RED="#e05252"`, `SLATE="#4a6fa5"`
-
-Chart rules:
-- Always call `apply_dark(fig)` on every figure
-- Use ACCENT as the primary series color
-- Keep titles short; set title after apply_dark: `fig.update_layout(title=dict(text="...", font_color="rgba(245,245,240,0.9)"))`
-- Bar charts for monthly comparisons, line charts for time trends
-
-Example:
-<chart>
-df = master[master["business_date"].dt.year == 2025].copy()
-monthly = df.groupby(df["business_date"].dt.month)["room_revenue"].sum().reset_index()
-labels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-monthly["label"] = monthly["business_date"].apply(lambda m: labels[m-1])
-fig = go.Figure(go.Bar(x=monthly["label"], y=monthly["room_revenue"], marker_color=ACCENT))
-apply_dark(fig)
-fig.update_layout(title=dict(text="2025 Monthly Revenue", font_color="rgba(245,245,240,0.9)"))
-</chart>
-"""
+For charts include Plotly code in <chart></chart> tags. Variable must be named `fig`.
+Chart variables: `master` (daily 2024-2025: business_date,room_revenue,occupancy_rate[0-1],adr,revpar,room_nights,ooo_rooms,is_major_event_day,is_barclays_event,is_msg_event,is_yankees_game,medallia_overall_satisfaction), `forecast` (2026: business_date,pred_revenue,pred_occupancy[0-1],pred_adr,pred_revpar), `go`,`px`,`pd`,`np`, `apply_dark(fig)` (dark theme — always call it), `ACCENT`(#e8854a),`GREEN`(#3ecf8e),`RED`(#e05252).
+After apply_dark(fig), set title: fig.update_layout(title=dict(text="...",font_color="rgba(245,245,240,0.9)"))"""
 
 def _call_claude(question: str, context: str, history: list) -> str:
     import anthropic
@@ -208,13 +194,13 @@ def _call_claude(question: str, context: str, history: list) -> str:
         return "⚠️ ANTHROPIC_API_KEY not set in Streamlit secrets."
     client = anthropic.Anthropic(api_key=api_key)
     messages = []
-    for item in history[-4:]:
+    for item in history[-2:]:
         messages.append({"role": "user",      "content": item["question"]})
         messages.append({"role": "assistant", "content": item["answer_raw"]})
     messages.append({"role": "user", "content": f"{question}\n\n---\n{context}"})
     resp = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=2048,
+        max_tokens=600,
         system=_SYSTEM,
         messages=messages,
     )

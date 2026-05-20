@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
 from datetime import date
 from pathlib import Path
@@ -108,7 +107,7 @@ if hz:
     st.session_state["dm_hz"] = hz
 horizon = st.session_state["dm_hz"]
 
-_yc1, _yc2, _ = st.columns([2, 2, 5])
+_yc1, _ = st.columns([2, 7])
 with _yc1:
     sel_year = st.selectbox("Year", [2025, 2024], key="dm_year",
                             label_visibility="collapsed")
@@ -327,72 +326,6 @@ st.dataframe(
         "lost_revenue":   st.column_config.NumberColumn("Lost Revenue", format="$%,.0f"),
     },
 )
-
-# ── Booking Window & Length of Stay ──────────────────────────────────────────
-st.markdown('<div class="dm-section"><div class="dm-section-ttl">Booking Behavior</div></div>',
-            unsafe_allow_html=True)
-
-_c1, _c2 = st.columns(2)
-
-# ── Booking window histogram ──────────────────────────────────────────────────
-with _c1:
-    bins   = [0, 1, 8, 15, 31, 61, 91, 462]
-    labels = ["Same Day", "1–7d", "8–14d", "15–30d", "31–60d", "61–90d", "90d+"]
-
-    def bucket(df_r, yr):
-        c = df_r[~df_r["is_cancelled"]]
-        counts = pd.cut(c["lead_time"], bins=bins, labels=labels,
-                        right=False, include_lowest=True).value_counts()
-        return [int(counts.get(l, 0)) for l in labels]
-
-    cy_vals = bucket(res_f, sel_year)
-    py_vals = bucket(res_py, py_yr)
-
-    fig_bw = go.Figure()
-    fig_bw.add_trace(go.Bar(x=labels, y=cy_vals, name=str(sel_year),
-                            marker_color=PURPLE,
-                            hovertemplate="%{x}: %{y:,} bookings<extra>" + str(sel_year) + "</extra>"))
-    fig_bw.add_trace(go.Bar(x=labels, y=py_vals, name=str(py_yr),
-                            marker_color=PURPLE_F, marker_line=dict(color=PURPLE, width=1),
-                            hovertemplate="%{x}: %{y:,} bookings<extra>" + str(py_yr) + "</extra>"))
-    lay = base_layout(h=260)
-    lay["title"] = dict(text="Booking Window Distribution",
-                        font=dict(size=11, color="rgba(245,245,240,0.7)"),
-                        x=0, xanchor="left", pad=dict(l=4))
-    lay["barmode"] = "group"
-    fig_bw.update_layout(**lay)
-    st.plotly_chart(fig_bw, use_container_width=True, config={"displayModeBar": False})
-
-# ── Length of stay distribution ───────────────────────────────────────────────
-with _c2:
-    los_bins   = [1, 2, 3, 4, 5, 8, 15, 400]
-    los_labels = ["1 night", "2 nights", "3 nights", "4 nights", "5–7", "8–14", "15+"]
-
-    def los_bucket(df_r):
-        c = df_r[~df_r["is_cancelled"] & (df_r["number_of_nights"] >= 1)]
-        counts = pd.cut(c["number_of_nights"], bins=los_bins, labels=los_labels,
-                        right=False, include_lowest=True).value_counts()
-        return [int(counts.get(l, 0)) for l in los_labels]
-
-    los_cy = los_bucket(res_f)
-    los_py = los_bucket(res_py)
-    pct_cy = [v / sum(los_cy) * 100 if sum(los_cy) else 0 for v in los_cy]
-    pct_py = [v / sum(los_py) * 100 if sum(los_py) else 0 for v in los_py]
-
-    fig_los = go.Figure()
-    fig_los.add_trace(go.Bar(x=los_labels, y=pct_cy, name=str(sel_year),
-                             marker_color=GREEN,
-                             hovertemplate="%{x}: %{y:.1f}%<extra>" + str(sel_year) + "</extra>"))
-    fig_los.add_trace(go.Bar(x=los_labels, y=pct_py, name=str(py_yr),
-                             marker_color=GREEN_F, marker_line=dict(color=GREEN, width=1),
-                             hovertemplate="%{x}: %{y:.1f}%<extra>" + str(py_yr) + "</extra>"))
-    lay2 = base_layout(h=260, ysuffix="%")
-    lay2["title"] = dict(text="Length of Stay Distribution",
-                         font=dict(size=11, color="rgba(245,245,240,0.7)"),
-                         x=0, xanchor="left", pad=dict(l=4))
-    lay2["barmode"] = "group"
-    fig_los.update_layout(**lay2)
-    st.plotly_chart(fig_los, use_container_width=True, config={"displayModeBar": False})
 
 # ── Booking pace / pickup ─────────────────────────────────────────────────────
 st.markdown('<div class="dm-section"><div class="dm-section-ttl">Booking Pace — Rooms Picked Up</div></div>',

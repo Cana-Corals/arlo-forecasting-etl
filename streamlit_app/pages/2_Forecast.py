@@ -116,7 +116,7 @@ st.markdown("""
 HORIZONS = ["Next 7d", "Next 30d", "Q1", "Q2", "Q3", "Q4", "Full Year", "Custom"]
 
 if "fc_hz" not in st.session_state:
-    st.session_state["fc_hz"] = "Q3"
+    st.session_state["fc_hz"] = "Full Year"
 
 hz = st.segmented_control(
     "Horizon", HORIZONS,
@@ -229,17 +229,13 @@ oc, od = delta(occ_fc, occ_py)
 ac, ad = delta(adr_fc, adr_py)
 pc, pd_ = delta(rp_fc, rp_py)
 
-period_lbl = {
-    "Next 7d": "next 7 days", "Next 30d": "next 30 days",
-    "Q1": "Q1 2026", "Q2": "Q2 2026", "Q3": "Q3 2026", "Q4": "Q4 2026",
-    "Full Year": "Full Year 2026",
-    "Custom": f"{start.strftime('%b %d')} – {end.strftime('%b %d, %Y')}",
-}.get(horizon, "")
+kpi_yr = start.year if start.year >= 2026 else start.year
+kpi_tag = "Forecast" if start.year >= 2026 else "Actual"
 
 st.markdown(f"""
 <div class="fc-kpi-grid">
   <div class="fc-kpi">
-    <div class="fc-kpi-lbl">Revenue — {period_lbl}</div>
+    <div class="fc-kpi-lbl">Revenue {kpi_tag} {kpi_yr}</div>
     <div class="fc-kpi-val">${rev_fc/1e3:,.0f}k</div>
     <div class="fc-kpi-row">
       <span class="{rc}">{rd}</span>
@@ -247,7 +243,7 @@ st.markdown(f"""
     </div>
   </div>
   <div class="fc-kpi">
-    <div class="fc-kpi-lbl">Occupancy — {period_lbl}</div>
+    <div class="fc-kpi-lbl">Occupancy {kpi_tag} {kpi_yr}</div>
     <div class="fc-kpi-val">{occ_fc:.1f}%</div>
     <div class="fc-kpi-row">
       <span class="{oc}">{od}</span>
@@ -255,7 +251,7 @@ st.markdown(f"""
     </div>
   </div>
   <div class="fc-kpi">
-    <div class="fc-kpi-lbl">ADR — {period_lbl}</div>
+    <div class="fc-kpi-lbl">ADR {kpi_tag} {kpi_yr}</div>
     <div class="fc-kpi-val">${adr_fc:,.0f}</div>
     <div class="fc-kpi-row">
       <span class="{ac}">{ad}</span>
@@ -263,7 +259,7 @@ st.markdown(f"""
     </div>
   </div>
   <div class="fc-kpi">
-    <div class="fc-kpi-lbl">RevPAR — {period_lbl}</div>
+    <div class="fc-kpi-lbl">RevPAR {kpi_tag} {kpi_yr}</div>
     <div class="fc-kpi-val">${rp_fc:,.0f}</div>
     <div class="fc-kpi-row">
       <span class="{pc}">{pd_}</span>
@@ -345,114 +341,105 @@ def build_bars(fc_df, py_df, val_col_fc, val_col_py, agg_fn,
 if fc.empty:
     st.info("No forecast data available for the selected period.")
 else:
-    # Revenue chart
-    st.markdown('<div class="fc-section"><div class="fc-section-ttl">Revenue Forecast</div></div>',
+    # Bar / Line toggle
+    _tc, _ = st.columns([3, 6])
+    with _tc:
+        use_line = st.radio("Chart style", ["Bar", "Line"], horizontal=True,
+                            key="fc_chart_style", label_visibility="collapsed")
+
+    # Revenue + Occupancy side by side
+    st.markdown('<div class="fc-section"><div class="fc-section-ttl">Revenue &amp; Occupancy Forecast</div></div>',
                 unsafe_allow_html=True)
-    fig_rev = build_bars(fc, py, "pred_revenue", "actual_revenue", "sum",
-                         ACCENT, ACCENT_F, prefix="$", suffix="",
-                         fc_label=fc_bar_label, py_label=py_bar_label)
-    fig_rev.update_layout(**chart_layout())
-    fig_rev.update_yaxes(tickprefix="$", tickformat=",.0f")
-    st.plotly_chart(fig_rev, use_container_width=True, config={"displayModeBar": False})
+    _rc, _oc = st.columns(2)
 
-    # Occupancy chart
-    st.markdown('<div class="fc-section"><div class="fc-section-ttl">Occupancy Forecast</div></div>',
+    with _rc:
+        if use_line == "Bar":
+            fig_rev = build_bars(fc, py, "pred_revenue", "actual_revenue", "sum",
+                                 ACCENT, ACCENT_F, prefix="$",
+                                 fc_label=fc_bar_label, py_label=py_bar_label)
+        else:
+            fc_r = agg_fc(fc, "pred_revenue", "sum")
+            xl_r  = period_labels(fc_r["period"])
+            fig_rev = go.Figure()
+            fig_rev.add_trace(go.Scatter(x=xl_r, y=fc_r["pred_revenue"],
+                                         name=fc_bar_label, line=dict(color=ACCENT, width=2),
+                                         mode="lines+markers"))
+            if not py.empty:
+                py_r = agg_fc(py.rename(columns={"actual_revenue": "pred_revenue"}),
+                              "pred_revenue", "sum")
+                fig_rev.add_trace(go.Scatter(x=period_labels(py_r["period"]), y=py_r["pred_revenue"],
+                                             name=py_bar_label, line=dict(color=ACCENT_F, width=1.5, dash="dot"),
+                                             mode="lines+markers"))
+        fig_rev.update_layout(**chart_layout())
+        fig_rev.update_yaxes(tickprefix="$", tickformat=",.0f")
+        st.plotly_chart(fig_rev, use_container_width=True, config={"displayModeBar": False})
+
+    with _oc:
+        fc_occ = fc.copy()
+        fc_occ["pred_occ_pct"] = fc_occ["pred_occupancy"] * 100
+        py_occ = py.copy()
+        py_occ["actual_occ_pct"] = py_occ["actual_occupancy"] * 100
+
+        if use_line == "Bar":
+            fig_occ = build_bars(fc_occ, py_occ, "pred_occ_pct", "actual_occ_pct", "mean",
+                                 GREEN, GREEN_F, suffix="%",
+                                 fc_label=fc_bar_label, py_label=py_bar_label)
+        else:
+            o_r = agg_fc(fc_occ, "pred_occ_pct", "mean")
+            xl_o = period_labels(o_r["period"])
+            fig_occ = go.Figure()
+            fig_occ.add_trace(go.Scatter(x=xl_o, y=o_r["pred_occ_pct"],
+                                          name=fc_bar_label, line=dict(color=GREEN, width=2),
+                                          mode="lines+markers"))
+            if not py_occ.empty:
+                o_py = agg_fc(py_occ.rename(columns={"actual_occ_pct": "pred_occ_pct"}),
+                              "pred_occ_pct", "mean")
+                fig_occ.add_trace(go.Scatter(x=period_labels(o_py["period"]), y=o_py["pred_occ_pct"],
+                                             name=py_bar_label, line=dict(color=GREEN_F, width=1.5, dash="dot"),
+                                             mode="lines+markers"))
+        fig_occ.update_layout(**chart_layout())
+        fig_occ.update_yaxes(ticksuffix="%", range=[0, 105])
+        st.plotly_chart(fig_occ, use_container_width=True, config={"displayModeBar": False})
+
+    # ADR + RevPAR forecast side by side
+    st.markdown('<div class="fc-section"><div class="fc-section-ttl">ADR &amp; RevPAR Forecast</div></div>',
                 unsafe_allow_html=True)
+    _ac, _rpc = st.columns(2)
 
-    fc_occ = fc.copy()
-    fc_occ["pred_occ_pct"] = fc_occ["pred_occupancy"] * 100
-    py_occ = py.copy()
-    py_occ["actual_occ_pct"] = py_occ["actual_occupancy"] * 100
+    with _ac:
+        adr_r = agg_fc(fc, "pred_adr", "mean")
+        xl_a  = period_labels(adr_r["period"])
+        fig_adr = go.Figure()
+        fig_adr.add_trace(go.Scatter(x=xl_a, y=adr_r["pred_adr"],
+                                     name=fc_bar_label, line=dict(color=ACCENT, width=2),
+                                     mode="lines+markers",
+                                     hovertemplate="$%{y:,.0f}<extra>" + fc_bar_label + "</extra>"))
+        if not py.empty:
+            adr_py = agg_fc(py.rename(columns={"actual_adr": "pred_adr"}), "pred_adr", "mean")
+            fig_adr.add_trace(go.Scatter(x=period_labels(adr_py["period"]), y=adr_py["pred_adr"],
+                                         name=py_bar_label, line=dict(color=ACCENT_F, width=1.5, dash="dot"),
+                                         mode="lines+markers",
+                                         hovertemplate="$%{y:,.0f}<extra>" + py_bar_label + "</extra>"))
+        adr_lay = chart_layout()
+        adr_lay["title"] = dict(text="ADR Forecast", font=dict(size=11, color="rgba(245,245,240,0.7)"), x=0)
+        fig_adr.update_layout(**adr_lay)
+        fig_adr.update_yaxes(tickprefix="$", tickformat=",.0f")
+        st.plotly_chart(fig_adr, use_container_width=True, config={"displayModeBar": False})
 
-    fig_occ = build_bars(fc_occ, py_occ, "pred_occ_pct", "actual_occ_pct", "mean",
-                         GREEN, GREEN_F, prefix="", suffix="%",
-                         fc_label=fc_bar_label, py_label=py_bar_label)
-    fig_occ.update_layout(**chart_layout())
-    fig_occ.update_yaxes(ticksuffix="%", range=[0, 105])
-    st.plotly_chart(fig_occ, use_container_width=True, config={"displayModeBar": False})
-
-# ── Room type mix (2025 actual — best available proxy for 2026 mix) ───────────
-st.markdown('<div class="fc-section"><div class="fc-section-ttl">Room Type Mix — Nights Sold (2025 same period)</div></div>',
-            unsafe_allow_html=True)
-
-rt_py = rt_df[(rt_df["business_date"] >= py_start) & (rt_df["business_date"] <= py_end)]
-rt_py2 = rt_df[
-    (rt_df["business_date"] >= pd.Timestamp(start.replace(year=2024))) &
-    (rt_df["business_date"] <= pd.Timestamp(end.replace(year=2024)))
-]
-
-if not rt_py.empty:
-    cur = rt_py.groupby("room_type").agg(rn=("room_nights","sum")).sort_values("rn")
-    pyr = rt_py2.groupby("room_type").agg(rn24=("room_nights","sum")).reset_index()
-    cur = cur.reset_index().merge(pyr, on="room_type", how="left").fillna(0)
-
-    fig_rt = go.Figure()
-    fig_rt.add_trace(go.Bar(y=cur["room_type"], x=cur["rn"],
-                            orientation="h", name="2025 same period",
-                            marker_color=ACCENT,
-                            hovertemplate="%{y}: %{x:,.0f} nights<extra>2025</extra>"))
-    fig_rt.add_trace(go.Bar(y=cur["room_type"], x=cur["rn24"],
-                            orientation="h", name="2024 same period",
-                            marker_color=ACCENT_F,
-                            marker_line=dict(color=ACCENT, width=1),
-                            hovertemplate="%{y}: %{x:,.0f} nights<extra>2024</extra>"))
-    rt_lay = chart_layout(h=300)
-    rt_lay["barmode"] = "group"
-    rt_lay["margin"]["l"] = 50
-    fig_rt.update_layout(**rt_lay)
-    st.plotly_chart(fig_rt, use_container_width=True, config={"displayModeBar": False})
-else:
-    st.info("No room type data for this period.")
-
-# ── Booking source mix ────────────────────────────────────────────────────────
-st.markdown('<div class="fc-section"><div class="fc-section-ttl">Booking Source — Revenue by Channel (2025 same period)</div></div>',
-            unsafe_allow_html=True)
-
-SOURCE_NAMES = {
-    "EXTRA": "Extranet / OTA",   "WEBSITE": "Direct – Website",
-    "SLS": "Sales / Groups",     "EBL": "EBL",
-    "INP": "In-Person / Walk-in","WEBBOOK": "Web Booking Engine",
-    "GDSS": "GDS / Travel Agents","FD": "Front Desk",
-    "EXPDC": "Expedia Direct",   "BOOKINGDC": "Booking.com",
-    "MOBILE": "Mobile App",      "GLOB": "Global Distribution",
-    "MOBILEWEB": "Mobile Web",   "HOT2N": "Hotel Tonight",
-}
-
-src_py  = src_df[(src_df["business_date"] >= py_start) & (src_df["business_date"] <= py_end)]
-src_py2 = src_df[
-    (src_df["business_date"] >= pd.Timestamp(start.replace(year=2024))) &
-    (src_df["business_date"] <= pd.Timestamp(end.replace(year=2024)))
-]
-
-if not src_py.empty:
-    sc = src_py.groupby("source_code")["total_revenue"].sum().reset_index()
-    sc["label"] = sc["source_code"].map(lambda x: SOURCE_NAMES.get(x, x))
-    sc = sc.nlargest(10, "total_revenue").sort_values("total_revenue")
-
-    sc2 = src_py2.groupby("source_code")["total_revenue"].sum().reset_index().rename(
-        columns={"total_revenue": "rev24"})
-    sc = sc.merge(sc2, on="source_code", how="left").fillna(0)
-
-    SLATE = "#4a6fa5"
-    SLATE_F = "rgba(74,111,165,0.22)"
-
-    fig_src = go.Figure()
-    fig_src.add_trace(go.Bar(y=sc["label"], x=sc["total_revenue"],
-                             orientation="h", name="2025 same period",
-                             marker_color=SLATE,
-                             hovertemplate="%{y}: $%{x:,.0f}<extra>2025</extra>"))
-    fig_src.add_trace(go.Bar(y=sc["label"], x=sc["rev24"],
-                             orientation="h", name="2024 same period",
-                             marker_color=SLATE_F,
-                             marker_line=dict(color=SLATE, width=1),
-                             hovertemplate="%{y}: $%{x:,.0f}<extra>2024</extra>"))
-    src_lay = chart_layout(h=340)
-    src_lay["barmode"] = "group"
-    src_lay["margin"]["l"] = 140
-    src_lay["xaxis"].update({"tickprefix": "$", "tickformat": ",.0f"})
-    fig_src.update_layout(**src_lay)
-    st.plotly_chart(fig_src, use_container_width=True, config={"displayModeBar": False})
-else:
-    st.info("No source data for this period.")
+    with _rpc:
+        rp_r = agg_fc(fc, "pred_revpar", "mean")
+        xl_rp = period_labels(rp_r["period"])
+        SLATE = "#4a6fa5"
+        SLATE_F = "rgba(74,111,165,0.22)"
+        fig_rp = go.Figure()
+        fig_rp.add_trace(go.Scatter(x=xl_rp, y=rp_r["pred_revpar"],
+                                    name=fc_bar_label, line=dict(color=SLATE, width=2),
+                                    mode="lines+markers",
+                                    hovertemplate="$%{y:,.0f}<extra>" + fc_bar_label + "</extra>"))
+        rp_lay = chart_layout()
+        rp_lay["title"] = dict(text="RevPAR Forecast", font=dict(size=11, color="rgba(245,245,240,0.7)"), x=0)
+        fig_rp.update_layout(**rp_lay)
+        fig_rp.update_yaxes(tickprefix="$", tickformat=",.0f")
+        st.plotly_chart(fig_rp, use_container_width=True, config={"displayModeBar": False})
 
 st.markdown("<div style='height:32px'></div>", unsafe_allow_html=True)

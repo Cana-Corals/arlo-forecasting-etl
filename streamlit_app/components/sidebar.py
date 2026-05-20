@@ -48,11 +48,8 @@ section[data-testid="stSidebar"] .stButton > button:hover {
 </style>
 """
 
+
 def render_sidebar(active: str = "") -> None:
-    """
-    Renders a shared sidebar for all non-Dashboard pages.
-    `active` is the page key (e.g. 'forecast', 'performance').
-    """
     app_root = Path(__file__).resolve().parents[1]
 
     st.markdown(_CSS, unsafe_allow_html=True)
@@ -72,6 +69,17 @@ def render_sidebar(active: str = "") -> None:
           </div>
         </div>
         """, unsafe_allow_html=True)
+
+        # Overview section
+        st.markdown('<div style="padding:10px 16px 6px;font-size:9px;font-weight:600;'
+                    'letter-spacing:.18em;text-transform:uppercase;'
+                    'color:rgba(255,255,255,.22);">Overview</div>', unsafe_allow_html=True)
+
+        dashboard_path = app_root / "pages/1_Dashboard.py"
+        dashboard_label = "● Dashboard" if active == "dashboard" else "Dashboard"
+        if st.button(dashboard_label, key="sb_dashboard", use_container_width=True,
+                     disabled=not dashboard_path.exists()):
+            st.switch_page("pages/1_Dashboard.py")
 
         # Analytics section
         st.markdown('<div style="padding:10px 16px 6px;font-size:9px;font-weight:600;'
@@ -103,3 +111,22 @@ def render_sidebar(active: str = "") -> None:
             if st.button(btn_label, key=f"sb_{key}", use_container_width=True,
                          disabled=not full_path.exists()):
                 st.switch_page(path)
+
+        # Dev panel — julio only
+        if st.session_state.get("username") == "julio":
+            st.markdown('<div style="margin:8px 6px 0;border-top:1px solid rgba(255,255,255,.06);"></div>',
+                        unsafe_allow_html=True)
+            with st.expander("Dev", expanded=False):
+                st.markdown('<div style="font-size:10px;color:rgba(245,245,240,.4);padding:2px 0 6px;">Developer tools</div>',
+                            unsafe_allow_html=True)
+                if st.button("Clear Cache", key="sb_clear_cache", use_container_width=True):
+                    st.cache_data.clear()
+                    st.success("Cache cleared")
+
+        # Footer — logout
+        st.markdown('<div style="margin:12px 6px 0;border-top:1px solid rgba(255,255,255,.06);"></div>',
+                    unsafe_allow_html=True)
+        if st.button("Logout", key="sb_logout", use_container_width=True):
+            for key in ["authentication_status", "name", "username", "logout", "_auth"]:
+                st.session_state.pop(key, None)
+            st.rerun()

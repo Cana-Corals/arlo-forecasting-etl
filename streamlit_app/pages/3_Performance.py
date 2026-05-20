@@ -335,30 +335,32 @@ with _col4:
 st.markdown('<div class="pf-section"><div class="pf-section-ttl">Occupancy by Day of Week</div></div>',
             unsafe_allow_html=True)
 
-dow_cur = df.groupby("day_of_week")["occupancy_rate"].mean() * 100
-dow_py  = df_py.groupby("day_of_week")["occupancy_rate"].mean() * 100
-DOW_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-days = list(range(7))
+_dow_col, _ = st.columns(2)
+with _dow_col:
+    dow_cur = df.groupby("day_of_week")["occupancy_rate"].mean() * 100
+    dow_py  = df_py.groupby("day_of_week")["occupancy_rate"].mean() * 100
+    DOW_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    days = list(range(7))
 
-fig_dow = go.Figure()
-fig_dow.add_trace(go.Bar(
-    x=[DOW_LABELS[i] for i in days],
-    y=[float(dow_cur.get(i, 0)) for i in days],
-    name=str(sel_year), marker_color=GREEN,
-    hovertemplate="%{x}: %{y:.1f}%<extra>" + str(sel_year) + "</extra>",
-))
-fig_dow.add_trace(go.Bar(
-    x=[DOW_LABELS[i] for i in days],
-    y=[float(dow_py.get(i, 0)) for i in days],
-    name=str(py_yr), marker_color=GREEN_F,
-    marker_line=dict(color=GREEN, width=1),
-    hovertemplate="%{x}: %{y:.1f}%<extra>" + str(py_yr) + "</extra>",
-))
-dow_lay = base_layout(h=220, ysuffix="%")
-dow_lay["bargroupgap"] = 0.1
-dow_lay["xaxis"]["tickangle"] = 0
-fig_dow.update_layout(**dow_lay)
-st.plotly_chart(fig_dow, use_container_width=True, config={"displayModeBar": False})
+    fig_dow = go.Figure()
+    fig_dow.add_trace(go.Bar(
+        x=[DOW_LABELS[i] for i in days],
+        y=[float(dow_cur.get(i, 0)) for i in days],
+        name=str(sel_year), marker_color=GREEN,
+        hovertemplate="%{x}: %{y:.1f}%<extra>" + str(sel_year) + "</extra>",
+    ))
+    fig_dow.add_trace(go.Bar(
+        x=[DOW_LABELS[i] for i in days],
+        y=[float(dow_py.get(i, 0)) for i in days],
+        name=str(py_yr), marker_color=GREEN_F,
+        marker_line=dict(color=GREEN, width=1),
+        hovertemplate="%{x}: %{y:.1f}%<extra>" + str(py_yr) + "</extra>",
+    ))
+    dow_lay = base_layout(h=220, ysuffix="%")
+    dow_lay["bargroupgap"] = 0.1
+    dow_lay["xaxis"]["tickangle"] = 0
+    fig_dow.update_layout(**dow_lay)
+    st.plotly_chart(fig_dow, use_container_width=True, config={"displayModeBar": False})
 
 # ── Market segment ────────────────────────────────────────────────────────────
 st.markdown('<div class="pf-section"><div class="pf-section-ttl">Revenue by Market Segment</div></div>',

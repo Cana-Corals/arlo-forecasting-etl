@@ -5,7 +5,11 @@ from yaml.loader import SafeLoader
 from pathlib import Path
 from datetime import date, datetime
 import sys
+import re
 import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
+import plotly.express as px
 
 BASE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
@@ -31,7 +35,6 @@ st.markdown("""
     .arlo-date  { font-size: 0.85rem; color: rgba(245,245,240,0.4); margin-bottom: 1.5rem; }
     .search-hint { font-size: 0.72rem; color: rgba(245,245,240,0.3); text-align: center; margin-top: 0.3rem; }
 
-    /* Style the text input to look like a search bar */
     div[data-testid="stTextInput"] input {
         background: #1a1a1a !important;
         border: 1px solid rgba(255,255,255,0.12) !important;
@@ -44,20 +47,19 @@ st.markdown("""
         border-color: rgba(232,133,74,0.5) !important;
         box-shadow: 0 0 0 2px rgba(232,133,74,0.1) !important;
     }
-
-    /* Hide the Ask button — form submits on Enter */
     button[kind="primaryFormSubmit"] { display: none !important; }
 
-    /* Chat history cards */
     .chat-q {
         font-size: 0.78rem; font-weight: 600; color: rgba(232,133,74,0.9);
-        margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;
+        margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;
     }
     .chat-card {
         background: #1a1a1a; border: 1px solid rgba(255,255,255,0.07);
-        border-radius: 8px; padding: 14px 18px; margin-bottom: 12px;
+        border-radius: 8px; padding: 14px 18px; margin-bottom: 6px;
     }
-    .chat-card p { color: rgba(245,245,240,0.8); font-size: 0.88rem; margin: 0; }
+    .chat-card p { color: rgba(245,245,240,0.82); font-size: 0.88rem; margin: 0; line-height: 1.6; }
+    .chat-card ul, .chat-card ol { color: rgba(245,245,240,0.82); font-size: 0.88rem; }
+    .chat-card strong { color: #f5f5f0; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -75,7 +77,7 @@ def load_auth_config() -> dict:
                 "expiry_days": st.secrets["cookie"]["expiry_days"],
             },
         }
-    config_path = Path(__file__).resolve().parents[1] / "config" / "users.yaml"
+    config_path = BASE / "config" / "users.yaml"
     with open(config_path) as f:
         return yaml.load(f, Loader=SafeLoader)
 
@@ -88,134 +90,182 @@ authenticator = stauth.Authenticate(
     config["cookie"]["expiry_days"],
 )
 
-# ── Hotel data context builder ────────────────────────────────────────────────
+# ── Dark chart theme ──────────────────────────────────────────────────────────
+DARK_LAYOUT = dict(
+    paper_bgcolor="#1a1a1a",
+    plot_bgcolor="#1a1a1a",
+    font=dict(color="rgba(245,245,240,0.7)", family="Inter, system-ui, sans-serif", size=11),
+    xaxis=dict(gridcolor="rgba(255,255,255,0.06)", linecolor="rgba(255,255,255,0.1)", zeroline=False),
+    yaxis=dict(gridcolor="rgba(255,255,255,0.06)", linecolor="rgba(255,255,255,0.1)", zeroline=False),
+    legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=11)),
+    margin=dict(l=10, r=10, t=36, b=10),
+    hoverlabel=dict(bgcolor="#222222", bordercolor="rgba(255,255,255,0.15)", font_color="#f5f5f0"),
+)
+ACCENT = "#e8854a"
+GREEN  = "#3ecf8e"
+RED    = "#e05252"
+SLATE  = "#4a6fa5"
+
+# ── Data loaders ──────────────────────────────────────────────────────────────
+@st.cache_data(ttl=3600, show_spinner=False)
+def _load_master() -> pd.DataFrame:
+    return pd.read_csv(BASE / "data" / "final" / "hotel_daily_master.csv", parse_dates=["business_date"])
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def _load_forecast() -> pd.DataFrame:
+    try:
+        from components.forecast_engine import generate_future_predictions
+        return generate_future_predictions(2026)
+    except Exception:
+        return pd.DataFrame()
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def _build_hotel_context() -> str:
-    master = pd.read_csv(
-        BASE / "data" / "final" / "hotel_daily_master.csv",
-        parse_dates=["business_date"],
-    )
-
+    master = _load_master()
     month_names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
     lines = [
-        "## Arlo Williamsburg — Hotel Revenue Intelligence\n",
-        "**Property**: Arlo Williamsburg, Brooklyn NY | 147 rooms | Williamsburg neighborhood\n\n",
+        "## Arlo Williamsburg — Hotel Revenue Data\n",
+        "**Property**: Arlo Williamsburg, Brooklyn NY | 147 rooms\n\n",
     ]
-
     for year in [2024, 2025]:
         df_y = master[master["business_date"].dt.year == year]
         if df_y.empty:
             continue
-        total_rev  = df_y["room_revenue"].sum()
-        avg_occ    = df_y["occupancy_rate"].mean() * 100
-        avg_adr    = df_y["adr"].mean()
-        avg_revpar = df_y["revpar"].mean()
         lines.append(f"### {year} Full Year\n")
-        lines.append(f"- Total Room Revenue: ${total_rev:,.0f}\n")
-        lines.append(f"- Avg Occupancy: {avg_occ:.1f}%\n")
-        lines.append(f"- Avg ADR: ${avg_adr:.0f}\n")
-        lines.append(f"- Avg RevPAR: ${avg_revpar:.0f}\n\n")
-
+        lines.append(f"- Revenue: ${df_y['room_revenue'].sum():,.0f}\n")
+        lines.append(f"- Avg Occ: {df_y['occupancy_rate'].mean()*100:.1f}%\n")
+        lines.append(f"- Avg ADR: ${df_y['adr'].mean():.0f}\n")
+        lines.append(f"- Avg RevPAR: ${df_y['revpar'].mean():.0f}\n\n")
         monthly = df_y.groupby(df_y["business_date"].dt.month).agg(
-            occ=("occupancy_rate", "mean"),
-            adr=("adr", "mean"),
-            revpar=("revpar", "mean"),
-            revenue=("room_revenue", "sum"),
-            room_nights=("room_nights", "sum"),
+            occ=("occupancy_rate","mean"), adr=("adr","mean"),
+            revpar=("revpar","mean"), revenue=("room_revenue","sum"),
+            room_nights=("room_nights","sum"),
         )
-        lines.append(f"#### {year} Monthly Breakdown\n")
-        lines.append("| Month | Occ% | ADR | RevPAR | Revenue | Rm Nights |\n")
-        lines.append("|-------|------|-----|--------|---------|----------|\n")
-        for m, row in monthly.iterrows():
-            lines.append(
-                f"| {month_names[m-1]} | {row['occ']*100:.1f}% | ${row['adr']:.0f} |"
-                f" ${row['revpar']:.0f} | ${row['revenue']:,.0f} | {int(row['room_nights'])} |\n"
-            )
+        lines.append(f"#### {year} Monthly\n| Month | Occ% | ADR | RevPAR | Revenue |\n|---|---|---|---|---|\n")
+        for m, r in monthly.iterrows():
+            lines.append(f"| {month_names[m-1]} | {r['occ']*100:.1f}% | ${r['adr']:.0f} | ${r['revpar']:.0f} | ${r['revenue']:,.0f} |\n")
         lines.append("\n")
-
-    # YoY comparison
     df24 = master[master["business_date"].dt.year == 2024]
     df25 = master[master["business_date"].dt.year == 2025]
     if not df24.empty and not df25.empty:
-        rev_chg  = (df25["room_revenue"].sum() / df24["room_revenue"].sum() - 1) * 100
-        occ_chg  = (df25["occupancy_rate"].mean() / df24["occupancy_rate"].mean() - 1) * 100
-        adr_chg  = (df25["adr"].mean() / df24["adr"].mean() - 1) * 100
-        lines.append("### 2024→2025 Year-over-Year Change\n")
-        lines.append(f"- Revenue: {rev_chg:+.1f}%\n")
-        lines.append(f"- Occupancy: {occ_chg:+.1f}pp\n")
-        lines.append(f"- ADR: {adr_chg:+.1f}%\n\n")
-
-    # 2026 ML forecast
+        lines.append("### YoY 2024→2025\n")
+        lines.append(f"- Revenue: {(df25['room_revenue'].sum()/df24['room_revenue'].sum()-1)*100:+.1f}%\n")
+        lines.append(f"- Occupancy: {(df25['occupancy_rate'].mean()/df24['occupancy_rate'].mean()-1)*100:+.1f}pp\n")
+        lines.append(f"- ADR: {(df25['adr'].mean()/df24['adr'].mean()-1)*100:+.1f}%\n\n")
     try:
-        from components.forecast_engine import generate_future_predictions
-        fc = generate_future_predictions(2026)
-        fc_total  = fc["pred_revenue"].sum()
-        fc_occ    = fc["pred_occupancy"].mean() * 100
-        fc_adr    = fc["pred_adr"].mean()
-        fc_revpar = fc["pred_revpar"].mean()
-        lines.append("### 2026 ML Forecast (full year)\n")
-        lines.append(f"- Projected Revenue: ${fc_total:,.0f}\n")
-        lines.append(f"- Projected Avg Occupancy: {fc_occ:.1f}%\n")
-        lines.append(f"- Projected Avg ADR: ${fc_adr:.0f}\n")
-        lines.append(f"- Projected Avg RevPAR: ${fc_revpar:.0f}\n\n")
-
-        fc_m = fc.groupby(fc["business_date"].dt.month).agg(
-            occ=("pred_occupancy", "mean"),
-            adr=("pred_adr", "mean"),
-            revpar=("pred_revpar", "mean"),
-            revenue=("pred_revenue", "sum"),
-        )
-        lines.append("#### 2026 Monthly Forecast\n")
-        lines.append("| Month | Pred Occ% | Pred ADR | Pred RevPAR | Pred Revenue |\n")
-        lines.append("|-------|-----------|----------|-------------|---------------|\n")
-        for m, row in fc_m.iterrows():
-            lines.append(
-                f"| {month_names[m-1]} | {row['occ']*100:.1f}% | ${row['adr']:.0f} |"
-                f" ${row['revpar']:.0f} | ${row['revenue']:,.0f} |\n"
-            )
+        fc = _load_forecast()
+        if not fc.empty:
+            lines.append("### 2026 ML Forecast\n")
+            lines.append(f"- Projected Revenue: ${fc['pred_revenue'].sum():,.0f}\n")
+            lines.append(f"- Projected Occ: {fc['pred_occupancy'].mean()*100:.1f}%\n")
+            lines.append(f"- Projected ADR: ${fc['pred_adr'].mean():.0f}\n")
+            lines.append(f"- Projected RevPAR: ${fc['pred_revpar'].mean():.0f}\n")
     except Exception:
         pass
-
     return "".join(lines)
 
+# ── Claude call ───────────────────────────────────────────────────────────────
+_SYSTEM = """You are a hotel revenue intelligence assistant for Arlo Williamsburg (147 rooms, Brooklyn NY).
 
-def _stream_claude(question: str, context: str, history: list):
-    """Yields text chunks from Claude API."""
+Answer questions concisely using the hotel data provided. Use markdown formatting.
+
+CHARTS: When a chart would make the answer clearer, generate Plotly code inside <chart></chart> tags.
+The code must create a variable named `fig`. You have these variables pre-loaded:
+- `master` (DataFrame, 2024–2025 daily actuals): business_date, room_revenue, occupancy_rate (0–1 scale), adr, revpar, room_nights, ooo_rooms, available_rooms, temp_mean_f, had_precipitation, is_federal_holiday, is_major_event_day, is_barclays_event, is_msg_event, is_yankees_game, is_us_open_event, pickup_7d, pickup_14d, pickup_30d, total_rooms_on_books, avg_booked_rate, medallia_overall_satisfaction
+- `forecast` (DataFrame, 2026 ML predictions): business_date, pred_revenue, pred_occupancy (0–1), pred_adr, pred_revpar
+- `go` (plotly.graph_objects), `px` (plotly.express), `pd` (pandas), `np` (numpy)
+- `DARK_LAYOUT` (dict): always call `fig.update_layout(**DARK_LAYOUT)` for dark theme
+- `ACCENT="#e8854a"` (orange), `GREEN="#3ecf8e"`, `RED="#e05252"`, `SLATE="#4a6fa5"`
+
+Chart rules:
+- Always call `fig.update_layout(**DARK_LAYOUT)` on every figure
+- Use ACCENT as the primary color
+- Add month/year labels where relevant
+- Keep chart titles short (set via `title=dict(text="...", font_color="rgba(245,245,240,0.9)")`)
+- Prefer bar charts for monthly comparisons, line charts for trends over time
+
+Example — monthly revenue bar chart:
+<chart>
+df = master[master["business_date"].dt.year == 2025].copy()
+df["month"] = df["business_date"].dt.month
+monthly = df.groupby("month")["room_revenue"].sum().reset_index()
+month_labels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+monthly["label"] = monthly["month"].apply(lambda m: month_labels[m-1])
+fig = go.Figure(go.Bar(x=monthly["label"], y=monthly["room_revenue"], marker_color=ACCENT))
+fig.update_layout(**DARK_LAYOUT, title=dict(text="2025 Monthly Revenue", font_color="rgba(245,245,240,0.9)"))
+</chart>
+"""
+
+def _call_claude(question: str, context: str, history: list) -> str:
     import anthropic
     api_key = st.secrets.get("ANTHROPIC_API_KEY", "")
     if not api_key:
-        yield "⚠️ ANTHROPIC_API_KEY not set in Streamlit secrets."
-        return
-
+        return "⚠️ ANTHROPIC_API_KEY not set in Streamlit secrets."
     client = anthropic.Anthropic(api_key=api_key)
-
-    system = (
-        "You are a hotel revenue intelligence assistant for Arlo Williamsburg, a 147-room boutique hotel "
-        "in Brooklyn, New York. You have access to the hotel's actual performance data for 2024–2025 and "
-        "ML-generated revenue forecasts for 2026.\n\n"
-        "Answer questions concisely and professionally. Focus on actionable revenue management insights. "
-        "Use specific numbers from the data when relevant. Use markdown formatting (bold key numbers, "
-        "bullet lists, short tables) to make answers easy to scan. "
-        "If you need data that isn't in the context, say so and offer the closest available insight."
-    )
-
     messages = []
     for item in history[-4:]:
         messages.append({"role": "user",      "content": item["question"]})
-        messages.append({"role": "assistant", "content": item["answer"]})
-    messages.append({
-        "role": "user",
-        "content": f"{question}\n\n---\n{context}",
-    })
-
-    with client.messages.stream(
+        messages.append({"role": "assistant", "content": item["answer_raw"]})
+    messages.append({"role": "user", "content": f"{question}\n\n---\n{context}"})
+    resp = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=1024,
-        system=system,
+        max_tokens=2048,
+        system=_SYSTEM,
         messages=messages,
-    ) as stream:
-        for chunk in stream.text_stream:
-            yield chunk
+    )
+    return resp.content[0].text
+
+# ── Response renderer ─────────────────────────────────────────────────────────
+def _render_and_store(response_text: str) -> list:
+    """Parse <chart> tags, render each segment, return stored segments for history."""
+    master   = _load_master()
+    forecast = _load_forecast()
+    exec_ns  = {
+        "go": go, "px": px, "pd": pd, "np": np,
+        "master": master.copy(),
+        "forecast": forecast.copy() if not forecast.empty else pd.DataFrame(),
+        "DARK_LAYOUT": DARK_LAYOUT,
+        "ACCENT": ACCENT, "GREEN": GREEN, "RED": RED, "SLATE": SLATE,
+    }
+
+    parts    = re.split(r'(<chart>.*?</chart>)', response_text, flags=re.DOTALL)
+    segments = []
+
+    for part in parts:
+        if part.startswith("<chart>") and part.endswith("</chart>"):
+            code = part[7:-8].strip()
+            try:
+                ns = {**exec_ns}
+                exec(code, ns)
+                fig = ns.get("fig")
+                if isinstance(fig, go.Figure):
+                    st.plotly_chart(fig, use_container_width=True)
+                    segments.append({"type": "chart", "content": fig.to_dict()})
+                else:
+                    st.warning("Chart code did not produce a `fig` variable.")
+            except Exception as e:
+                st.error(f"Chart error: {e}")
+        else:
+            text = part.strip()
+            if text:
+                st.markdown(f'<div class="chat-card">{text}</div>', unsafe_allow_html=True)
+                segments.append({"type": "text", "content": text})
+
+    return segments
+
+
+def _display_history_item(item: dict):
+    """Re-display a stored history item."""
+    st.markdown(f'<div class="chat-q">{item["question"]}</div>', unsafe_allow_html=True)
+    for seg in item.get("segments", []):
+        if seg["type"] == "text":
+            st.markdown(f'<div class="chat-card">{seg["content"]}</div>', unsafe_allow_html=True)
+        elif seg["type"] == "chart":
+            try:
+                st.plotly_chart(go.Figure(seg["content"]), use_container_width=True)
+            except Exception:
+                pass
+    st.markdown("---")
 
 
 # ── Login page ────────────────────────────────────────────────────────────────
@@ -272,41 +322,34 @@ def home_page():
 
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # Previous conversation history
+        # Previous conversation
         for item in st.session_state["chat_history"]:
-            st.markdown(
-                f'<div class="chat-card"><div class="chat-q">{item["question"]}</div></div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown(item["answer"])
-            st.markdown("---")
+            _display_history_item(item)
 
-        # Input form — submits on Enter
+        # Input form
         with st.form("ai_form", clear_on_submit=True, border=False):
             question = st.text_input(
                 label="",
-                placeholder='Ask anything — "How is Q3 looking?"',
+                placeholder='Ask anything — "Show me Q3 occupancy" or "Chart monthly ADR"',
                 label_visibility="collapsed",
                 key="home_question",
             )
             st.form_submit_button("Ask", use_container_width=True, type="primary")
 
-        st.markdown('<div class="search-hint">Press Enter to ask · Powered by Claude AI</div>', unsafe_allow_html=True)
+        st.markdown('<div class="search-hint">Press Enter to ask · Powered by Claude AI · Charts supported</div>', unsafe_allow_html=True)
 
-        # Process submitted question
         if question and question.strip():
             q = question.strip()
-            context = _build_hotel_context()
-            response_slot = st.empty()
-            full_answer = ""
-            try:
-                for chunk in _stream_claude(q, context, st.session_state["chat_history"]):
-                    full_answer += chunk
-                    response_slot.markdown(full_answer + " ▌")
-                response_slot.markdown(full_answer)
-                st.session_state["chat_history"].append({"question": q, "answer": full_answer})
-            except Exception as exc:
-                st.error(f"Error calling Claude: {exc}")
+            st.markdown(f'<div class="chat-q">{q}</div>', unsafe_allow_html=True)
+            with st.spinner("Thinking..."):
+                context      = _build_hotel_context()
+                raw_response = _call_claude(q, context, st.session_state["chat_history"])
+            segments = _render_and_store(raw_response)
+            st.session_state["chat_history"].append({
+                "question":   q,
+                "answer_raw": raw_response,
+                "segments":   segments,
+            })
 
     render_nav()
 

@@ -481,42 +481,75 @@ with st.sidebar:
 
     # ── Nav ───────────────────────────────────────────────────────────────────
     if COLLAPSED:
-        # Inline SVGs — no external font dependency, render reliably everywhere
+        # SVGs use currentColor so JS can change parent div's color → icon tints orange on hover
         _is = ("display:flex;justify-content:center;align-items:center;"
-               "height:40px;cursor:pointer;border-radius:4px;margin:2px 5px;")
-        _home = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(232,133,74,.75)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9L12 2l9 7v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'
-        _fc   = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,240,.55)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 1 18"/><polyline points="16 7 22 7 22 13"/></svg>'
-        _pe   = '<svg width="17" height="17" viewBox="0 0 24 24" fill="rgba(245,245,240,.5)" stroke="none"><rect x="2" y="13" width="5" height="9" rx="1"/><rect x="9.5" y="8" width="5" height="14" rx="1"/><rect x="17" y="3" width="5" height="19" rx="1"/></svg>'
-        _de   = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,240,.55)" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
-        _co   = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,240,.55)" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="3" width="20" height="20" rx="1"/><line x1="12" y1="3" x2="12" y2="23"/><line x1="2" y1="11" x2="22" y2="11"/></svg>'
-        _mo   = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,240,.55)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/><line x1="6" y1="20" x2="18" y2="20"/></svg>'
+               "height:40px;cursor:pointer;border-radius:4px;margin:2px 5px;"
+               "transition:color .12s,background .12s;")
+        _home = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9L12 2l9 7v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'
+        _fc   = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 1 18"/><polyline points="16 7 22 7 22 13"/></svg>'
+        _pe   = '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="2" y="13" width="5" height="9" rx="1"/><rect x="9.5" y="8" width="5" height="14" rx="1"/><rect x="17" y="3" width="5" height="19" rx="1"/></svg>'
+        _de   = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+        _co   = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="3" width="20" height="20" rx="1"/><line x1="12" y1="3" x2="12" y2="23"/><line x1="2" y1="11" x2="22" y2="11"/></svg>'
+        _mo   = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/><line x1="6" y1="20" x2="18" y2="20"/></svg>'
+
+        # JS snippet: lazily create a fixed tooltip div on first hover (escapes overflow:hidden)
+        _TC = (
+            "var t=document.getElementById('arlo-tip');"
+            "if(!t){t=document.createElement('div');t.id='arlo-tip';"
+            "t.style.cssText='position:fixed;background:#1c1c1c;color:#f5f5f0;"
+            "font-size:11px;font-weight:500;padding:5px 10px;border-radius:4px;"
+            "border:1px solid rgba(255,255,255,.12);pointer-events:none;opacity:0;"
+            "transition:opacity .12s;z-index:9999;transform:translateY(-50%);"
+            "white-space:nowrap';document.body.appendChild(t)}"
+        )
+        def _tip(name, orig_c="rgba(245,245,240,.55)", bg="rgba(255,255,255,.06)"):
+            show = (
+                f"{_TC}t.textContent='{name}';"
+                "var r=this.getBoundingClientRect();"
+                "t.style.top=(r.top+r.height/2)+'px';"
+                f"t.style.left=(r.right+10)+'px';t.style.opacity='1';"
+                f"this.style.color='#e8854a';this.style.background='{bg}'"
+            )
+            hide = (
+                "var t=document.getElementById('arlo-tip');if(t)t.style.opacity='0';"
+                f"this.style.color='{orig_c}';this.style.background='transparent'"
+            )
+            return show, hide
+
+        _sh_hm, _hh_hm = _tip("Home",          "rgba(232,133,74,.75)", "rgba(232,133,74,.12)")
+        _sh_fc, _hh_fc = _tip("Forecast")
+        _sh_pe, _hh_pe = _tip("Performance")
+        _sh_de, _hh_de = _tip("Demand")
+        _sh_co, _hh_co = _tip("Competitive")
+        _sh_mo, _hh_mo = _tip("Model Insights")
+
         st.markdown(f"""
         <div style="padding:8px 0;display:flex;flex-direction:column;gap:2px;">
-          <div onclick="window.location.search='?nav=home'" style="{_is}"
-               onmouseover="this.style.background='rgba(232,133,74,.12)'"
-               onmouseout="this.style.background='transparent'">
+          <div onclick="window.location.search='?nav=home'"
+               style="{_is}color:rgba(232,133,74,.75);"
+               onmouseover="{_sh_hm}" onmouseout="{_hh_hm}">
             {_home}</div>
           <div style="height:1px;background:rgba(255,255,255,.06);margin:4px 10px;"></div>
-          <div onclick="window.location.search='?nav=forecast'" style="{_is}"
-               onmouseover="this.style.background='rgba(255,255,255,.06)'"
-               onmouseout="this.style.background='transparent'">
+          <div onclick="window.location.search='?nav=forecast'"
+               style="{_is}color:rgba(245,245,240,.55);"
+               onmouseover="{_sh_fc}" onmouseout="{_hh_fc}">
             {_fc}</div>
-          <div onclick="window.location.search='?nav=performance'" style="{_is}"
-               onmouseover="this.style.background='rgba(255,255,255,.06)'"
-               onmouseout="this.style.background='transparent'">
+          <div onclick="window.location.search='?nav=performance'"
+               style="{_is}color:rgba(245,245,240,.55);"
+               onmouseover="{_sh_pe}" onmouseout="{_hh_pe}">
             {_pe}</div>
-          <div onclick="window.location.search='?nav=demand'" style="{_is}"
-               onmouseover="this.style.background='rgba(255,255,255,.06)'"
-               onmouseout="this.style.background='transparent'">
+          <div onclick="window.location.search='?nav=demand'"
+               style="{_is}color:rgba(245,245,240,.55);"
+               onmouseover="{_sh_de}" onmouseout="{_hh_de}">
             {_de}</div>
           <div style="height:1px;background:rgba(255,255,255,.06);margin:4px 10px;"></div>
-          <div onclick="window.location.search='?nav=competitive'" style="{_is}"
-               onmouseover="this.style.background='rgba(255,255,255,.06)'"
-               onmouseout="this.style.background='transparent'">
+          <div onclick="window.location.search='?nav=competitive'"
+               style="{_is}color:rgba(245,245,240,.55);"
+               onmouseover="{_sh_co}" onmouseout="{_hh_co}">
             {_co}</div>
-          <div onclick="window.location.search='?nav=model_insights'" style="{_is}"
-               onmouseover="this.style.background='rgba(255,255,255,.06)'"
-               onmouseout="this.style.background='transparent'">
+          <div onclick="window.location.search='?nav=model_insights'"
+               style="{_is}color:rgba(245,245,240,.55);"
+               onmouseover="{_sh_mo}" onmouseout="{_hh_mo}">
             {_mo}</div>
         </div>
         """, unsafe_allow_html=True)

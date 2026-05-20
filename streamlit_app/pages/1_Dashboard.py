@@ -515,9 +515,6 @@ with st.sidebar:
         </div>
         """, unsafe_allow_html=True)
     else:
-        if st.button("✦  AI Assistant", key="nav_ai", use_container_width=True):
-            st.switch_page("Home.py")
-        st.markdown('<div style="height:1px;background:rgba(255,255,255,.06);margin:6px 10px 2px;"></div>', unsafe_allow_html=True)
         st.markdown('<div style="padding:14px 16px 14px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Analytics</div>', unsafe_allow_html=True)
         for lbl, path in [("Forecast","pages/2_Forecast.py"),("Performance","pages/3_Performance.py"),("Demand","pages/4_Demand.py")]:
             if st.button(lbl, key=f"nav_{lbl}", use_container_width=True):
@@ -606,11 +603,11 @@ st.html(f"""
 
 # ── Core performance KPIs ─────────────────────────────────────────────────────
 def _delta_html(d, hero=False):
-    icon = "ti-trending-up" if d >= 0 else "ti-trending-down"
-    sign = "+" if d >= 0 else ""
-    cls  = "" if d >= 0 else " neg"
+    arrow = "▲" if d >= 0 else "▼"
+    sign  = "+" if d >= 0 else ""
+    cls   = "" if d >= 0 else " neg"
     accent = ' style="color:var(--arlo-accent)"' if hero else ""
-    return f'<div class="kpi-delta{cls}"{accent}><i class="ti {icon}" style="font-size:45px;"></i>{sign}{d:.1f}% STLY</div>'
+    return f'<div class="kpi-delta{cls}"{accent}>{arrow} {sign}{d:.1f}% STLY</div>'
 
 mpi_sub  = f"MPI {mpi_val:.2f} vs comp"  if mpi_val else "vs comp set"
 ari_sub  = f"ARI {ari_val:.2f} vs comp"  if ari_val else "vs comp set"

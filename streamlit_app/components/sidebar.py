@@ -116,12 +116,12 @@ def render_sidebar(active: str = "") -> None:
         if st.session_state.get("username") == "julio":
             st.markdown('<div style="margin:8px 6px 0;border-top:1px solid rgba(255,255,255,.06);"></div>',
                         unsafe_allow_html=True)
-            with st.expander("Dev", expanded=False):
-                st.markdown('<div style="font-size:10px;color:rgba(245,245,240,.4);padding:2px 0 6px;">Developer tools</div>',
-                            unsafe_allow_html=True)
-                if st.button("Clear Cache", key="sb_clear_cache", use_container_width=True):
-                    st.cache_data.clear()
-                    st.success("Cache cleared")
+            st.markdown('<div style="padding:10px 16px 4px;font-size:9px;font-weight:600;'
+                        'letter-spacing:.18em;text-transform:uppercase;'
+                        'color:rgba(255,255,255,.22);">Dev</div>', unsafe_allow_html=True)
+            if st.button("Clear Cache", key="sb_clear_cache", use_container_width=True):
+                st.cache_data.clear()
+                st.success("Cache cleared")
 
         # Footer — logout
         st.markdown('<div style="margin:12px 6px 0;border-top:1px solid rgba(255,255,255,.06);"></div>',

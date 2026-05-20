@@ -544,10 +544,6 @@ def login_page():
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown('<div class="arlo-title">Arlo Williamsburg</div>', unsafe_allow_html=True)
         st.markdown(
-            '<div style="text-align:center;font-size:1rem;color:#f5f5f0;letter-spacing:0.08em;font-weight:700;margin-bottom:0.4rem;">FORECASTING</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(
             '<div style="text-align:center;font-size:0.85rem;color:#f5f5f0;margin-bottom:2rem;">Internal Intelligence Platform</div>',
             unsafe_allow_html=True,
         )

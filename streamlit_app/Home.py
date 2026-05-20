@@ -100,12 +100,17 @@ DARK_LAYOUT = dict(
     paper_bgcolor="#1a1a1a",
     plot_bgcolor="#1a1a1a",
     font=dict(color="rgba(245,245,240,0.7)", family="Inter, system-ui, sans-serif", size=11),
-    xaxis=dict(gridcolor="rgba(255,255,255,0.06)", linecolor="rgba(255,255,255,0.1)", zeroline=False),
-    yaxis=dict(gridcolor="rgba(255,255,255,0.06)", linecolor="rgba(255,255,255,0.1)", zeroline=False),
     legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=11)),
     margin=dict(l=10, r=10, t=36, b=10),
     hoverlabel=dict(bgcolor="#222222", bordercolor="rgba(255,255,255,0.15)", font_color="#f5f5f0"),
 )
+
+def _apply_dark(fig: go.Figure) -> go.Figure:
+    """Apply dark theme to any Plotly figure without conflicting with user axis kwargs."""
+    fig.update_layout(**DARK_LAYOUT)
+    fig.update_xaxes(gridcolor="rgba(255,255,255,0.06)", linecolor="rgba(255,255,255,0.1)", zeroline=False)
+    fig.update_yaxes(gridcolor="rgba(255,255,255,0.06)", linecolor="rgba(255,255,255,0.1)", zeroline=False)
+    return fig
 ACCENT = "#e8854a"
 GREEN  = "#3ecf8e"
 RED    = "#e05252"
@@ -175,13 +180,13 @@ Available variables inside chart code:
 - `master` (DataFrame, 2024–2025 daily): business_date, room_revenue, occupancy_rate (0–1), adr, revpar, room_nights, ooo_rooms, available_rooms, temp_mean_f, had_precipitation, is_federal_holiday, is_major_event_day, is_barclays_event, is_msg_event, is_yankees_game, is_us_open_event, pickup_7d, pickup_14d, pickup_30d, total_rooms_on_books, avg_booked_rate, medallia_overall_satisfaction
 - `forecast` (DataFrame, 2026 ML predictions): business_date, pred_revenue, pred_occupancy (0–1), pred_adr, pred_revpar
 - `go`, `px`, `pd`, `np`
-- `DARK_LAYOUT` — always call `fig.update_layout(**DARK_LAYOUT)` on every chart
+- `apply_dark(fig)` — call this on every chart to apply the dark theme (handles colors, grid, axes). Do NOT use `fig.update_layout(**DARK_LAYOUT)` directly — use `apply_dark(fig)` instead.
 - `ACCENT="#e8854a"` (orange), `GREEN="#3ecf8e"`, `RED="#e05252"`, `SLATE="#4a6fa5"`
 
 Chart rules:
-- Always apply `fig.update_layout(**DARK_LAYOUT)`
+- Always call `apply_dark(fig)` on every figure
 - Use ACCENT as the primary series color
-- Keep titles short, use `title=dict(text="...", font_color="rgba(245,245,240,0.9)")`
+- Keep titles short; set title after apply_dark: `fig.update_layout(title=dict(text="...", font_color="rgba(245,245,240,0.9)"))`
 - Bar charts for monthly comparisons, line charts for time trends
 
 Example:
@@ -191,7 +196,8 @@ monthly = df.groupby(df["business_date"].dt.month)["room_revenue"].sum().reset_i
 labels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 monthly["label"] = monthly["business_date"].apply(lambda m: labels[m-1])
 fig = go.Figure(go.Bar(x=monthly["label"], y=monthly["room_revenue"], marker_color=ACCENT))
-fig.update_layout(**DARK_LAYOUT, title=dict(text="2025 Monthly Revenue", font_color="rgba(245,245,240,0.9)"))
+apply_dark(fig)
+fig.update_layout(title=dict(text="2025 Monthly Revenue", font_color="rgba(245,245,240,0.9)"))
 </chart>
 """
 
@@ -224,6 +230,7 @@ def _parse_segments(response_text: str) -> list:
         "master":   master.copy(),
         "forecast": forecast.copy() if not forecast.empty else pd.DataFrame(),
         "DARK_LAYOUT": DARK_LAYOUT,
+        "apply_dark": _apply_dark,
         "ACCENT": ACCENT, "GREEN": GREEN, "RED": RED, "SLATE": SLATE,
     }
     parts    = re.split(r'(<chart>.*?</chart>)', response_text, flags=re.DOTALL)

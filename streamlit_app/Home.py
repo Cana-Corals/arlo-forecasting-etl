@@ -132,6 +132,14 @@ def _load_forecast() -> pd.DataFrame:
         return pd.DataFrame()
 
 @st.cache_data(ttl=3600, show_spinner=False)
+def _load_room_types() -> pd.DataFrame:
+    return pd.read_csv(BASE / "data" / "processed" / "daily_stats_room_type.csv", parse_dates=["business_date"])
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def _load_ready() -> pd.DataFrame:
+    return pd.read_csv(BASE / "data" / "final" / "hotel_model_ready.csv", parse_dates=["business_date"])
+
+@st.cache_data(ttl=3600, show_spinner=False)
 def _build_hotel_context() -> str:
     """Compact single-line-per-month format. ~500 tokens vs ~3600 previously."""
     master = _load_master()
@@ -291,17 +299,115 @@ def _chart_revenue_daily_2025() -> go.Figure:
     fig.update_layout(title=dict(text="2025 Daily Revenue Trend", font_color="rgba(245,245,240,0.9)"))
     return fig
 
+# ── Room type charts ──────────────────────────────────────────────────────────
+def _chart_room_revenue() -> go.Figure:
+    rt  = _load_room_types()
+    agg = rt.groupby("room_type")["room_revenue"].sum().sort_values()
+    fig = go.Figure(go.Bar(x=agg.values, y=agg.index, orientation="h", marker_color=ACCENT))
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="Total Revenue by Room Type (2024–2025)", font_color="rgba(245,245,240,0.9)"),
+                      margin=dict(l=60, r=10, t=36, b=10))
+    return fig
+
+def _chart_room_ooo() -> go.Figure:
+    rt  = _load_room_types()
+    agg = rt.groupby("room_type")["ooo_rooms"].sum().sort_values()
+    fig = go.Figure(go.Bar(x=agg.values, y=agg.index, orientation="h", marker_color=RED))
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="Total OOO Nights by Room Type (2024–2025)", font_color="rgba(245,245,240,0.9)"),
+                      margin=dict(l=60, r=10, t=36, b=10))
+    return fig
+
+def _chart_room_occupancy() -> go.Figure:
+    rt  = _load_room_types()
+    rt2 = rt.copy()
+    rt2["avail"] = rt2["total_physical_rooms"] - rt2["ooo_rooms"]
+    rt2["occ"]   = rt2.apply(lambda r: r["room_nights"] / r["avail"] if r["avail"] > 0 else None, axis=1)
+    agg = rt2.groupby("room_type")["occ"].mean().dropna().sort_values() * 100
+    fig = go.Figure(go.Bar(x=agg.values, y=agg.index, orientation="h", marker_color=GREEN))
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="Average Occupancy % by Room Type (2024–2025)", font_color="rgba(245,245,240,0.9)"),
+                      margin=dict(l=60, r=10, t=36, b=10))
+    return fig
+
+# ── Demand / booking pace charts ──────────────────────────────────────────────
+def _chart_demand_pickup() -> go.Figure:
+    ready = _load_ready()
+    df = ready[ready["business_date"].dt.year == 2025].copy()
+    df["month"] = df["business_date"].dt.month
+    m = df.groupby("month")[["pickup_7d","pickup_14d","pickup_30d"]].mean()
+    fig = go.Figure()
+    for col, color, lbl in [("pickup_7d", GREEN, "7-day"), ("pickup_14d", SLATE, "14-day"), ("pickup_30d", ACCENT, "30-day")]:
+        fig.add_trace(go.Scatter(x=[_MN[i-1] for i in m.index], y=m[col],
+                                 mode="lines+markers", name=lbl, line=dict(color=color, width=2)))
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="2025 Monthly Booking Pickup (rooms added)", font_color="rgba(245,245,240,0.9)"))
+    return fig
+
+def _chart_demand_on_books() -> go.Figure:
+    ready = _load_ready()
+    df = ready[ready["business_date"].dt.year == 2025].copy()
+    df["month"] = df["business_date"].dt.month
+    m = df.groupby("month")["total_rooms_on_books"].mean()
+    fig = go.Figure(go.Bar(x=[_MN[i-1] for i in m.index], y=m.values, marker_color=SLATE))
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="2025 Avg Rooms on Books by Month", font_color="rgba(245,245,240,0.9)"))
+    return fig
+
+# ── Forecast vs actuals comparison ────────────────────────────────────────────
+def _chart_forecast_vs_2025_occ() -> go.Figure:
+    master = _load_master()
+    fc     = _load_forecast()
+    fig    = go.Figure()
+    df25   = master[master["business_date"].dt.year == 2025]
+    m25    = df25.groupby(df25["business_date"].dt.month)["occupancy_rate"].mean() * 100
+    fig.add_trace(go.Scatter(x=[_MN[i-1] for i in m25.index], y=m25.values,
+                             mode="lines+markers", name="2025 Actual", line=dict(color=SLATE, width=2)))
+    if not fc.empty:
+        mfc = fc.groupby(fc["business_date"].dt.month)["pred_occupancy"].mean() * 100
+        fig.add_trace(go.Scatter(x=[_MN[i-1] for i in mfc.index], y=mfc.values,
+                                 mode="lines+markers", name="2026 Forecast", line=dict(color=ACCENT, width=2, dash="dash")))
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="Occupancy: 2025 Actual vs 2026 Forecast", font_color="rgba(245,245,240,0.9)"))
+    return fig
+
+def _chart_forecast_vs_2025_rev() -> go.Figure:
+    master = _load_master()
+    fc     = _load_forecast()
+    fig    = go.Figure()
+    df25   = master[master["business_date"].dt.year == 2025]
+    m25    = df25.groupby(df25["business_date"].dt.month)["room_revenue"].sum()
+    fig.add_trace(go.Bar(x=[_MN[i-1] for i in m25.index], y=m25.values, name="2025 Actual", marker_color=SLATE))
+    if not fc.empty:
+        mfc = fc.groupby(fc["business_date"].dt.month)["pred_revenue"].sum()
+        fig.add_trace(go.Bar(x=[_MN[i-1] for i in mfc.index], y=mfc.values, name="2026 Forecast", marker_color=ACCENT))
+    fig.update_layout(barmode="group")
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="Revenue: 2025 Actual vs 2026 Forecast", font_color="rgba(245,245,240,0.9)"))
+    return fig
+
 _CHART_FNS = {
-    "revenue_monthly":      _chart_revenue_monthly,
-    "adr_monthly":          _chart_adr_trend,
-    "adr_trend":            _chart_adr_daily_2025,
-    "occupancy_monthly":    _chart_occupancy_monthly,
-    "occupancy_trend":      _chart_occupancy_daily_2025,
-    "revpar_monthly":       _chart_revpar_monthly,
-    "revenue_trend":        _chart_revenue_daily_2025,
-    "forecast_revenue":     _chart_forecast_revenue,
-    "forecast_occupancy":   _chart_forecast_occupancy,
-    "forecast_adr":         _chart_forecast_adr,
+    # Performance
+    "revenue_monthly":          _chart_revenue_monthly,
+    "revenue_trend":            _chart_revenue_daily_2025,
+    "adr_monthly":              _chart_adr_trend,
+    "adr_trend":                _chart_adr_daily_2025,
+    "occupancy_monthly":        _chart_occupancy_monthly,
+    "occupancy_trend":          _chart_occupancy_daily_2025,
+    "revpar_monthly":           _chart_revpar_monthly,
+    # Room types
+    "room_revenue":             _chart_room_revenue,
+    "room_ooo":                 _chart_room_ooo,
+    "room_occupancy":           _chart_room_occupancy,
+    # Demand
+    "demand_pickup":            _chart_demand_pickup,
+    "demand_on_books":          _chart_demand_on_books,
+    # Forecast
+    "forecast_revenue":         _chart_forecast_revenue,
+    "forecast_occupancy":       _chart_forecast_occupancy,
+    "forecast_adr":             _chart_forecast_adr,
+    "forecast_vs_2025_rev":     _chart_forecast_vs_2025_rev,
+    "forecast_vs_2025_occ":     _chart_forecast_vs_2025_occ,
 }
 
 # ── Claude call ───────────────────────────────────────────────────────────────
@@ -313,15 +419,51 @@ Never mix text and charts. Never output more than one chart name.
 
 Available charts:
 revenue_monthly — monthly revenue 2024 vs 2025
+revenue_trend — daily revenue line 2025
 adr_monthly — monthly ADR 2024 vs 2025
 adr_trend — daily ADR line 2025
-occupancy_monthly — monthly occupancy 2024 vs 2025
+occupancy_monthly — monthly occupancy % 2024 vs 2025
 occupancy_trend — daily occupancy line 2025
 revpar_monthly — monthly RevPAR 2024 vs 2025
-revenue_trend — daily revenue line 2025
+room_revenue — total revenue by room type (ranked)
+room_ooo — total OOO nights by room type (ranked)
+room_occupancy — average occupancy % by room type
+demand_pickup — 2025 booking pickup 7d/14d/30d by month
+demand_on_books — 2025 avg rooms on books by month
 forecast_revenue — 2026 projected revenue by month
 forecast_occupancy — 2026 projected occupancy
-forecast_adr — 2026 projected ADR"""
+forecast_adr — 2026 projected ADR
+forecast_vs_2025_rev — 2025 actual vs 2026 forecast revenue
+forecast_vs_2025_occ — 2025 actual vs 2026 forecast occupancy"""
+
+# Catalog shown to user in the UI
+_CHART_CATALOG_DISPLAY = [
+    ("📊 Performance", [
+        ("revenue_monthly", "Monthly revenue 2024 vs 2025"),
+        ("revenue_trend",   "Daily revenue trend 2025"),
+        ("adr_monthly",     "Monthly ADR 2024 vs 2025"),
+        ("adr_trend",       "Daily ADR trend 2025"),
+        ("occupancy_monthly","Monthly occupancy % 2024 vs 2025"),
+        ("occupancy_trend", "Daily occupancy trend 2025"),
+        ("revpar_monthly",  "Monthly RevPAR 2024 vs 2025"),
+    ]),
+    ("🛏 Room Types", [
+        ("room_revenue",    "Revenue by room type (ranked)"),
+        ("room_ooo",        "OOO nights by room type (ranked)"),
+        ("room_occupancy",  "Occupancy % by room type"),
+    ]),
+    ("📅 Demand", [
+        ("demand_pickup",   "Booking pickup 7d/14d/30d by month"),
+        ("demand_on_books", "Avg rooms on books by month"),
+    ]),
+    ("🔮 Forecast", [
+        ("forecast_revenue",       "2026 projected revenue"),
+        ("forecast_occupancy",     "2026 projected occupancy"),
+        ("forecast_adr",           "2026 projected ADR"),
+        ("forecast_vs_2025_rev",   "2025 actual vs 2026 forecast — revenue"),
+        ("forecast_vs_2025_occ",   "2025 actual vs 2026 forecast — occupancy"),
+    ]),
+]
 
 def _call_claude(question: str, context: str, history: list) -> str:
     import anthropic
@@ -477,6 +619,12 @@ def home_page():
             '<div class="search-hint">Press Enter to ask · Powered by Claude AI</div>',
             unsafe_allow_html=True,
         )
+
+        with st.expander("📊 Available charts", expanded=False):
+            for section, charts in _CHART_CATALOG_DISPLAY:
+                st.markdown(f"**{section}**")
+                for name, desc in charts:
+                    st.markdown(f"- `{name}` — {desc}")
 
         # Only trigger on actual form submission — not on reruns after processing
         if submitted and question.strip():

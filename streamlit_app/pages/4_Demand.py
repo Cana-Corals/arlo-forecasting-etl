@@ -36,6 +36,8 @@ st.markdown("""
 .dm-title  { font-size:14px; font-weight:600; color:var(--white); }
 .dm-sub    { font-size:11px; color:var(--muted); }
 .dm-rule   { height:2px; background:linear-gradient(90deg,var(--purple) 0%,transparent 60%); }
+.dm-home-btn { margin-left:auto; font-size:11px; color:rgba(245,245,240,.45); text-decoration:none; padding:5px 11px; border:1px solid rgba(255,255,255,.1); border-radius:4px; transition:color .15s,border-color .15s; }
+.dm-home-btn:hover { color:rgba(245,245,240,.9); border-color:rgba(255,255,255,.25); }
 
 .dm-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:18px 20px 6px; }
 .dm-kpi { background:var(--dark); border:1px solid var(--border); border-radius:6px; padding:14px 16px; }
@@ -89,6 +91,7 @@ st.markdown("""
 <div class="dm-topbar">
   <span class="dm-title">Demand Drivers</span>
   <span class="dm-sub">Booking behavior, lead times & channel mix</span>
+  <a href="/" target="_self" class="dm-home-btn">⌂ Home</a>
 </div>
 <div class="dm-rule"></div>
 """, unsafe_allow_html=True)

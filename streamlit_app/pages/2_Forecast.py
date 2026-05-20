@@ -41,6 +41,13 @@ st.markdown("""
 .fc-title { font-size:14px; font-weight:600; color:var(--white); }
 .fc-sub   { font-size:11px; color:var(--muted); }
 .fc-rule  { height:2px; background:linear-gradient(90deg,var(--accent) 0%,transparent 60%); }
+.fc-home-btn {
+  margin-left:auto; font-size:11px; color:rgba(245,245,240,.45);
+  text-decoration:none; padding:5px 11px;
+  border:1px solid rgba(255,255,255,.1); border-radius:4px;
+  transition:color .15s,border-color .15s;
+}
+.fc-home-btn:hover { color:rgba(245,245,240,.9); border-color:rgba(255,255,255,.25); }
 
 .fc-kpi-grid {
   display:grid; grid-template-columns:repeat(4,1fr); gap:12px;
@@ -100,6 +107,7 @@ st.markdown("""
 <div class="fc-topbar">
   <span class="fc-title">Forecast</span>
   <span class="fc-sub">ML model · 2026 forward predictions</span>
+  <a href="/" target="_self" class="fc-home-btn">⌂ Home</a>
 </div>
 <div class="fc-rule"></div>
 """, unsafe_allow_html=True)

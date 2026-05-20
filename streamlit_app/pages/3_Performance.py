@@ -35,6 +35,8 @@ st.markdown("""
 .pf-title  { font-size:14px; font-weight:600; color:var(--white); }
 .pf-sub    { font-size:11px; color:var(--muted); }
 .pf-rule   { height:2px; background:linear-gradient(90deg,var(--slate) 0%,transparent 60%); }
+.pf-home-btn { margin-left:auto; font-size:11px; color:rgba(245,245,240,.45); text-decoration:none; padding:5px 11px; border:1px solid rgba(255,255,255,.1); border-radius:4px; transition:color .15s,border-color .15s; }
+.pf-home-btn:hover { color:rgba(245,245,240,.9); border-color:rgba(255,255,255,.25); }
 
 .pf-kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; padding:18px 20px 6px; }
 .pf-kpi { background:var(--dark); border:1px solid var(--border); border-radius:6px; padding:14px 16px; }
@@ -88,6 +90,7 @@ st.markdown("""
 <div class="pf-topbar">
   <span class="pf-title">Performance</span>
   <span class="pf-sub">2024 – 2025 actuals</span>
+  <a href="/" target="_self" class="pf-home-btn">⌂ Home</a>
 </div>
 <div class="pf-rule"></div>
 """, unsafe_allow_html=True)

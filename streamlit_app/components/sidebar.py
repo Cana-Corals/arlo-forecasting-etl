@@ -35,7 +35,7 @@ section[data-testid="stSidebar"] .stButton > button {
   color:rgba(245,245,240,.6) !important;
   font-size:12px !important; font-weight:400 !important;
   text-align:left !important; justify-content:flex-start !important;
-  padding:7px 10px 7px 16px !important; margin:1px 6px !important;
+  padding:9px 10px 9px 16px !important; margin:3px 6px !important;
   width:calc(100% - 12px) !important; border-radius:4px !important;
   transition:background .12s !important;
 }
@@ -72,14 +72,6 @@ def render_sidebar(active: str = "") -> None:
           </div>
         </div>
         """, unsafe_allow_html=True)
-
-        # AI Assistant (top)
-        label_ai, path_ai = "✦  AI Assistant", "Home.py"
-        if st.button("✦  AI Assistant", key="sb_ai", use_container_width=True):
-            st.switch_page(path_ai)
-
-        st.markdown('<div style="height:1px;background:rgba(255,255,255,.06);margin:4px 10px;"></div>',
-                    unsafe_allow_html=True)
 
         # Analytics section
         st.markdown('<div style="padding:10px 16px 6px;font-size:9px;font-weight:600;'

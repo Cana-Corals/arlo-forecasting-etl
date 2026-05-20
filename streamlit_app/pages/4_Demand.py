@@ -307,6 +307,7 @@ st.dataframe(
     display_df,
     use_container_width=True,
     hide_index=True,
+    height=(len(display_df) + 1) * 35 + 3,
     column_config={
         "room_type":      st.column_config.TextColumn("Code"),
         "label":          st.column_config.TextColumn("Room Type"),

@@ -530,9 +530,13 @@ def login_page():
         section[data-testid="stSidebar"] { display: none; }
         .block-container { padding-top: 2rem; }
         .arlo-title { text-align:center; font-size:2.4rem; font-weight:700; color:#f5f5f0; margin-bottom:0.2rem; }
-        .confidential { text-align:center; font-size:2.25rem; font-weight:700; color:rgba(245,245,240,0.85); letter-spacing:0.12em; margin-top:2rem; }
+        .confidential { text-align:center; font-size:0.75rem; color:rgba(245,245,240,0.3); letter-spacing:0.12em; margin-top:2rem; }
         div[data-testid="stForm"] { width:100% !important; }
-        div[data-testid="stForm"] > div > div { width:100% !important; }
+        div[data-testid="stForm"] div[data-testid="stTextInput"],
+        div[data-testid="stForm"] div[data-testid="stTextInput"] > div,
+        div[data-testid="stForm"] div[data-testid="stTextInput"] input {
+            width:100% !important; box-sizing:border-box !important;
+        }
     </style>
     """, unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 1.2, 1])
@@ -540,11 +544,11 @@ def login_page():
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown('<div class="arlo-title">Arlo Williamsburg</div>', unsafe_allow_html=True)
         st.markdown(
-            '<div style="text-align:center;font-size:2rem;color:#f5f5f0;letter-spacing:0.08em;font-weight:700;margin-bottom:0.4rem;">FORECASTING</div>',
+            '<div style="text-align:center;font-size:1rem;color:#f5f5f0;letter-spacing:0.08em;font-weight:700;margin-bottom:0.4rem;">FORECASTING</div>',
             unsafe_allow_html=True,
         )
         st.markdown(
-            '<div style="text-align:center;font-size:1.7rem;color:#f5f5f0;margin-bottom:2rem;">Internal Intelligence Platform</div>',
+            '<div style="text-align:center;font-size:0.85rem;color:#f5f5f0;margin-bottom:2rem;">Internal Intelligence Platform</div>',
             unsafe_allow_html=True,
         )
         authenticator.login(

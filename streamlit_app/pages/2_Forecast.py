@@ -338,22 +338,26 @@ def build_bars(fc_df, py_df, val_col_fc, val_col_py, agg_fn,
     ))
     return fig
 
+SLATE   = "#4a6fa5"
+SLATE_F = "rgba(74,111,165,0.22)"
+
 if fc.empty:
     st.info("No forecast data available for the selected period.")
 else:
-    # Bar / Line toggle
-    _tc, _ = st.columns([3, 6])
-    with _tc:
-        use_line = st.radio("Chart style", ["Bar", "Line"], horizontal=True,
-                            key="fc_chart_style", label_visibility="collapsed")
-
-    # Revenue + Occupancy side by side
-    st.markdown('<div class="fc-section"><div class="fc-section-ttl">Revenue &amp; Occupancy Forecast</div></div>',
-                unsafe_allow_html=True)
+    # ── Revenue + Occupancy — each chart has its own type toggle ──────────────
     _rc, _oc = st.columns(2)
 
     with _rc:
-        if use_line == "Bar":
+        _rl, _rt = st.columns([3, 1.5])
+        with _rl:
+            st.markdown('<div class="fc-section"><div class="fc-section-ttl">Revenue Forecast</div></div>',
+                        unsafe_allow_html=True)
+        with _rt:
+            rev_t = st.segmented_control("", ["📊", "📈"], default="📊",
+                                          key="fc_rev_t", label_visibility="collapsed")
+        is_bar_rev = (rev_t == "📊" or rev_t is None)
+
+        if is_bar_rev:
             fig_rev = build_bars(fc, py, "pred_revenue", "actual_revenue", "sum",
                                  ACCENT, ACCENT_F, prefix="$",
                                  fc_label=fc_bar_label, py_label=py_bar_label)
@@ -375,12 +379,22 @@ else:
         st.plotly_chart(fig_rev, use_container_width=True, config={"displayModeBar": False})
 
     with _oc:
+        _ol, _ot = st.columns([3, 1.5])
+        with _ol:
+            st.markdown('<div class="fc-section"><div class="fc-section-ttl">Occupancy Forecast</div></div>',
+                        unsafe_allow_html=True)
+        with _ot:
+            occ_t = st.segmented_control("", ["📊", "📈"], default="📊",
+                                          key="fc_occ_t", label_visibility="collapsed")
+        is_bar_occ = (occ_t == "📊" or occ_t is None)
+
         fc_occ = fc.copy()
         fc_occ["pred_occ_pct"] = fc_occ["pred_occupancy"] * 100
         py_occ = py.copy()
-        py_occ["actual_occ_pct"] = py_occ["actual_occupancy"] * 100
+        if not py_occ.empty:
+            py_occ["actual_occ_pct"] = py_occ["actual_occupancy"] * 100
 
-        if use_line == "Bar":
+        if is_bar_occ:
             fig_occ = build_bars(fc_occ, py_occ, "pred_occ_pct", "actual_occ_pct", "mean",
                                  GREEN, GREEN_F, suffix="%",
                                  fc_label=fc_bar_label, py_label=py_bar_label)
@@ -401,44 +415,75 @@ else:
         fig_occ.update_yaxes(ticksuffix="%", range=[0, 105])
         st.plotly_chart(fig_occ, use_container_width=True, config={"displayModeBar": False})
 
-    # ADR + RevPAR forecast side by side
-    st.markdown('<div class="fc-section"><div class="fc-section-ttl">ADR &amp; RevPAR Forecast</div></div>',
-                unsafe_allow_html=True)
+    # ── ADR + RevPAR — each chart has its own type toggle ────────────────────
     _ac, _rpc = st.columns(2)
 
     with _ac:
-        adr_r = agg_fc(fc, "pred_adr", "mean")
-        xl_a  = period_labels(adr_r["period"])
-        fig_adr = go.Figure()
-        fig_adr.add_trace(go.Scatter(x=xl_a, y=adr_r["pred_adr"],
-                                     name=fc_bar_label, line=dict(color=ACCENT, width=2),
-                                     mode="lines+markers",
-                                     hovertemplate="$%{y:,.0f}<extra>" + fc_bar_label + "</extra>"))
-        if not py.empty:
-            adr_py = agg_fc(py.rename(columns={"actual_adr": "pred_adr"}), "pred_adr", "mean")
-            fig_adr.add_trace(go.Scatter(x=period_labels(adr_py["period"]), y=adr_py["pred_adr"],
-                                         name=py_bar_label, line=dict(color=ACCENT_F, width=1.5, dash="dot"),
+        _al, _at = st.columns([3, 1.5])
+        with _al:
+            st.markdown('<div class="fc-section"><div class="fc-section-ttl">ADR Forecast</div></div>',
+                        unsafe_allow_html=True)
+        with _at:
+            adr_t = st.segmented_control("", ["📊", "📈"], default="📈",
+                                          key="fc_adr_t", label_visibility="collapsed")
+        is_bar_adr = (adr_t == "📊")
+
+        if is_bar_adr:
+            fig_adr = build_bars(fc, py, "pred_adr", "actual_adr", "mean",
+                                 ACCENT, ACCENT_F, prefix="$",
+                                 fc_label=fc_bar_label, py_label=py_bar_label)
+        else:
+            adr_r = agg_fc(fc, "pred_adr", "mean")
+            xl_a  = period_labels(adr_r["period"])
+            fig_adr = go.Figure()
+            fig_adr.add_trace(go.Scatter(x=xl_a, y=adr_r["pred_adr"],
+                                         name=fc_bar_label, line=dict(color=ACCENT, width=2),
                                          mode="lines+markers",
-                                         hovertemplate="$%{y:,.0f}<extra>" + py_bar_label + "</extra>"))
-        adr_lay = chart_layout()
-        adr_lay["title"] = dict(text="ADR Forecast", font=dict(size=11, color="rgba(245,245,240,0.7)"), x=0)
-        fig_adr.update_layout(**adr_lay)
+                                         hovertemplate="$%{y:,.0f}<extra>" + fc_bar_label + "</extra>"))
+            if not py.empty:
+                adr_py_agg = agg_fc(py.rename(columns={"actual_adr": "pred_adr"}), "pred_adr", "mean")
+                fig_adr.add_trace(go.Scatter(x=period_labels(adr_py_agg["period"]), y=adr_py_agg["pred_adr"],
+                                             name=py_bar_label, line=dict(color=ACCENT_F, width=1.5, dash="dot"),
+                                             mode="lines+markers",
+                                             hovertemplate="$%{y:,.0f}<extra>" + py_bar_label + "</extra>"))
+        fig_adr.update_layout(**chart_layout())
         fig_adr.update_yaxes(tickprefix="$", tickformat=",.0f")
         st.plotly_chart(fig_adr, use_container_width=True, config={"displayModeBar": False})
 
     with _rpc:
-        rp_r = agg_fc(fc, "pred_revpar", "mean")
-        xl_rp = period_labels(rp_r["period"])
-        SLATE = "#4a6fa5"
-        SLATE_F = "rgba(74,111,165,0.22)"
-        fig_rp = go.Figure()
-        fig_rp.add_trace(go.Scatter(x=xl_rp, y=rp_r["pred_revpar"],
-                                    name=fc_bar_label, line=dict(color=SLATE, width=2),
-                                    mode="lines+markers",
-                                    hovertemplate="$%{y:,.0f}<extra>" + fc_bar_label + "</extra>"))
-        rp_lay = chart_layout()
-        rp_lay["title"] = dict(text="RevPAR Forecast", font=dict(size=11, color="rgba(245,245,240,0.7)"), x=0)
-        fig_rp.update_layout(**rp_lay)
+        _rl2, _rt2 = st.columns([3, 1.5])
+        with _rl2:
+            st.markdown('<div class="fc-section"><div class="fc-section-ttl">RevPAR Forecast</div></div>',
+                        unsafe_allow_html=True)
+        with _rt2:
+            rp_t = st.segmented_control("", ["📊", "📈"], default="📈",
+                                         key="fc_rp_t", label_visibility="collapsed")
+        is_bar_rp = (rp_t == "📊")
+
+        if is_bar_rp:
+            py_rp_df = py.copy()
+            if not py_rp_df.empty:
+                py_rp_df["actual_revpar"] = py_rp_df["actual_revenue"] / 147
+            fig_rp = build_bars(fc, py_rp_df, "pred_revpar", "actual_revpar", "mean",
+                                SLATE, SLATE_F, prefix="$",
+                                fc_label=fc_bar_label, py_label=py_bar_label)
+        else:
+            rp_r = agg_fc(fc, "pred_revpar", "mean")
+            xl_rp = period_labels(rp_r["period"])
+            fig_rp = go.Figure()
+            fig_rp.add_trace(go.Scatter(x=xl_rp, y=rp_r["pred_revpar"],
+                                        name=fc_bar_label, line=dict(color=SLATE, width=2),
+                                        mode="lines+markers",
+                                        hovertemplate="$%{y:,.0f}<extra>" + fc_bar_label + "</extra>"))
+            if not py.empty:
+                py_for_rp = py.copy()
+                py_for_rp["pred_revpar"] = py_for_rp["actual_revenue"] / 147
+                rp_py_agg = agg_fc(py_for_rp, "pred_revpar", "mean")
+                fig_rp.add_trace(go.Scatter(x=period_labels(rp_py_agg["period"]), y=rp_py_agg["pred_revpar"],
+                                            name=py_bar_label, line=dict(color=SLATE_F, width=1.5, dash="dot"),
+                                            mode="lines+markers",
+                                            hovertemplate="$%{y:,.0f}<extra>" + py_bar_label + "</extra>"))
+        fig_rp.update_layout(**chart_layout())
         fig_rp.update_yaxes(tickprefix="$", tickformat=",.0f")
         st.plotly_chart(fig_rp, use_container_width=True, config={"displayModeBar": False})
 

@@ -6,6 +6,8 @@ from pathlib import Path
 from datetime import date, datetime
 import sys
 import re
+import threading
+import time
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -180,12 +182,16 @@ def _build_hotel_context() -> str:
     return "".join(out)
 
 # ── Claude call ───────────────────────────────────────────────────────────────
-_SYSTEM = """Hotel revenue assistant for Arlo Williamsburg (147 rooms, Brooklyn NY).
-Be brief and direct. 2-4 bullet points max for text answers. Bold key numbers.
+_SYSTEM = """You are a hotel revenue analyst for Arlo Williamsburg (147 rooms, Brooklyn NY). Be direct and professional.
 
-For charts include Plotly code in <chart></chart> tags. Variable must be named `fig`.
-Chart variables: `master` (daily 2024-2025: business_date,room_revenue,occupancy_rate[0-1],adr,revpar,room_nights,ooo_rooms,is_major_event_day,is_barclays_event,is_msg_event,is_yankees_game,medallia_overall_satisfaction), `forecast` (2026: business_date,pred_revenue,pred_occupancy[0-1],pred_adr,pred_revpar), `go`,`px`,`pd`,`np`, `apply_dark(fig)` (dark theme — always call it), `ACCENT`(#e8854a),`GREEN`(#3ecf8e),`RED`(#e05252).
-After apply_dark(fig), set title: fig.update_layout(title=dict(text="...",font_color="rgba(245,245,240,0.9)"))"""
+RULES — no exceptions:
+- Text answer: max 100 words, bullet points only, bold key numbers.
+- Chart request: produce EXACTLY ONE <chart> block. No extra text except one intro sentence.
+- Never produce more than one chart. Never combine long text with a chart.
+
+Chart code goes inside <chart></chart>. Variable must be named `fig`.
+Data: `master` (daily 2024-2025: business_date,room_revenue,occupancy_rate[0-1],adr,revpar,room_nights), `forecast` (2026: business_date,pred_revenue,pred_occupancy[0-1],pred_adr,pred_revpar), `go`,`px`,`pd`,`np`.
+Theme: call `apply_dark(fig)`, then `fig.update_layout(title=dict(text="...",font_color="rgba(245,245,240,0.9)"))`. Colors: `ACCENT`=#e8854a `GREEN`=#3ecf8e `RED`=#e05252."""
 
 def _call_claude(question: str, context: str, history: list) -> str:
     import anthropic
@@ -200,7 +206,7 @@ def _call_claude(question: str, context: str, history: list) -> str:
     messages.append({"role": "user", "content": f"{question}\n\n---\n{context}"})
     resp = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=600,
+        max_tokens=250,
         system=_SYSTEM,
         messages=messages,
     )

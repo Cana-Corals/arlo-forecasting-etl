@@ -303,12 +303,14 @@ SORT_OPTIONS = {
     "Lost Revenue": "lost_revenue",
 }
 
-_s1, _s2 = st.columns([2, 6])
-with _s1:
-    sort_by = st.selectbox(
-        "Sort by", list(SORT_OPTIONS.keys()),
-        index=0, key="rt_sort",
-    )
+sort_by = st.radio(
+    "Sort table by",
+    list(SORT_OPTIONS.keys()),
+    index=0,
+    horizontal=True,
+    key="rt_sort",
+    label_visibility="collapsed",
+)
 
 sort_col = SORT_OPTIONS[sort_by]
 rt_stats = rt_stats.sort_values(sort_col, ascending=False).reset_index(drop=True)
@@ -741,7 +743,7 @@ with _ce2:
     cards = ""
     for _, row in df_ev.sort_values("lift", ascending=False).iterrows():
         lift_v  = row["lift"]
-        color   = "#3ecf8e" if lift_v > 0 else "#e05252"
+        color   = "#3ecf8e" if lift_v > 0 else "#eb2323"
         sym     = "▲" if lift_v > 0 else "▼"
         note    = ("Positive demand signal" if lift_v > 1
                    else "Minimal impact" if abs(lift_v) <= 1

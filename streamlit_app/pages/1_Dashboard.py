@@ -449,12 +449,13 @@ with st.sidebar:
     if COLLAPSED:
         st.markdown("""
         <div style="display:flex;align-items:center;justify-content:center;
-                    padding:14px 0 12px;border-bottom:1px solid rgba(255,255,255,.08);">
+                    padding:18px 0 20px;border-bottom:1px solid rgba(255,255,255,.08);">
           <div style="width:32px;height:32px;border-radius:6px;background:#e8854a;
                       display:flex;align-items:center;justify-content:center;
                       font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em;">AW</div>
         </div>
         """, unsafe_allow_html=True)
+        st.markdown('<div style="height:12px;"></div>', unsafe_allow_html=True)
         if st.button("☰", key="sb_tog", use_container_width=True):
             st.session_state["sb_collapsed"] = False
             st.rerun()
@@ -480,38 +481,43 @@ with st.sidebar:
 
     # ── Nav ───────────────────────────────────────────────────────────────────
     if COLLAPSED:
-        # Tabler icon buttons — onclick sets ?nav= query param, Python catches it above
+        # Inline SVGs — no external font dependency, render reliably everywhere
         _is = ("display:flex;justify-content:center;align-items:center;"
-               "height:36px;cursor:pointer;border-radius:4px;margin:1px 5px;")
-        _ic = "font-size:16px;color:rgba(245,245,240,.55);"
+               "height:40px;cursor:pointer;border-radius:4px;margin:2px 5px;")
+        _home = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(232,133,74,.75)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9L12 2l9 7v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'
+        _fc   = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,240,.55)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 1 18"/><polyline points="16 7 22 7 22 13"/></svg>'
+        _pe   = '<svg width="17" height="17" viewBox="0 0 24 24" fill="rgba(245,245,240,.5)" stroke="none"><rect x="2" y="13" width="5" height="9" rx="1"/><rect x="9.5" y="8" width="5" height="14" rx="1"/><rect x="17" y="3" width="5" height="19" rx="1"/></svg>'
+        _de   = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,240,.55)" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+        _co   = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,240,.55)" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="3" width="20" height="20" rx="1"/><line x1="12" y1="3" x2="12" y2="23"/><line x1="2" y1="11" x2="22" y2="11"/></svg>'
+        _mo   = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,240,.55)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/><line x1="6" y1="20" x2="18" y2="20"/></svg>'
         st.markdown(f"""
-        <div style="padding:6px 0;display:flex;flex-direction:column;gap:2px;">
+        <div style="padding:8px 0;display:flex;flex-direction:column;gap:2px;">
           <div onclick="window.location.search='?nav=home'" style="{_is}"
                onmouseover="this.style.background='rgba(232,133,74,.12)'"
                onmouseout="this.style.background='transparent'">
-            <i class="ti ti-sparkles" style="font-size:16px;color:rgba(232,133,74,.7);"></i></div>
+            {_home}</div>
           <div style="height:1px;background:rgba(255,255,255,.06);margin:4px 10px;"></div>
           <div onclick="window.location.search='?nav=forecast'" style="{_is}"
                onmouseover="this.style.background='rgba(255,255,255,.06)'"
                onmouseout="this.style.background='transparent'">
-            <i class="ti ti-trending-up" style="{_ic}"></i></div>
+            {_fc}</div>
           <div onclick="window.location.search='?nav=performance'" style="{_is}"
                onmouseover="this.style.background='rgba(255,255,255,.06)'"
                onmouseout="this.style.background='transparent'">
-            <i class="ti ti-chart-bar" style="{_ic}"></i></div>
+            {_pe}</div>
           <div onclick="window.location.search='?nav=demand'" style="{_is}"
                onmouseover="this.style.background='rgba(255,255,255,.06)'"
                onmouseout="this.style.background='transparent'">
-            <i class="ti ti-calendar-event" style="{_ic}"></i></div>
+            {_de}</div>
           <div style="height:1px;background:rgba(255,255,255,.06);margin:4px 10px;"></div>
           <div onclick="window.location.search='?nav=competitive'" style="{_is}"
                onmouseover="this.style.background='rgba(255,255,255,.06)'"
                onmouseout="this.style.background='transparent'">
-            <i class="ti ti-building-store" style="{_ic}"></i></div>
+            {_co}</div>
           <div onclick="window.location.search='?nav=model_insights'" style="{_is}"
                onmouseover="this.style.background='rgba(255,255,255,.06)'"
                onmouseout="this.style.background='transparent'">
-            <i class="ti ti-brain" style="{_ic}"></i></div>
+            {_mo}</div>
         </div>
         """, unsafe_allow_html=True)
     else:

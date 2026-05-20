@@ -181,17 +181,147 @@ def _build_hotel_context() -> str:
         pass
     return "".join(out)
 
+# ── Pre-built chart catalog ───────────────────────────────────────────────────
+_MN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+def _chart_revenue_monthly() -> go.Figure:
+    master = _load_master()
+    fig = go.Figure()
+    for year, color in [(2024, SLATE), (2025, ACCENT)]:
+        df = master[master["business_date"].dt.year == year]
+        m  = df.groupby(df["business_date"].dt.month)["room_revenue"].sum()
+        fig.add_trace(go.Bar(name=str(year), x=[_MN[i-1] for i in m.index], y=m.values, marker_color=color))
+    fig.update_layout(barmode="group")
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="Monthly Revenue 2024 vs 2025", font_color="rgba(245,245,240,0.9)"))
+    return fig
+
+def _chart_adr_trend() -> go.Figure:
+    master = _load_master()
+    fig = go.Figure()
+    for year, color in [(2024, SLATE), (2025, ACCENT)]:
+        df = master[master["business_date"].dt.year == year].sort_values("business_date")
+        m  = df.groupby(df["business_date"].dt.month)["adr"].mean()
+        fig.add_trace(go.Scatter(name=str(year), x=[_MN[i-1] for i in m.index], y=m.values,
+                                 mode="lines+markers", line=dict(color=color, width=2)))
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="Monthly ADR 2024 vs 2025", font_color="rgba(245,245,240,0.9)"))
+    return fig
+
+def _chart_occupancy_monthly() -> go.Figure:
+    master = _load_master()
+    fig = go.Figure()
+    for year, color in [(2024, SLATE), (2025, ACCENT)]:
+        df = master[master["business_date"].dt.year == year]
+        m  = df.groupby(df["business_date"].dt.month)["occupancy_rate"].mean() * 100
+        fig.add_trace(go.Scatter(name=str(year), x=[_MN[i-1] for i in m.index], y=m.values,
+                                 mode="lines+markers", line=dict(color=color, width=2)))
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="Monthly Occupancy % 2024 vs 2025", font_color="rgba(245,245,240,0.9)"))
+    return fig
+
+def _chart_revpar_monthly() -> go.Figure:
+    master = _load_master()
+    fig = go.Figure()
+    for year, color in [(2024, SLATE), (2025, ACCENT)]:
+        df = master[master["business_date"].dt.year == year]
+        m  = df.groupby(df["business_date"].dt.month)["revpar"].mean()
+        fig.add_trace(go.Bar(name=str(year), x=[_MN[i-1] for i in m.index], y=m.values, marker_color=color))
+    fig.update_layout(barmode="group")
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="Monthly RevPAR 2024 vs 2025", font_color="rgba(245,245,240,0.9)"))
+    return fig
+
+def _chart_forecast_revenue() -> go.Figure:
+    fc = _load_forecast()
+    if fc.empty:
+        return None
+    m = fc.groupby(fc["business_date"].dt.month)["pred_revenue"].sum()
+    fig = go.Figure(go.Bar(x=[_MN[i-1] for i in m.index], y=m.values, marker_color=ACCENT, name="2026 Forecast"))
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="2026 Projected Revenue by Month", font_color="rgba(245,245,240,0.9)"))
+    return fig
+
+def _chart_forecast_occupancy() -> go.Figure:
+    fc = _load_forecast()
+    if fc.empty:
+        return None
+    m = fc.groupby(fc["business_date"].dt.month)["pred_occupancy"].mean() * 100
+    fig = go.Figure(go.Scatter(x=[_MN[i-1] for i in m.index], y=m.values,
+                               mode="lines+markers", line=dict(color=GREEN, width=2), name="2026 Forecast"))
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="2026 Projected Occupancy %", font_color="rgba(245,245,240,0.9)"))
+    return fig
+
+def _chart_forecast_adr() -> go.Figure:
+    fc = _load_forecast()
+    if fc.empty:
+        return None
+    m = fc.groupby(fc["business_date"].dt.month)["pred_adr"].mean()
+    fig = go.Figure(go.Scatter(x=[_MN[i-1] for i in m.index], y=m.values,
+                               mode="lines+markers", line=dict(color=ACCENT, width=2), name="2026 Forecast"))
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="2026 Projected ADR", font_color="rgba(245,245,240,0.9)"))
+    return fig
+
+def _chart_adr_daily_2025() -> go.Figure:
+    master = _load_master()
+    df = master[master["business_date"].dt.year == 2025].sort_values("business_date")
+    fig = go.Figure(go.Scatter(x=df["business_date"], y=df["adr"],
+                               mode="lines", line=dict(color=ACCENT, width=1.5), name="ADR"))
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="2025 Daily ADR Trend", font_color="rgba(245,245,240,0.9)"))
+    return fig
+
+def _chart_occupancy_daily_2025() -> go.Figure:
+    master = _load_master()
+    df = master[master["business_date"].dt.year == 2025].sort_values("business_date")
+    fig = go.Figure(go.Scatter(x=df["business_date"], y=df["occupancy_rate"]*100,
+                               mode="lines", line=dict(color=GREEN, width=1.5), name="Occupancy %"))
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="2025 Daily Occupancy Trend", font_color="rgba(245,245,240,0.9)"))
+    return fig
+
+def _chart_revenue_daily_2025() -> go.Figure:
+    master = _load_master()
+    df = master[master["business_date"].dt.year == 2025].sort_values("business_date")
+    fig = go.Figure(go.Scatter(x=df["business_date"], y=df["room_revenue"],
+                               mode="lines", line=dict(color=ACCENT, width=1.5), name="Revenue"))
+    _apply_dark(fig)
+    fig.update_layout(title=dict(text="2025 Daily Revenue Trend", font_color="rgba(245,245,240,0.9)"))
+    return fig
+
+_CHART_FNS = {
+    "revenue_monthly":      _chart_revenue_monthly,
+    "adr_monthly":          _chart_adr_trend,
+    "adr_trend":            _chart_adr_daily_2025,
+    "occupancy_monthly":    _chart_occupancy_monthly,
+    "occupancy_trend":      _chart_occupancy_daily_2025,
+    "revpar_monthly":       _chart_revpar_monthly,
+    "revenue_trend":        _chart_revenue_daily_2025,
+    "forecast_revenue":     _chart_forecast_revenue,
+    "forecast_occupancy":   _chart_forecast_occupancy,
+    "forecast_adr":         _chart_forecast_adr,
+}
+
 # ── Claude call ───────────────────────────────────────────────────────────────
-_SYSTEM = """You are a hotel revenue analyst for Arlo Williamsburg (147 rooms, Brooklyn NY). Be direct and professional.
+_SYSTEM = """Hotel revenue analyst for Arlo Williamsburg (147 rooms, Brooklyn NY).
 
-RULES — no exceptions:
-- Text answer: max 100 words, bullet points only, bold key numbers.
-- Chart request: produce EXACTLY ONE <chart> block. No extra text except one intro sentence.
-- Never produce more than one chart. Never combine long text with a chart.
+For CHART requests respond with exactly one line: CHART: [chart_name]
+For TEXT requests respond with max 3 bullet points, max 12 words each, bold key numbers.
+Never mix text and charts. Never output more than one chart name.
 
-Chart code goes inside <chart></chart>. Variable must be named `fig`.
-Data: `master` (daily 2024-2025: business_date,room_revenue,occupancy_rate[0-1],adr,revpar,room_nights), `forecast` (2026: business_date,pred_revenue,pred_occupancy[0-1],pred_adr,pred_revpar), `go`,`px`,`pd`,`np`.
-Theme: call `apply_dark(fig)`, then `fig.update_layout(title=dict(text="...",font_color="rgba(245,245,240,0.9)"))`. Colors: `ACCENT`=#e8854a `GREEN`=#3ecf8e `RED`=#e05252."""
+Available charts:
+revenue_monthly — monthly revenue 2024 vs 2025
+adr_monthly — monthly ADR 2024 vs 2025
+adr_trend — daily ADR line 2025
+occupancy_monthly — monthly occupancy 2024 vs 2025
+occupancy_trend — daily occupancy line 2025
+revpar_monthly — monthly RevPAR 2024 vs 2025
+revenue_trend — daily revenue line 2025
+forecast_revenue — 2026 projected revenue by month
+forecast_occupancy — 2026 projected occupancy
+forecast_adr — 2026 projected ADR"""
 
 def _call_claude(question: str, context: str, history: list) -> str:
     import anthropic
@@ -206,44 +336,36 @@ def _call_claude(question: str, context: str, history: list) -> str:
     messages.append({"role": "user", "content": f"{question}\n\n---\n{context}"})
     resp = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=250,
+        max_tokens=120,
         system=_SYSTEM,
         messages=messages,
     )
-    return resp.content[0].text
+    return resp.content[0].text.strip()
 
-# ── Parse response into segments (no rendering) ───────────────────────────────
+# ── Parse response into segments ──────────────────────────────────────────────
 def _parse_segments(response_text: str) -> list:
-    """Execute chart code and return segments as {type, content} dicts."""
-    master   = _load_master()
-    forecast = _load_forecast()
-    exec_ns  = {
-        "go": go, "px": px, "pd": pd, "np": np,
-        "master":   master.copy(),
-        "forecast": forecast.copy() if not forecast.empty else pd.DataFrame(),
-        "DARK_LAYOUT": DARK_LAYOUT,
-        "apply_dark": _apply_dark,
-        "ACCENT": ACCENT, "GREEN": GREEN, "RED": RED, "SLATE": SLATE,
-    }
-    parts    = re.split(r'(<chart>.*?</chart>)', response_text, flags=re.DOTALL)
     segments = []
-    for part in parts:
-        if part.startswith("<chart>") and part.endswith("</chart>"):
-            code = part[7:-8].strip()
+    # Check for CHART: directive
+    m = re.search(r'CHART:\s*(\w+)', response_text, re.IGNORECASE)
+    if m:
+        chart_name = m.group(1).lower()
+        fn = _CHART_FNS.get(chart_name)
+        if fn:
             try:
-                ns = {**exec_ns}
-                exec(code, ns)
-                fig = ns.get("fig")
-                if isinstance(fig, go.Figure):
+                fig = fn()
+                if fig is not None:
                     segments.append({"type": "chart", "content": fig.to_dict()})
                 else:
-                    segments.append({"type": "text", "content": "_Chart error: no `fig` produced._"})
+                    segments.append({"type": "text", "content": "_Chart data not available._"})
             except Exception as e:
                 segments.append({"type": "text", "content": f"_Chart error: {e}_"})
         else:
-            text = part.strip()
-            if text:
-                segments.append({"type": "text", "content": text})
+            segments.append({"type": "text", "content": f"_Unknown chart: {chart_name}_"})
+    else:
+        # Plain text answer
+        text = response_text.strip()
+        if text:
+            segments.append({"type": "text", "content": text})
     return segments
 
 # ── Render stored segments ────────────────────────────────────────────────────
@@ -332,9 +454,8 @@ def home_page():
                 st.markdown(
                     '<div class="chat-empty">'
                     'Ask anything about the hotel<br>'
-                    '"Show me Q3 occupancy"<br>'
-                    '"Chart monthly ADR 2024 vs 2025"<br>'
-                    '"How is the 2026 forecast looking?"'
+                    '"ADR trend 2025" · "Revenue monthly chart"<br>'
+                    '"2026 forecast revenue" · "How is occupancy?"'
                     '</div>',
                     unsafe_allow_html=True,
                 )
@@ -345,7 +466,7 @@ def home_page():
         with st.form("ai_form", clear_on_submit=True, border=False):
             question = st.text_input(
                 label="",
-                placeholder='Ask anything — "Chart monthly ADR" or "How is Q3 looking?"',
+                placeholder='Ask anything — "ADR trend 2025" or "How is occupancy tracking?"',
                 label_visibility="collapsed",
                 key="home_question",
             )

@@ -502,11 +502,14 @@ with st.sidebar:
                              use_container_width=True, help=label):
                     st.switch_page(path)
     else:
-        st.markdown('<div style="padding:14px 16px 14px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Analytics</div>', unsafe_allow_html=True)
+        if st.button("← Home", key="nav_home", use_container_width=True):
+            st.switch_page("Home.py")
+        st.markdown('<div style="height:1px;background:rgba(255,255,255,.06);margin:6px 10px 2px;"></div>', unsafe_allow_html=True)
+        st.markdown('<div style="padding:10px 16px 6px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Analytics</div>', unsafe_allow_html=True)
         for lbl, path in [("Forecast","pages/2_Forecast.py"),("Performance","pages/3_Performance.py"),("Demand","pages/4_Demand.py")]:
             if st.button(lbl, key=f"nav_{lbl}", use_container_width=True):
                 st.switch_page(path)
-        st.markdown('<div style="padding:10px 16px 15px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Intelligence</div>', unsafe_allow_html=True)
+        st.markdown('<div style="padding:10px 16px 6px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Intelligence</div>', unsafe_allow_html=True)
         for lbl, path in [("Competitive","pages/5_Competitive.py"),("Model Insights","pages/6_Model_Insights.py")]:
             if st.button(lbl, key=f"nav_{lbl.replace(' ','_')}", use_container_width=True):
                 st.switch_page(path)

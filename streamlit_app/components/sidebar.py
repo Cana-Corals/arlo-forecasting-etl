@@ -70,6 +70,10 @@ def render_sidebar(active: str = "") -> None:
         </div>
         """, unsafe_allow_html=True)
 
+        # Home button
+        if st.button("← Home", key="sb_home", use_container_width=True):
+            st.switch_page("Home.py")
+
         # Overview section
         st.markdown('<div style="padding:10px 16px 6px;font-size:9px;font-weight:600;'
                     'letter-spacing:.18em;text-transform:uppercase;'

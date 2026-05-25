@@ -41,7 +41,7 @@ st.markdown("""
 .dm-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:18px 20px 6px; }
 .dm-kpi { background:var(--dark); border:1px solid var(--border); border-radius:6px; padding:14px 16px; }
 .dm-kpi-lbl { font-size:9px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
-.dm-kpi-val { font-size:22px; font-weight:600; color:var(--white); line-height:1; }
+.dm-kpi-val { font-size:28px; font-weight:600; color:var(--white); line-height:1; }
 .dm-kpi-sub { font-size:10px; color:var(--muted2); margin-top:5px; }
 
 .dm-section { padding:16px 20px 0; }

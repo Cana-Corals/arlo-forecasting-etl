@@ -52,14 +52,10 @@ _CHANNEL_MAP = {
 
 @st.cache_data
 def load_source_stats() -> pd.DataFrame:
-    raw = BASE_DIR / "data" / "raw"
-    files = sorted(raw.glob("wburg_daily_stats_source_*.csv"))
-    if not files:
+    path = PROCESSED_DIR / "daily_stats_source.csv"
+    if not path.exists():
         return pd.DataFrame()
-    parts = [pd.read_csv(f, parse_dates=["Business Date"]) for f in files]
-    df = pd.concat(parts, ignore_index=True)
-    df.columns = [c.strip().lower().replace(" ", "_").replace("-", "_") for c in df.columns]
-    df = df.rename(columns={"business_date": "business_date", "source_code": "source_code"})
+    df = pd.read_csv(path, parse_dates=["business_date"])
     df["channel"] = df["source_code"].map(_CHANNEL_MAP).fillna("Voice / Other")
     return df.sort_values("business_date").reset_index(drop=True)
 

@@ -8,6 +8,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from components.sidebar import render_sidebar
+from components.data import load_source_stats
 
 BASE = Path(__file__).resolve().parents[2]
 
@@ -389,6 +390,41 @@ mkt_lay["margin"]["l"] = 160
 mkt_lay["xaxis"].update({"tickprefix": "$", "tickformat": ",.0f"})
 fig_mkt.update_layout(**mkt_lay)
 st.plotly_chart(fig_mkt, use_container_width=True, config={"displayModeBar": False})
+
+# ── Channel mix ───────────────────────────────────────────────────────────────
+st.markdown('<div class="pf-section"><div class="pf-section-ttl">Channel Mix by Bookings Received</div></div>',
+            unsafe_allow_html=True)
+
+_src = load_source_stats()
+if not _src.empty:
+    _src_f = _src[(_src["business_date"] >= s_ts) & (_src["business_date"] <= e_ts)]
+    _ch = (
+        _src_f.groupby("channel")
+              .agg(Bookings=("room_nights", "sum"), Revenue=("room_revenue", "sum"))
+              .reset_index()
+              .rename(columns={"channel": "Channel"})
+    )
+    _total_bk = float(_ch["Bookings"].sum()) or 1.0
+    _ch["Share %"] = (_ch["Bookings"] / _total_bk * 100).round(1)
+    _ch["ADR ($)"] = (_ch["Revenue"] / _ch["Bookings"].replace(0, float("nan"))).round(0)
+    _ch = _ch.sort_values("Bookings", ascending=False)[
+        ["Channel", "Bookings", "Share %", "Revenue", "ADR ($)"]
+    ].reset_index(drop=True)
+
+    _ch_col, _ = st.columns([1, 1])
+    with _ch_col:
+        st.dataframe(
+            _ch,
+            column_config={
+                "Channel":  st.column_config.TextColumn("Channel"),
+                "Bookings": st.column_config.NumberColumn("Bookings", format="%d"),
+                "Share %":  st.column_config.NumberColumn("Share %",  format="%.1f%%"),
+                "Revenue":  st.column_config.NumberColumn("Revenue",  format="$%,.0f"),
+                "ADR ($)":  st.column_config.NumberColumn("ADR ($)",  format="$%.0f"),
+            },
+            use_container_width=True,
+            hide_index=True,
+        )
 
 # ── Guest satisfaction ────────────────────────────────────────────────────────
 med = df[df["medallia_overall_satisfaction"].notna()]

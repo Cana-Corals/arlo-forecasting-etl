@@ -9,6 +9,9 @@ lightgbm
 scikit-learn
 numpy
 
+# NLP
+nltk
+
 # Streamlit app
 streamlit
 streamlit-authenticator

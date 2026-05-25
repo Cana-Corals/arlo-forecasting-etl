@@ -569,24 +569,6 @@ with _tb_r:
     st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('</div><div class="arlo-accent-rule"></div>', unsafe_allow_html=True)
 
-# ── AI Insight ────────────────────────────────────────────────────────────────
-trend_word = "ahead of" if rev_d > 0 else "behind"
-occ_word   = "up" if occ_d > 0 else "down"
-ai_text = (
-    f"<strong>Revenue signal —</strong> YTD {latest_yr} revenue is "
-    f"${rev_c/1e6:.1f}M, {abs(rev_d):.1f}% {trend_word} same period last year. "
-    f"Occupancy is {occ_word} {abs(occ_d):.1f}% STLY at {occ_c:.1f}% with ADR of ${adr_c:.0f}. "
-    + (f"RevPAR index (RGI) stands at {rgi_val:.2f} vs comp set — " if rgi_val else "")
-    + "Rate strategy review recommended for upcoming peak weekends."
-)
-st.html(f"""
-<div style="padding:10px 50px 20;">
-  <div class="ai-box">
-    <i class="ti ti-sparkles ai-icon"></i>
-    <div class="ai-txt" style="font-size:16px;">{ai_text}</div>
-  </div>
-</div>
-""")
 
 # ── Core performance KPIs ─────────────────────────────────────────────────────
 def _delta_html(d, hero=False):

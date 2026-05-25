@@ -2,6 +2,13 @@ import streamlit as st
 from pathlib import Path
 
 
+def _go_home() -> None:
+    """Navigate to home using the Page object stored by Home.py on every run."""
+    pg = st.session_state.get("_pg_home")
+    if pg is not None:
+        st.switch_page(pg)
+
+
 def render_sidebar(active: str = "") -> None:
     app_root = Path(__file__).resolve().parents[1]
 
@@ -122,13 +129,13 @@ section[data-testid="stSidebar"] .stButton:not(:first-of-type) > button:hover {
 </style>""", unsafe_allow_html=True)
 
             _nav_items = [
-                ("✦", "Home",           "Home.py"),
-                (None, None, None),
+                ("✦", "Home",           None),
+                (None, None,            None),
                 ("◉", "Dashboard",      "pages/1_Dashboard.py"),
                 ("↗", "Forecast",       "pages/2_Forecast.py"),
                 ("≡", "Performance",    "pages/3_Performance.py"),
                 ("◇", "Demand",         "pages/4_Demand.py"),
-                (None, None, None),
+                (None, None,            None),
                 ("⊞", "Competitive",    "pages/5_Competitive.py"),
                 ("◎", "Model Insights", "pages/6_Model_Insights.py"),
             ]
@@ -139,7 +146,10 @@ section[data-testid="stSidebar"] .stButton:not(:first-of-type) > button:hover {
                 else:
                     if st.button(icon, key=f"sb_nav_{label.replace(' ','_')}",
                                  use_container_width=True, help=label):
-                        st.switch_page(path)
+                        if path is None:
+                            _go_home()
+                        else:
+                            st.switch_page(path)
 
             st.markdown(f"""
 <div style="margin-top:24px;padding:12px 0;border-top:1px solid rgba(255,255,255,.08);
@@ -154,7 +164,7 @@ section[data-testid="stSidebar"] .stButton:not(:first-of-type) > button:hover {
         else:
             # ── Expanded nav ──────────────────────────────────────────────────
             if st.button("← Home", key="sb_home", use_container_width=True):
-                st.switch_page("Home.py")
+                _go_home()
 
             st.markdown('<div style="padding:10px 16px 6px;font-size:9px;font-weight:600;'
                         'letter-spacing:.18em;text-transform:uppercase;'

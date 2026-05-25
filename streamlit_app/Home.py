@@ -641,9 +641,11 @@ def home_page():
 is_auth = st.session_state.get("authentication_status")
 
 if is_auth:
+    _pg_home = st.Page(home_page, title="Home", url_path="", default=True)
+    st.session_state["_pg_home"] = _pg_home
     pg = st.navigation(
         [
-            st.Page(home_page,                   title="Home",          url_path="",    default=True),
+            _pg_home,
             st.Page("pages/1_Dashboard.py",      title="Dashboard"),
             st.Page("pages/2_Forecast.py",       title="Forecast"),
             st.Page("pages/3_Performance.py",    title="Performance"),

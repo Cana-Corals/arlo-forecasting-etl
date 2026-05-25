@@ -484,12 +484,12 @@ with st.sidebar:
         </style>""", unsafe_allow_html=True)
 
         _nav_items = [
-            ("✦", "Home",           "Home.py"),
-            (None, None, None),
+            ("✦", "Home",           None),
+            (None, None,            None),
             ("↗", "Forecast",       "pages/2_Forecast.py"),
             ("≡", "Performance",    "pages/3_Performance.py"),
             ("◇", "Demand",         "pages/4_Demand.py"),
-            (None, None, None),
+            (None, None,            None),
             ("⊞", "Competitive",    "pages/5_Competitive.py"),
             ("◎", "Model Insights", "pages/6_Model_Insights.py"),
         ]
@@ -500,10 +500,15 @@ with st.sidebar:
             else:
                 if st.button(icon, key=f"sb_nav_{label.replace(' ','_')}",
                              use_container_width=True, help=label):
-                    st.switch_page(path)
+                    if path is None:
+                        _pg = st.session_state.get("_pg_home")
+                        if _pg: st.switch_page(_pg)
+                    else:
+                        st.switch_page(path)
     else:
         if st.button("← Home", key="nav_home", use_container_width=True):
-            st.switch_page("Home.py")
+            _pg = st.session_state.get("_pg_home")
+            if _pg: st.switch_page(_pg)
         st.markdown('<div style="height:1px;background:rgba(255,255,255,.06);margin:6px 10px 2px;"></div>', unsafe_allow_html=True)
         st.markdown('<div style="padding:10px 16px 6px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Analytics</div>', unsafe_allow_html=True)
         for lbl, path in [("Forecast","pages/2_Forecast.py"),("Performance","pages/3_Performance.py"),("Demand","pages/4_Demand.py")]:

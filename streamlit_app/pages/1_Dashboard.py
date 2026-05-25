@@ -138,7 +138,7 @@ section[data-testid="stSidebar"] .stButton:first-of-type > button:hover {{
   background:var(--arlo-dark); border-bottom:1px solid var(--arlo-border);
   height:52px; display:flex; align-items:center; padding:0 20px; gap:12px;
 }}
-.arlo-top-title {{ font-size:14px; font-weight:600; color:var(--arlo-white); }}
+.arlo-top-title {{ font-size:42px; font-weight:700; color:var(--arlo-white); letter-spacing:-.02em; }}
 .arlo-live-chip {{
   display:flex; align-items:center; gap:5px;
   padding:3px 9px; border-radius:20px;
@@ -548,12 +548,12 @@ st.markdown('<div class="arlo-topbar-row">', unsafe_allow_html=True)
 _tb_l, _tb_r = st.columns([5, 3])
 with _tb_l:
     st.markdown(f"""
-    <div style="display:flex;align-items:center;gap:12px;height:52px;padding:0 20px;">
+    <div style="display:flex;align-items:center;gap:14px;height:72px;padding:0 20px;">
       <span class="arlo-top-title">Dashboard</span>
-      <div class="arlo-live-chip"><div class="arlo-live-dot"></div>Live</div>
+      <div class="arlo-live-chip" style="font-size:11px;padding:4px 11px;"><div class="arlo-live-dot"></div>Live</div>
     </div>""", unsafe_allow_html=True)
 with _tb_r:
-    st.markdown('<div style="display:flex;align-items:center;justify-content:flex-end;height:52px;padding-right:16px;">', unsafe_allow_html=True)
+    st.markdown('<div style="display:flex;align-items:center;justify-content:flex-end;height:72px;padding-right:16px;">', unsafe_allow_html=True)
     _dr_picked = st.date_input(
         "Date range",
         value=(_dr[0], _dr[1]),

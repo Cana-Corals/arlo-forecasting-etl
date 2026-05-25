@@ -31,6 +31,39 @@ def load_events() -> pd.DataFrame:
     return df.sort_values("business_date").reset_index(drop=True)
 
 
+_CHANNEL_MAP = {
+    "EXTRA":   "OTA",
+    "EBL":     "OTA",
+    "GTA":     "OTA",
+    "GLOB":    "OTA",
+    "WEBSITE": "Direct / Web",
+    "WEBBOOK": "Direct / Web",
+    "MOBILE":  "Direct / Web",
+    "FD":      "Direct / Web",
+    "GDSS":    "GDS / Corporate",
+    "EXEC":    "GDS / Corporate",
+    "SLS":     "GDS / Corporate",
+    "CALL":    "Voice / Other",
+    "PHONE":   "Voice / Other",
+    "WHLS":    "Voice / Other",
+    "INP":     "Voice / Other",
+    "EVENTS":  "Voice / Other",
+}
+
+@st.cache_data
+def load_source_stats() -> pd.DataFrame:
+    raw = BASE_DIR / "data" / "raw"
+    files = sorted(raw.glob("wburg_daily_stats_source_*.csv"))
+    if not files:
+        return pd.DataFrame()
+    parts = [pd.read_csv(f, parse_dates=["Business Date"]) for f in files]
+    df = pd.concat(parts, ignore_index=True)
+    df.columns = [c.strip().lower().replace(" ", "_").replace("-", "_") for c in df.columns]
+    df = df.rename(columns={"business_date": "business_date", "source_code": "source_code"})
+    df["channel"] = df["source_code"].map(_CHANNEL_MAP).fillna("Voice / Other")
+    return df.sort_values("business_date").reset_index(drop=True)
+
+
 @st.cache_data
 def load_str() -> pd.DataFrame:
     path = PROCESSED_DIR / "str_daily.csv"

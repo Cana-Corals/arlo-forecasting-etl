@@ -63,6 +63,24 @@ python scripts/06_clean_medallia.py            # clean survey data
 python scripts/07_build_master_dataset.py      # build final dataset
 ```
 
+## Performance Table — Column Definitions
+
+| Column | Tooltip |
+|---|---|
+| Code | Short PMS code that identifies the room type |
+| Room Type | Full name of the room category |
+| Rooms | Total physical rooms in this category |
+| Nights Sold | Room-nights occupied (excludes OOO) |
+| Occupancy % | Rooms sold ÷ available; OOO nights excluded from base |
+| ADR | Room revenue ÷ rooms sold |
+| RevPAR | Room revenue ÷ (rooms × days) — combines rate and occupancy |
+| Revenue | Total revenue including ancillary charges |
+| Sellout Nights | Nights where every available room was occupied |
+| Sellout % | Sellout Nights ÷ total nights in period |
+| OOO Nights | Room-nights unavailable due to maintenance/holds |
+| OOO % | OOO Nights ÷ total possible room-nights |
+| Lost Revenue | OOO rooms × ADR per night — opportunity cost of unavailable rooms |
+
 ## Repository Structure
 
 ```

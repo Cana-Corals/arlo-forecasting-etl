@@ -1,0 +1,9 @@
+source,rating,text,sentiment,date
+Google,5,"Great location, super friendly staff. Room was spotless and the rooftop view is incredible. Will definitely come back!",0.5555555555555556,2024-08-15
+Google,4,Loved the vibe and the design. Bed was comfortable. Only issue was noise from the hallway at night kept us awake.,-0.2777777777777778,2024-09-01
+Google,2,Room was tiny and the AC was broken. Reported it but nothing was fixed. Not worth the price for such a small room.,0.0,2024-10-10
+Google,5,"Perfect weekend getaway. Rooftop bar is amazing, staff were attentive and helpful. Room smelled fresh and clean.",0.3125,2024-11-05
+TripAdvisor,3,Average stay. The check-in wait was long and the elevator was slow. Room was decent but nothing special. Overpriced for what you get.,0.0,2024-12-01
+TripAdvisor,5,Fantastic hotel. Location in Williamsburg is perfect. Breakfast options are great. Highly recommend to anyone visiting Brooklyn.,0.5882352941176471,2025-01-20
+TripAdvisor,1,"Terrible experience. The shower was leaking, bed was uncomfortable, and the front desk was rude when we complained. Worst stay ever.",-0.8333333333333333,2025-02-10
+Google,4,Really enjoyed our stay. Pool area is nice. Room service was fast. The neighborhood has great restaurants within walking distance.,0.5,2025-03-05

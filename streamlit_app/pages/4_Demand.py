@@ -434,7 +434,7 @@ def _build_rt_component(df, cols):
             )
             tds += f'<td data-raw="{raw}">{_he.escape(_fmt(val, kind))}</td>'
         trs += f"<tr>{tds}</tr>"
-    height = len(df) * 30 + 50
+    height = len(df) * 36 + 70
     return (
         f"<!DOCTYPE html><html><head><meta charset='utf-8'>"
         f"<style>{_RT_CSS}</style></head><body>"

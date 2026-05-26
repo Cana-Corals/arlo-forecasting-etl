@@ -340,18 +340,18 @@ _RT_COLS = [
 _RT_CSS = """
 * { font-family: Inter, system-ui, sans-serif; box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
 body { background: transparent; overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 24px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
 thead tr { border-bottom: 1px solid rgba(255,255,255,0.14); }
 th {
-  color: rgba(245,245,240,0.38); font-size: 18px; font-weight: 600;
-  letter-spacing: .08em; text-transform: uppercase;
-  padding: 12px 14px; text-align: right;
+  color: rgba(245,245,240,0.38); font-size: 9px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase;
+  padding: 8px 10px; text-align: right;
   position: relative; white-space: nowrap; vertical-align: bottom;
   cursor: pointer; user-select: none;
 }
 th:first-child, th:nth-child(2) { text-align: left; }
-.th-inner { display: inline-flex; align-items: center; gap: 4px; border-bottom: 1px dashed rgba(245,245,240,0.28); padding-bottom: 2px; }
-.sort-icon { font-size: 14px; color: #e8854a; min-width: 14px; }
+.th-inner { display: inline-flex; align-items: center; gap: 3px; border-bottom: 1px dashed rgba(245,245,240,0.28); padding-bottom: 1px; }
+.sort-icon { font-size: 7px; color: #e8854a; min-width: 7px; }
 .tip {
   display: none; position: absolute;
   top: calc(100% + 4px); left: 50%; transform: translateX(-50%);
@@ -367,8 +367,8 @@ th:first-child, th:nth-child(2) { text-align: left; }
 th:hover .tip { display: block; }
 th.sorted { color: rgba(245,245,240,0.75); }
 td {
-  padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.08);
-  color: #f5f5f0; text-align: right; font-size: 24px; white-space: nowrap;
+  padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  color: #f5f5f0; text-align: right; font-size: 12px; white-space: nowrap;
 }
 td:first-child { color: rgba(245,245,240,0.6); text-align: left; }
 td:nth-child(2) { text-align: left; }

@@ -295,36 +295,49 @@ master = load_master()
 events = load_events()
 str_df = load_str()
 
-latest_yr = int(master["business_date"].dt.year.max())
-prev_yr   = latest_yr - 1
+_max_yr = int(master["business_date"].dt.year.max())
+_min_yr = int(master["business_date"].dt.year.min())
 
-curr_all = master[master["business_date"].dt.year == latest_yr].copy()
-prev     = master[master["business_date"].dt.year == prev_yr].copy()
+# Year / horizon selector
+if "db_horizon" not in st.session_state:
+    st.session_state["db_horizon"] = str(_max_yr)
+_hz = st.session_state["db_horizon"]
 
-_dr_default = (
-    pd.Timestamp(f"{latest_yr}-01-01").date(),
-    curr_all["business_date"].max().date(),
-)
-_dr = st.session_state.get("dr", _dr_default)
-_dr = _dr if (isinstance(_dr, (tuple, list)) and len(_dr) == 2) else _dr_default
+if _hz == "2024":
+    _start, _end, _sel_yr = pd.Timestamp("2024-01-01"), pd.Timestamp("2024-12-31"), 2024
+elif _hz == "2025":
+    _start, _end, _sel_yr = pd.Timestamp("2025-01-01"), pd.Timestamp("2025-12-31"), 2025
+else:  # Custom
+    _dr_default = (
+        pd.Timestamp(f"{_max_yr}-01-01").date(),
+        master["business_date"].max().date(),
+    )
+    _dr = st.session_state.get("dr", _dr_default)
+    _dr = _dr if (isinstance(_dr, (tuple, list)) and len(_dr) == 2) else _dr_default
+    _start  = pd.Timestamp(_dr[0])
+    _end    = pd.Timestamp(_dr[1])
+    _sel_yr = int(_start.year)
 
-_start = pd.Timestamp(_dr[0])
-_end   = pd.Timestamp(_dr[1])
+_prev_yr = _sel_yr - 1
 
-curr = curr_all[
-    (curr_all["business_date"] >= _start) & (curr_all["business_date"] <= _end)
+curr = master[
+    (master["business_date"] >= _start) & (master["business_date"] <= _end)
 ].copy()
 
+prev = master[master["business_date"].dt.year == _prev_yr].copy()
 try:
-    _start_prev = _start.replace(year=prev_yr)
-    _end_prev   = _end.replace(year=prev_yr)
+    _start_prev = _start.replace(year=_prev_yr)
+    _end_prev   = _end.replace(year=_prev_yr)
 except ValueError:
-    _start_prev = _start.replace(year=prev_yr, day=28)
-    _end_prev   = _end.replace(year=prev_yr, day=28)
+    _start_prev = _start.replace(year=_prev_yr, day=28)
+    _end_prev   = _end.replace(year=_prev_yr, day=28)
 
 prev_ytd = prev[
     (prev["business_date"] >= _start_prev) & (prev["business_date"] <= _end_prev)
 ]
+
+# keep alias for any downstream refs
+latest_yr = _sel_yr
 
 def pct(a, b):
     return (a - b) / abs(b) * 100 if b else 0.0
@@ -363,7 +376,7 @@ else:
 
 # STR indices
 if not str_df.empty:
-    s25 = str_df[str_df["business_date"].dt.year == latest_yr]
+    s25 = str_df[str_df["business_date"].dt.year == _sel_yr]
     mpi_val      = s25["mpi"].mean() / 100 if "mpi" in s25 else None
     ari_val      = s25["ari"].mean() / 100 if "ari" in s25 else None
     rgi_val      = s25["rgi"].mean() / 100 if "rgi" in s25 else None
@@ -584,21 +597,34 @@ with _tb_l:
       <div class="arlo-live-chip" style="font-size:11px;padding:4px 11px;"><div class="arlo-live-dot"></div>Live</div>
     </div>""", unsafe_allow_html=True)
 with _tb_r:
-    st.markdown('<div style="display:flex;align-items:center;justify-content:flex-end;height:72px;padding-right:16px;">', unsafe_allow_html=True)
-    _dr_picked = st.date_input(
-        "Date range",
-        value=(_dr[0], _dr[1]),
-        min_value=master["business_date"].min().date(),
-        max_value=master["business_date"].max().date(),
-        key="dr",
-        label_visibility="collapsed",
-        format="MM/DD/YYYY",
-    )
-    if isinstance(_dr_picked, (tuple, list)) and len(_dr_picked) == 2:
-        if _dr_picked != tuple(_dr):
-            st.rerun()
+    st.markdown('<div style="display:flex;align-items:center;justify-content:flex-end;height:72px;padding-right:16px;gap:10px;">', unsafe_allow_html=True)
+    if _hz == "Custom":
+        _dr_picked = st.date_input(
+            "Date range",
+            value=(_dr[0], _dr[1]),
+            min_value=master["business_date"].min().date(),
+            max_value=master["business_date"].max().date(),
+            key="dr",
+            label_visibility="collapsed",
+            format="MM/DD/YYYY",
+        )
+        if isinstance(_dr_picked, (tuple, list)) and len(_dr_picked) == 2:
+            if _dr_picked != tuple(_dr):
+                st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('</div><div class="arlo-accent-rule"></div>', unsafe_allow_html=True)
+
+# ── Year / horizon selector ───────────────────────────────────────────────────
+_years = [str(y) for y in range(_min_yr, _max_yr + 1)] + ["Custom"]
+_hz_new = st.segmented_control(
+    "Year", _years,
+    default=_hz,
+    key="db_hz_ctrl",
+    label_visibility="collapsed",
+)
+if _hz_new and _hz_new != _hz:
+    st.session_state["db_horizon"] = _hz_new
+    st.rerun()
 
 
 # ── Core performance KPIs ─────────────────────────────────────────────────────

@@ -4,6 +4,8 @@ import plotly.graph_objects as go
 from datetime import date
 from pathlib import Path
 import sys
+import html as _he
+import streamlit.components.v1 as components
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from components.sidebar import render_sidebar
@@ -47,71 +49,6 @@ st.markdown("""
 .dm-section { padding:16px 20px 0; }
 .dm-section-ttl { font-size:9px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
 
-/* ── Room Type Performance table ── */
-.rt-wrap { padding:0 20px; overflow:visible; }
-.rt-table { width:100%; border-collapse:collapse; font-size:12px; }
-.rt-table thead tr { border-bottom:1px solid var(--border2); }
-.rt-table th {
-  background:transparent;
-  color:var(--muted);
-  font-size:9px; font-weight:600; letter-spacing:.12em; text-transform:uppercase;
-  padding:8px 10px;
-  text-align:right;
-  position:relative;
-  white-space:nowrap;
-  vertical-align:bottom;
-}
-.rt-table th:first-child,
-.rt-table th:nth-child(2) { text-align:left; }
-.rt-th-label {
-  display:inline-block;
-  border-bottom:1px dashed rgba(245,245,240,0.28);
-  padding-bottom:1px;
-  cursor:help;
-}
-.rt-tip {
-  display:none;
-  position:absolute;
-  bottom:calc(100% + 8px);
-  left:50%;
-  transform:translateX(-50%);
-  background:#2b2b2b;
-  border:1px solid rgba(255,255,255,0.14);
-  border-radius:5px;
-  padding:6px 9px;
-  width:200px;
-  font-size:9px;
-  color:rgba(245,245,240,0.85);
-  font-weight:400;
-  letter-spacing:normal;
-  text-transform:none;
-  text-align:left;
-  line-height:1.4;
-  z-index:9999;
-  pointer-events:none;
-  white-space:normal;
-}
-.rt-tip::after {
-  content:'';
-  position:absolute;
-  top:100%; left:50%;
-  transform:translateX(-50%);
-  border:5px solid transparent;
-  border-top-color:#2b2b2b;
-}
-.rt-table th:hover .rt-tip { display:block; }
-.rt-table td {
-  padding:7px 10px;
-  border-bottom:1px solid var(--border);
-  color:var(--white);
-  text-align:right;
-  font-size:12px;
-  white-space:nowrap;
-}
-.rt-table td:first-child { color:var(--muted2); text-align:left; }
-.rt-table td:nth-child(2) { text-align:left; }
-.rt-table tbody tr:hover td { background:rgba(255,255,255,0.03); }
-.rt-table tbody tr:last-child td { border-bottom:none; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -400,6 +337,69 @@ _RT_COLS = [
      "Estimated revenue lost to Out-of-Order rooms — OOO rooms × ADR per night. Represents the opportunity cost of rooms unavailable for sale."),
 ]
 
+_RT_CSS = """
+* { font-family: Inter, system-ui, sans-serif; box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+body { background: transparent; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead tr { border-bottom: 1px solid rgba(255,255,255,0.14); }
+th {
+  color: rgba(245,245,240,0.38); font-size: 9px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase;
+  padding: 8px 10px; text-align: right;
+  position: relative; white-space: nowrap; vertical-align: bottom;
+  cursor: pointer; user-select: none;
+}
+th:first-child, th:nth-child(2) { text-align: left; }
+.th-inner { display: inline-flex; align-items: center; gap: 3px; border-bottom: 1px dashed rgba(245,245,240,0.28); padding-bottom: 1px; }
+.sort-icon { font-size: 8px; color: #e8854a; min-width: 8px; }
+.tip {
+  display: none; position: absolute;
+  top: calc(100% + 4px); left: 50%; transform: translateX(-50%);
+  background: #2b2b2b; border: 1px solid rgba(255,255,255,0.14); border-radius: 5px;
+  padding: 6px 9px; width: 200px; font-size: 9px; color: rgba(245,245,240,0.85);
+  font-weight: 400; letter-spacing: normal; text-transform: none;
+  text-align: left; line-height: 1.4; z-index: 100; pointer-events: none; white-space: normal;
+}
+.tip::after {
+  content: ''; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+  border: 5px solid transparent; border-bottom-color: #2b2b2b;
+}
+th:hover .tip { display: block; }
+th.sorted { color: rgba(245,245,240,0.75); }
+td {
+  padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  color: #f5f5f0; text-align: right; font-size: 12px; white-space: nowrap;
+}
+td:first-child { color: rgba(245,245,240,0.6); text-align: left; }
+td:nth-child(2) { text-align: left; }
+tbody tr:hover td { background: rgba(255,255,255,0.03); }
+tbody tr:last-child td { border-bottom: none; }
+"""
+
+_RT_JS = """
+function sort(idx, th) {
+  const tbody = document.querySelector('tbody');
+  const rows  = Array.from(tbody.querySelectorAll('tr'));
+  const dir   = th.dataset.dir === 'asc' ? 'desc' : 'asc';
+  document.querySelectorAll('th').forEach(h => {
+    h.dataset.dir = 'none';
+    h.classList.remove('sorted');
+    h.querySelector('.sort-icon').textContent = '';
+  });
+  th.dataset.dir = dir;
+  th.classList.add('sorted');
+  th.querySelector('.sort-icon').textContent = dir === 'asc' ? ' ▲' : ' ▼';
+  rows.sort((a, b) => {
+    const av = a.cells[idx].dataset.raw;
+    const bv = b.cells[idx].dataset.raw;
+    const an = parseFloat(av), bn = parseFloat(bv);
+    if (!isNaN(an) && !isNaN(bn)) return dir === 'asc' ? an - bn : bn - an;
+    return dir === 'asc' ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+  });
+  rows.forEach(r => tbody.appendChild(r));
+}
+"""
+
 def _fmt(val, kind):
     try:
         v = float(val)
@@ -413,29 +413,37 @@ def _fmt(val, kind):
     if kind == "usdc":  return f"${v:,.0f}"
     return str(val)
 
-def _build_rt_table(df, cols):
+def _build_rt_component(df, cols):
     ths = ""
-    for _, label, _, tip in cols:
+    for i, (_, label, _, tip) in enumerate(cols):
+        safe_tip = _he.escape(tip)
         ths += (
-            f'<th>'
-            f'<span class="rt-th-label">{label}</span>'
-            f'<div class="rt-tip">{tip}</div>'
+            f'<th onclick="sort({i}, this)" data-dir="none">'
+            f'<div class="th-inner"><span>{label}</span>'
+            f'<span class="sort-icon"></span></div>'
+            f'<div class="tip">{safe_tip}</div>'
             f'</th>'
         )
     trs = ""
     for _, row in df.iterrows():
-        tds = "".join(f"<td>{_fmt(row[col], kind)}</td>" for col, _, kind, _ in cols)
+        tds = ""
+        for col, _, kind, _ in cols:
+            val = row[col]
+            raw = _he.escape(str(val)) if kind == "text" else (
+                float(val) if str(val) not in ("", "nan") else 0
+            )
+            tds += f'<td data-raw="{raw}">{_he.escape(_fmt(val, kind))}</td>'
         trs += f"<tr>{tds}</tr>"
+    height = len(df) * 36 + 54
     return (
-        f'<div class="rt-wrap">'
-        f'<table class="rt-table">'
-        f'<thead><tr>{ths}</tr></thead>'
-        f'<tbody>{trs}</tbody>'
-        f'</table></div>'
-    )
+        f"<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        f"<style>{_RT_CSS}</style></head><body>"
+        f"<table><thead><tr>{ths}</tr></thead><tbody>{trs}</tbody></table>"
+        f"<script>{_RT_JS}</script></body></html>"
+    ), height
 
-st.markdown(_build_rt_table(display_df, _RT_COLS), unsafe_allow_html=True)
-st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+_rt_html, _rt_height = _build_rt_component(display_df, _RT_COLS)
+components.html(_rt_html, height=_rt_height, scrolling=False)
 
 # ── Booking pace / pickup ─────────────────────────────────────────────────────
 st.markdown('<div class="dm-section"><div class="dm-section-ttl">Booking Pace — Rooms Picked Up</div></div>',

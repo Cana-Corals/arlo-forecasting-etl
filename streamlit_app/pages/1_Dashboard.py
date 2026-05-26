@@ -383,7 +383,11 @@ if not med.empty:
     med_value   = med["medallia_value_for_price"].mean()     if "medallia_value_for_price"     in med else None
     med_rec     = med["medallia_likelihood_to_recommend"].mean() if "medallia_likelihood_to_recommend" in med else None
     med_return  = med["medallia_likelihood_to_return"].mean()    if "medallia_likelihood_to_return"    in med else None
-    med_samples = int(med["medallia_sample_size"].sum())
+    # Sample size is weekly but stamped on every day — dedupe by ISO week to avoid 7× inflation
+    med_samples = int(
+        med.groupby(med["business_date"].dt.isocalendar().week)["medallia_sample_size"]
+           .first().sum()
+    )
 else:
     med_overall = None
 

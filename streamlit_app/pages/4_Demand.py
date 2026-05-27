@@ -344,8 +344,8 @@ table { width: 100%; border-collapse: collapse; font-size: 12px; }
 thead tr { border-bottom: 1px solid rgba(255,255,255,0.14); }
 th {
   color: rgba(245,245,240,0.38); font-size: 9px; font-weight: 600;
-  letter-spacing: .12em; text-transform: uppercase;
-  padding: 8px 10px; text-align: right;
+  letter-spacing: .10em; text-transform: uppercase;
+  padding: 8px 6px; text-align: right;
   position: relative; white-space: nowrap; vertical-align: bottom;
   cursor: pointer; user-select: none;
 }
@@ -367,11 +367,11 @@ th:first-child, th:nth-child(2) { text-align: left; }
 th:hover .tip { display: block; }
 th.sorted { color: rgba(245,245,240,0.75); }
 td {
-  padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 6px 6px; border-bottom: 1px solid rgba(255,255,255,0.08);
   color: #f5f5f0; text-align: right; font-size: 12px; white-space: nowrap;
 }
 td:first-child { color: rgba(245,245,240,0.6); text-align: left; }
-td:nth-child(2) { text-align: left; }
+td:nth-child(2) { text-align: left; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
 tbody tr:hover td { background: rgba(255,255,255,0.03); }
 tbody tr:last-child td { border-bottom: none; }
 """

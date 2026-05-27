@@ -241,16 +241,16 @@ st.markdown('<div class="dm-section"><div class="dm-section-ttl">Room Type Perfo
 ROOM_TYPE_NAMES = {
     "LS":   "Loft Suite",
     "SS":   "Studio Suite",
-    "SSRS": "Studio Suite — River/Skyline View",
-    "PLS":  "Premium Loft Suite",
-    "PSS":  "Premium Studio Suite",
+    "SSRS": "Accesible Studio Suite",
+    "PLS":  "City View Loft Suite",
+    "PSS":  "City View Studio Suite",
     "CVQ":  "City View Queen",
     "Q":    "Standard Queen",
     "QT":   "Queen Terrace",
-    "QTRS": "Queen Terrace — River/Skyline",
-    "SKT":  "Skyline King Terrace",
-    "PKT":  "Premium King Terrace",
-    "PQT":  "Premium Queen Terrace",
+    "QTRS": "Accesible Queen Terrace",
+    "SKT":  "King Terrace",
+    "PKT":  "City View King Terrace",
+    "PQT":  "City View Queen Terrace",
 }
 
 rt_f = rt_df[(rt_df["business_date"] >= s_ts) & (rt_df["business_date"] <= e_ts)].copy()

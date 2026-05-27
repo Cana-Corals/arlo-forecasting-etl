@@ -468,18 +468,44 @@ if not _rt_df.empty:
         )
         _rt_summary["Physical"] = _rt_summary["Physical"].astype(int)
         _rt_summary["Max OOO"]  = _rt_summary["Max OOO"].astype(int)
-        st.dataframe(
+
+        # % of physical rooms column
+        _rt_summary["% Phys"] = (
+            _rt_summary["Avg OOO"] / _rt_summary["Physical"].replace(0, float("nan")) * 100
+        ).round(1)
+
+        # Totals row
+        _tot_phys    = int(_rt_summary["Physical"].sum())
+        _tot_avg_ooo = round(float(_rt_summary["Avg OOO"].sum()), 1)
+        _tot_max_ooo = int(_rt_summary["Max OOO"].sum())
+        _tot_days    = int(_rt_summary["Days w/ OOO"].sum())
+        _tot_pct     = round(_tot_avg_ooo / _tot_phys * 100, 1) if _tot_phys else 0.0
+
+        _rt_display = pd.concat([
             _rt_summary,
+            pd.DataFrame([{
+                "Room": "TOTAL",
+                "Physical": _tot_phys,
+                "Avg OOO": _tot_avg_ooo,
+                "Max OOO": _tot_max_ooo,
+                "Days w/ OOO": _tot_days,
+                "% Phys": _tot_pct,
+            }]),
+        ], ignore_index=True)
+
+        st.dataframe(
+            _rt_display,
             column_config={
                 "Room":        st.column_config.TextColumn("Room"),
                 "Physical":    st.column_config.NumberColumn("Physical", format="%d"),
                 "Avg OOO":     st.column_config.NumberColumn("Avg OOO", format="%.1f"),
                 "Max OOO":     st.column_config.NumberColumn("Max OOO", format="%d"),
                 "Days w/ OOO": st.column_config.NumberColumn("Days w/ OOO", format="%d"),
+                "% Phys":      st.column_config.NumberColumn("% Phys", format="%.1f%%"),
             },
             use_container_width=True,
             hide_index=True,
-            height=360,
+            height=400,
         )
 
 # ── Market segment ────────────────────────────────────────────────────────────

@@ -8,7 +8,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from components.sidebar import render_sidebar
-from components.data import load_source_stats
+from components.data import load_source_stats, load_room_type_stats
 
 BASE = Path(__file__).resolve().parents[2]
 
@@ -362,6 +362,125 @@ with _dow_col:
     dow_lay["xaxis"]["tickangle"] = 0
     fig_dow.update_layout(**dow_lay)
     st.plotly_chart(fig_dow, use_container_width=True, config={"displayModeBar": False})
+
+# ── OOO by room type ─────────────────────────────────────────────────────────
+st.markdown('<div class="pf-section"><div class="pf-section-ttl">Out of Order Rooms — Trend by Room Type</div></div>',
+            unsafe_allow_html=True)
+
+_rt_df = load_room_type_stats()
+if not _rt_df.empty:
+    _rt_f = _rt_df[
+        (_rt_df["business_date"] >= s_ts) & (_rt_df["business_date"] <= e_ts)
+    ].copy()
+
+    _all_rts = sorted(_rt_f["room_type"].unique())
+
+    # Room type selector + view toggle
+    _sel_col, _view_col, _ = st.columns([3, 2, 3])
+    with _sel_col:
+        _sel_rts = st.multiselect(
+            "Room types", _all_rts, default=_all_rts, key="ooo_rts",
+            label_visibility="collapsed",
+        )
+    with _view_col:
+        _ooo_view = st.segmented_control(
+            "View", ["Stacked", "Per Room"], default="Stacked",
+            key="ooo_view", label_visibility="collapsed",
+        )
+
+    _sel_rts = _sel_rts or _all_rts
+
+    # Aggregate to the same time granularity as other charts
+    _rt_f["p"] = _rt_f["business_date"].dt.to_period(
+        "D" if n_days <= 14 else ("W" if n_days <= 60 else "M")
+    )
+    _rt_agg = (
+        _rt_f[_rt_f["room_type"].isin(_sel_rts)]
+        .groupby(["room_type", "p"])["ooo_rooms"]
+        .sum()
+        .reset_index()
+    )
+    _xl_ooo = sorted(_rt_agg["p"].unique())
+    _xl_labels = []
+    for p in _xl_ooo:
+        try:    _xl_labels.append(p.start_time.strftime(dfmt))
+        except: _xl_labels.append(str(p))
+
+    # Colour palette for room types
+    _RT_COLORS = [
+        "#e8854a","#3ecf8e","#4a6fa5","#d4903a","#e05252",
+        "#9b59b6","#1abc9c","#f39c12","#2980b9","#c0392b",
+        "#27ae60","#8e44ad",
+    ]
+    _rt_color = {rt: _RT_COLORS[i % len(_RT_COLORS)] for i, rt in enumerate(_all_rts)}
+
+    _ooo_col1, _ooo_col2 = st.columns([2, 1])
+
+    with _ooo_col1:
+        fig_ooo = go.Figure()
+        for rt in _sel_rts:
+            _rt_vals = _rt_agg[_rt_agg["room_type"] == rt]
+            _yvals = []
+            for p in _xl_ooo:
+                row = _rt_vals[_rt_vals["p"] == p]
+                _yvals.append(float(row["ooo_rooms"].values[0]) if len(row) else 0)
+
+            _trace_kw = dict(
+                x=_xl_labels, y=_yvals, name=rt,
+                marker_color=_rt_color[rt],
+                hovertemplate=f"{rt}: %{{y:.0f}} rooms<extra></extra>",
+            )
+            if _ooo_view == "Stacked":
+                fig_ooo.add_trace(go.Bar(**_trace_kw))
+            else:
+                fig_ooo.add_trace(go.Scatter(
+                    x=_xl_labels, y=_yvals, name=rt,
+                    line=dict(color=_rt_color[rt], width=1.8),
+                    hovertemplate=f"{rt}: %{{y:.0f}} rooms<extra></extra>",
+                ))
+
+        _ooo_lay = base_layout(h=280, ytitle="OOO Rooms")
+        _ooo_lay["title"] = dict(
+            text="Out of Order Rooms",
+            font=dict(size=11, color="rgba(245,245,240,0.7)"), x=0, xanchor="left", pad=dict(l=4),
+        )
+        if _ooo_view == "Stacked":
+            _ooo_lay["barmode"] = "stack"
+        fig_ooo.update_layout(**_ooo_lay)
+        st.plotly_chart(fig_ooo, use_container_width=True, config={"displayModeBar": False})
+
+    with _ooo_col2:
+        # Summary table: avg daily OOO, max OOO, % of physical rooms
+        _rt_summary = (
+            _rt_f[_rt_f["room_type"].isin(_sel_rts)]
+            .groupby("room_type")
+            .agg(
+                Physical=("total_physical_rooms", "mean"),
+                Avg_OOO=("ooo_rooms", "mean"),
+                Max_OOO=("ooo_rooms", "max"),
+                OOO_Days=("ooo_rooms", lambda x: int((x > 0).sum())),
+            )
+            .round(1)
+            .reset_index()
+            .rename(columns={"room_type": "Room", "Avg_OOO": "Avg OOO",
+                              "Max_OOO": "Max OOO", "OOO_Days": "Days w/ OOO"})
+            .sort_values("Avg OOO", ascending=False)
+        )
+        _rt_summary["Physical"] = _rt_summary["Physical"].astype(int)
+        _rt_summary["Max OOO"]  = _rt_summary["Max OOO"].astype(int)
+        st.dataframe(
+            _rt_summary,
+            column_config={
+                "Room":        st.column_config.TextColumn("Room"),
+                "Physical":    st.column_config.NumberColumn("Physical", format="%d"),
+                "Avg OOO":     st.column_config.NumberColumn("Avg OOO", format="%.1f"),
+                "Max OOO":     st.column_config.NumberColumn("Max OOO", format="%d"),
+                "Days w/ OOO": st.column_config.NumberColumn("Days w/ OOO", format="%d"),
+            },
+            use_container_width=True,
+            hide_index=True,
+            height=360,
+        )
 
 # ── Market segment ────────────────────────────────────────────────────────────
 st.markdown('<div class="pf-section"><div class="pf-section-ttl">Revenue by Market Segment</div></div>',

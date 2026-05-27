@@ -61,6 +61,15 @@ def load_source_stats() -> pd.DataFrame:
 
 
 @st.cache_data
+def load_room_type_stats() -> pd.DataFrame:
+    path = PROCESSED_DIR / "daily_stats_room_type.csv"
+    if not path.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(path, parse_dates=["business_date"])
+    return df.sort_values(["business_date", "room_type"]).reset_index(drop=True)
+
+
+@st.cache_data
 def load_str() -> pd.DataFrame:
     path = PROCESSED_DIR / "str_daily.csv"
     if not path.exists():

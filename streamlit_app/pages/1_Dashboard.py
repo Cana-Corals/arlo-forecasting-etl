@@ -303,20 +303,25 @@ if "db_horizon" not in st.session_state:
     st.session_state["db_horizon"] = str(_max_yr)
 _hz = st.session_state["db_horizon"]
 
-if _hz == "2024":
-    _start, _end, _sel_yr = pd.Timestamp("2024-01-01"), pd.Timestamp("2024-12-31"), 2024
-elif _hz == "2025":
-    _start, _end, _sel_yr = pd.Timestamp("2025-01-01"), pd.Timestamp("2025-12-31"), 2025
+_all_years_mode = _hz == "All Years"
+
+if _hz not in ("All Years", "Custom"):
+    yr = int(_hz)
+    _start, _end, _sel_yr = pd.Timestamp(f"{yr}-01-01"), pd.Timestamp(f"{yr}-12-31"), yr
+elif _hz == "All Years":
+    _start  = master["business_date"].min()
+    _end    = master["business_date"].max()
+    _sel_yr = _max_yr
 else:  # Custom
     _dr_default = (
-        pd.Timestamp(f"{_max_yr}-01-01").date(),
+        master["business_date"].min().date(),
         master["business_date"].max().date(),
     )
     _dr = st.session_state.get("dr", _dr_default)
     _dr = _dr if (isinstance(_dr, (tuple, list)) and len(_dr) == 2) else _dr_default
     _start  = pd.Timestamp(_dr[0])
     _end    = pd.Timestamp(_dr[1])
-    _sel_yr = int(_start.year)
+    _sel_yr = int(_end.year)
 
 _prev_yr = _sel_yr - 1
 
@@ -324,17 +329,19 @@ curr = master[
     (master["business_date"] >= _start) & (master["business_date"] <= _end)
 ].copy()
 
-prev = master[master["business_date"].dt.year == _prev_yr].copy()
-try:
-    _start_prev = _start.replace(year=_prev_yr)
-    _end_prev   = _end.replace(year=_prev_yr)
-except ValueError:
-    _start_prev = _start.replace(year=_prev_yr, day=28)
-    _end_prev   = _end.replace(year=_prev_yr, day=28)
-
-prev_ytd = prev[
-    (prev["business_date"] >= _start_prev) & (prev["business_date"] <= _end_prev)
-]
+if _all_years_mode:
+    prev_ytd = pd.DataFrame(columns=curr.columns)
+else:
+    prev = master[master["business_date"].dt.year == _prev_yr].copy()
+    try:
+        _start_prev = _start.replace(year=_prev_yr)
+        _end_prev   = _end.replace(year=_prev_yr)
+    except ValueError:
+        _start_prev = _start.replace(year=_prev_yr, day=28)
+        _end_prev   = _end.replace(year=_prev_yr, day=28)
+    prev_ytd = prev[
+        (prev["business_date"] >= _start_prev) & (prev["business_date"] <= _end_prev)
+    ]
 
 # keep alias for any downstream refs
 latest_yr = _sel_yr
@@ -343,17 +350,24 @@ def pct(a, b):
     return (a - b) / abs(b) * 100 if b else 0.0
 
 rev_c  = curr["total_revenue"].sum()
-rev_p  = prev_ytd["total_revenue"].sum()
 occ_c  = curr["occupancy_rate"].mean() * 100
-occ_p  = prev_ytd["occupancy_rate"].mean() * 100
 adr_c  = curr["adr"].mean()
-adr_p  = prev_ytd["adr"].mean()
 rp_c   = curr["revpar"].mean()
-rp_p   = prev_ytd["revpar"].mean()
 trp_c  = (curr["total_revenue"] / curr["available_rooms"]).mean()
-trp_p  = (prev_ytd["total_revenue"] / prev_ytd["available_rooms"]).mean()
 
-rev_d, occ_d, adr_d, rp_d, trp_d = pct(rev_c,rev_p), pct(occ_c,occ_p), pct(adr_c,adr_p), pct(rp_c,rp_p), pct(trp_c,trp_p)
+if not prev_ytd.empty:
+    rev_p  = prev_ytd["total_revenue"].sum()
+    occ_p  = prev_ytd["occupancy_rate"].mean() * 100
+    adr_p  = prev_ytd["adr"].mean()
+    rp_p   = prev_ytd["revpar"].mean()
+    trp_p  = (prev_ytd["total_revenue"] / prev_ytd["available_rooms"]).mean()
+    rev_d, occ_d, adr_d, rp_d, trp_d = (
+        pct(rev_c, rev_p), pct(occ_c, occ_p), pct(adr_c, adr_p),
+        pct(rp_c, rp_p),   pct(trp_c, trp_p),
+    )
+else:
+    rev_p = occ_p = adr_p = rp_p = trp_p = 0.0
+    rev_d = occ_d = adr_d = rp_d = trp_d = None
 
 # Channel mix from source-code stats
 _src = load_source_stats()
@@ -459,7 +473,12 @@ for _, row in _ev_pool.iterrows():
         break
 
 # Date display
-date_str = f"Jan 1 – {curr['business_date'].max().strftime('%b %-d')}, {latest_yr}"
+if _all_years_mode or _hz == "Custom":
+    date_str = f"{_start.strftime('%b %-d, %Y')} – {_end.strftime('%b %-d, %Y')}"
+else:
+    date_str = f"Jan 1 – {curr['business_date'].max().strftime('%b %-d')}, {latest_yr}"
+
+_period_label = f"{_min_yr} – {_max_yr}" if _all_years_mode else f"YTD {latest_yr}"
 
 # User info
 name     = st.session_state.get("name", "")
@@ -615,7 +634,7 @@ with _tb_r:
 st.markdown('</div><div class="arlo-accent-rule"></div>', unsafe_allow_html=True)
 
 # ── Year / horizon selector ───────────────────────────────────────────────────
-_years = [str(y) for y in range(_min_yr, _max_yr + 1)] + ["Custom"]
+_years = [str(y) for y in range(_min_yr, _max_yr + 1)] + ["All Years", "Custom"]
 _hz_new = st.segmented_control(
     "Year", _years,
     default=_hz,
@@ -629,6 +648,8 @@ if _hz_new and _hz_new != _hz:
 
 # ── Core performance KPIs ─────────────────────────────────────────────────────
 def _delta_html(d, hero=False):
+    if d is None:
+        return '<div class="kpi-delta" style="color:var(--arlo-muted);">— no STLY</div>'
     arrow = "▲" if d >= 0 else "▼"
     sign  = "+" if d >= 0 else ""
     cls   = "" if d >= 0 else " neg"
@@ -653,7 +674,7 @@ st.html(f"""
       <div class="kpi-lbl">Revenue</div>
       <div class="kpi-val">${_rev_val}</div>
       {_delta_html(rev_d)}
-      <div class="kpi-sub">YTD {latest_yr}</div>
+      <div class="kpi-sub">{_period_label}</div>
       <div class="spark">{svg_spark(rev_spark,"rgba(62,207,142,0.5)")}</div>
     </div>
 

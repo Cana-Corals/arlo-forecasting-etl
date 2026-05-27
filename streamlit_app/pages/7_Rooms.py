@@ -87,9 +87,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Controls ──────────────────────────────────────────────────────────────────
-HORIZONS = ["Q1", "Q2", "Q3", "Q4", "Full Year", "Custom"]
+HORIZONS = ["Q1", "Q2", "Q3", "Q4", "All Years", "Custom"]
 if "rm_hz" not in st.session_state:
-    st.session_state["rm_hz"] = "Full Year"
+    st.session_state["rm_hz"] = "All Years"
 
 hz = st.segmented_control("Horizon", HORIZONS,
                            default=st.session_state["rm_hz"],
@@ -98,13 +98,15 @@ if hz:
     st.session_state["rm_hz"] = hz
 horizon = st.session_state["rm_hz"]
 
+_all_years = (horizon == "All Years")
+
 _yc1, _ = st.columns([2, 7])
 with _yc1:
-    sel_year = st.selectbox("Year", [2025, 2024, "All Years"], key="rm_year",
-                            label_visibility="collapsed")
+    sel_year = st.selectbox("Year", [2025, 2024], key="rm_year",
+                            label_visibility="collapsed",
+                            disabled=_all_years)
 
-_all_years = (sel_year == "All Years")
-_yr_int    = 2025 if _all_years else int(sel_year)
+_yr_int = 2025 if _all_years else int(sel_year)
 
 def preset_dates(h, yr):
     if h == "Q1":        return date(yr, 1, 1),  date(yr, 3, 31)

@@ -135,6 +135,7 @@ section[data-testid="stSidebar"] .stButton:not(:first-of-type) > button:hover {
                 ("↗", "Forecast",       "pages/2_Forecast.py"),
                 ("≡", "Performance",    "pages/3_Performance.py"),
                 ("◇", "Demand",         "pages/4_Demand.py"),
+                ("⊡", "Rooms",          "pages/7_Rooms.py"),
                 (None, None,            None),
                 ("⊞", "Competitive",    "pages/5_Competitive.py"),
                 ("◎", "Model Insights", "pages/6_Model_Insights.py"),
@@ -184,6 +185,7 @@ section[data-testid="stSidebar"] .stButton:not(:first-of-type) > button:hover {
                 ("Forecast",    "pages/2_Forecast.py",    "forecast"),
                 ("Performance", "pages/3_Performance.py", "performance"),
                 ("Demand",      "pages/4_Demand.py",      "demand"),
+                ("Rooms",       "pages/7_Rooms.py",       "rooms"),
             ]:
                 full_path = app_root / path
                 btn_label = f"● {label}" if key == active else label

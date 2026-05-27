@@ -650,6 +650,7 @@ if is_auth:
             st.Page("pages/2_Forecast.py",       title="Forecast"),
             st.Page("pages/3_Performance.py",    title="Performance"),
             st.Page("pages/4_Demand.py",         title="Demand"),
+            st.Page("pages/7_Rooms.py",          title="Rooms"),
             st.Page("pages/5_Competitive.py",    title="Competitive"),
             st.Page("pages/6_Model_Insights.py", title="Model Insights"),
         ],

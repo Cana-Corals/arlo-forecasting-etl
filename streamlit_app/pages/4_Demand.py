@@ -450,7 +450,7 @@ def _build_rt_component(df, cols, totals=None):
             )
             tds += f'<td data-raw="{raw}">{_he.escape(_fmt(val, kind))}</td>'
         tfoot = f"<tfoot><tr>{tds}</tr></tfoot>"
-    height = (len(df) + (1 if totals else 0)) * 36 + 70
+    height = len(df) * 36 + (120 if totals else 70)
     return (
         f"<!DOCTYPE html><html><head><meta charset='utf-8'>"
         f"<style>{_RT_CSS}</style></head><body>"
@@ -478,7 +478,7 @@ _tot_row = {
 }
 
 _rt_html, _rt_height = _build_rt_component(display_df, _RT_COLS, totals=_tot_row)
-components.html(_rt_html, height=_rt_height, scrolling=False)
+components.html(_rt_html, height=_rt_height, scrolling=True)
 
 # ── Booking pace / pickup ─────────────────────────────────────────────────────
 st.markdown('<div class="dm-section"><div class="dm-section-ttl">Booking Pace — Rooms Picked Up</div></div>',

@@ -374,6 +374,12 @@ td:first-child { color: rgba(245,245,240,0.6); text-align: left; }
 td:nth-child(2) { text-align: left; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
 tbody tr:hover td { background: rgba(255,255,255,0.03); }
 tbody tr:last-child td { border-bottom: none; }
+tfoot tr td {
+  border-top: 2px solid rgba(255,255,255,0.18);
+  font-weight: 600; color: rgba(245,245,240,0.9);
+  background: rgba(255,255,255,0.02); border-bottom: none;
+}
+tfoot tr td:first-child { color: #e8854a; }
 """
 
 _RT_JS = """
@@ -413,7 +419,7 @@ def _fmt(val, kind):
     if kind == "usdc":  return f"${v:,.0f}"
     return str(val)
 
-def _build_rt_component(df, cols):
+def _build_rt_component(df, cols, totals=None):
     ths = ""
     for i, (_, label, _, tip) in enumerate(cols):
         safe_tip = _he.escape(tip)
@@ -434,15 +440,44 @@ def _build_rt_component(df, cols):
             )
             tds += f'<td data-raw="{raw}">{_he.escape(_fmt(val, kind))}</td>'
         trs += f"<tr>{tds}</tr>"
-    height = len(df) * 36 + 70
+    tfoot = ""
+    if totals is not None:
+        tds = ""
+        for col, _, kind, _ in cols:
+            val = totals.get(col, "")
+            raw = _he.escape(str(val)) if kind == "text" else (
+                float(val) if str(val) not in ("", "nan") else 0
+            )
+            tds += f'<td data-raw="{raw}">{_he.escape(_fmt(val, kind))}</td>'
+        tfoot = f"<tfoot><tr>{tds}</tr></tfoot>"
+    height = (len(df) + (1 if totals else 0)) * 36 + 70
     return (
         f"<!DOCTYPE html><html><head><meta charset='utf-8'>"
         f"<style>{_RT_CSS}</style></head><body>"
-        f"<table><thead><tr>{ths}</tr></thead><tbody>{trs}</tbody></table>"
+        f"<table><thead><tr>{ths}</tr></thead><tbody>{trs}</tbody>{tfoot}</table>"
         f"<script>{_RT_JS}</script></body></html>"
     ), height
 
-_rt_html, _rt_height = _build_rt_component(display_df, _RT_COLS)
+_tot_rn = float(rt_stats["room_nights"].sum())
+_tot_rv = float(rt_stats["room_revenue"].sum())
+_tot_nr = float(rt_stats["n_rooms"].sum())
+_tot_row = {
+    "room_type":       "TOTAL",
+    "label":           "All Types",
+    "n_rooms":         int(_tot_nr),
+    "room_nights":     int(_tot_rn),
+    "avg_occ":         float(display_df["avg_occ"].mean()),
+    "avg_adr":         _tot_rv / _tot_rn if _tot_rn else 0.0,
+    "revpar":          _tot_rv / (_tot_nr * n_days_period) if (_tot_nr * n_days_period) else 0.0,
+    "total_revenue":   float(rt_stats["total_revenue"].sum()),
+    "sellout_days":    int(rt_stats["sellout_days"].sum()),
+    "sellout_pct":     float(display_df["sellout_pct"].mean()),
+    "ooo_room_nights": int(rt_stats["ooo_room_nights"].sum()),
+    "ooo_pct":         float(rt_stats["ooo_room_nights"].sum() / (_tot_nr * n_days_period) * 100) if (_tot_nr * n_days_period) else 0.0,
+    "lost_revenue":    float(rt_stats["lost_revenue"].sum()),
+}
+
+_rt_html, _rt_height = _build_rt_component(display_df, _RT_COLS, totals=_tot_row)
 components.html(_rt_html, height=_rt_height, scrolling=False)
 
 # ── Booking pace / pickup ─────────────────────────────────────────────────────

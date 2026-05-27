@@ -49,6 +49,7 @@ st.markdown("""
 .rm-kpi-lbl   { font-size:9px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
 .rm-kpi-val   { font-size:24px; font-weight:600; color:var(--white); line-height:1; margin-bottom:4px; }
 .rm-kpi-delta { font-size:10px; color:var(--muted2); margin-top:5px; }
+.rm-kpi-desc  { font-size:9px; color:var(--muted); margin-top:3px; line-height:1.4; }
 
 .rm-section { padding:16px 20px 0; }
 .rm-section-ttl { font-size:9px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
@@ -99,8 +100,11 @@ horizon = st.session_state["rm_hz"]
 
 _yc1, _ = st.columns([2, 7])
 with _yc1:
-    sel_year = st.selectbox("Year", [2025, 2024], key="rm_year",
+    sel_year = st.selectbox("Year", [2025, 2024, "All Years"], key="rm_year",
                             label_visibility="collapsed")
+
+_all_years = (sel_year == "All Years")
+_yr_int    = 2025 if _all_years else int(sel_year)
 
 def preset_dates(h, yr):
     if h == "Q1":        return date(yr, 1, 1),  date(yr, 3, 31)
@@ -110,20 +114,23 @@ def preset_dates(h, yr):
     if h == "Full Year": return date(yr, 1, 1),  date(yr, 12, 31)
     return None, None
 
-if horizon == "Custom":
+if _all_years:
+    start = rt_df["business_date"].min().date()
+    end   = rt_df["business_date"].max().date()
+elif horizon == "Custom":
     _c1, _c2, _ = st.columns([2, 2, 4])
     with _c1:
-        start = st.date_input("From", value=date(sel_year, 1, 1),
+        start = st.date_input("From", value=date(_yr_int, 1, 1),
                               min_value=date(2024, 1, 1), max_value=date(2025, 12, 31),
                               key="rm_start", format="MM/DD/YYYY", label_visibility="collapsed")
     with _c2:
-        end = st.date_input("To", value=date(sel_year, 12, 31),
+        end = st.date_input("To", value=date(_yr_int, 12, 31),
                             min_value=date(2024, 1, 1), max_value=date(2025, 12, 31),
                             key="rm_end", format="MM/DD/YYYY", label_visibility="collapsed")
     if isinstance(start, date) and isinstance(end, date) and start > end:
         start, end = end, start
 else:
-    start, end = preset_dates(horizon, sel_year)
+    start, end = preset_dates(horizon, _yr_int)
 
 s_ts = pd.Timestamp(start)
 e_ts = pd.Timestamp(end)
@@ -145,31 +152,37 @@ avg_adr          = total_room_rev / total_sold if total_sold else 0.0
 revpar           = total_room_rev / total_capacity if total_capacity else 0.0
 total_lost_rev   = float(rt_f["lost_rev"].sum())
 
-py_yr = sel_year - 1
-try:
-    py_s = pd.Timestamp(start.replace(year=py_yr))
-    py_e = pd.Timestamp(end.replace(year=py_yr))
-except ValueError:
-    py_s = pd.Timestamp(start.replace(year=py_yr, day=28))
-    py_e = pd.Timestamp(end.replace(year=py_yr, day=28))
-
-rt_py = rt_df[(rt_df["business_date"] >= py_s) & (rt_df["business_date"] <= py_e)].copy()
-
-if not rt_py.empty:
-    rt_py["available"] = rt_py["total_physical_rooms"] - rt_py["ooo_rooms"]
-    rt_py["lost_rev"]  = rt_py["ooo_rooms"] * rt_py["adr"].fillna(0)
-    py_capacity  = int(rt_py["total_physical_rooms"].sum())
-    py_ooo       = int(rt_py["ooo_rooms"].sum())
-    py_available = py_capacity - py_ooo
-    py_sold      = int(rt_py["room_nights"].sum())
-    py_occ_pct   = py_sold / py_available * 100 if py_available else 0.0
-    py_room_rev  = float(rt_py["room_revenue"].sum())
-    py_adr       = py_room_rev / py_sold if py_sold else 0.0
-    py_revpar    = py_room_rev / py_capacity if py_capacity else 0.0
-    py_lost_rev  = float(rt_py["lost_rev"].sum())
-else:
+if _all_years:
+    rt_py = pd.DataFrame()
+    py_yr = None
     py_capacity = py_ooo = py_available = py_sold = 0
     py_occ_pct = py_adr = py_revpar = py_lost_rev = 0.0
+else:
+    py_yr = _yr_int - 1
+    try:
+        py_s = pd.Timestamp(start.replace(year=py_yr))
+        py_e = pd.Timestamp(end.replace(year=py_yr))
+    except ValueError:
+        py_s = pd.Timestamp(start.replace(year=py_yr, day=28))
+        py_e = pd.Timestamp(end.replace(year=py_yr, day=28))
+
+    rt_py = rt_df[(rt_df["business_date"] >= py_s) & (rt_df["business_date"] <= py_e)].copy()
+
+    if not rt_py.empty:
+        rt_py["available"] = rt_py["total_physical_rooms"] - rt_py["ooo_rooms"]
+        rt_py["lost_rev"]  = rt_py["ooo_rooms"] * rt_py["adr"].fillna(0)
+        py_capacity  = int(rt_py["total_physical_rooms"].sum())
+        py_ooo       = int(rt_py["ooo_rooms"].sum())
+        py_available = py_capacity - py_ooo
+        py_sold      = int(rt_py["room_nights"].sum())
+        py_occ_pct   = py_sold / py_available * 100 if py_available else 0.0
+        py_room_rev  = float(rt_py["room_revenue"].sum())
+        py_adr       = py_room_rev / py_sold if py_sold else 0.0
+        py_revpar    = py_room_rev / py_capacity if py_capacity else 0.0
+        py_lost_rev  = float(rt_py["lost_rev"].sum())
+    else:
+        py_capacity = py_ooo = py_available = py_sold = 0
+        py_occ_pct = py_adr = py_revpar = py_lost_rev = 0.0
 
 def _delta_html(v, base, invert=False):
     if base == 0 or rt_py.empty:
@@ -187,21 +200,25 @@ st.markdown(f"""
     <div class="rm-kpi-lbl">Capacity</div>
     <div class="rm-kpi-val">{total_capacity:,}</div>
     <div class="rm-kpi-delta">{n_capacity_rooms} rooms &middot; {n_days_period} nights</div>
+    <div class="rm-kpi-desc">Max room-nights that could ever be sold</div>
   </div>
   <div class="rm-kpi">
     <div class="rm-kpi-lbl">Rooms Available</div>
     <div class="rm-kpi-val">{total_available:,}</div>
     <div class="rm-kpi-delta">{_delta_html(total_available, py_available)}</div>
+    <div class="rm-kpi-desc">Capacity minus Out-of-Order nights</div>
   </div>
   <div class="rm-kpi" style="border-top-color:#e05252;">
     <div class="rm-kpi-lbl">Rooms OOO</div>
     <div class="rm-kpi-val">{total_ooo:,}</div>
     <div class="rm-kpi-delta">{_delta_html(total_ooo, py_ooo, invert=True)}</div>
+    <div class="rm-kpi-desc">Room-nights blocked &mdash; maintenance &amp; holds</div>
   </div>
   <div class="rm-kpi" style="border-top-color:#3ecf8e;">
     <div class="rm-kpi-lbl">Rooms Sold</div>
     <div class="rm-kpi-val">{total_sold:,}</div>
     <div class="rm-kpi-delta">{_delta_html(total_sold, py_sold)}</div>
+    <div class="rm-kpi-desc">Room-nights occupied by guests</div>
   </div>
 </div>
 <div class="rm-kpi-grid" style="padding-top:6px;">
@@ -209,21 +226,25 @@ st.markdown(f"""
     <div class="rm-kpi-lbl">Occupancy %</div>
     <div class="rm-kpi-val">{occ_pct:.1f}%</div>
     <div class="rm-kpi-delta">{_delta_html(occ_pct, py_occ_pct)}</div>
+    <div class="rm-kpi-desc">Sold &divide; Available &mdash; OOO excluded from base</div>
   </div>
   <div class="rm-kpi">
     <div class="rm-kpi-lbl">ADR</div>
     <div class="rm-kpi-val">${avg_adr:,.0f}</div>
     <div class="rm-kpi-delta">{_delta_html(avg_adr, py_adr)}</div>
+    <div class="rm-kpi-desc">Room revenue &divide; rooms sold</div>
   </div>
   <div class="rm-kpi">
     <div class="rm-kpi-lbl">RevPAR</div>
     <div class="rm-kpi-val">${revpar:,.0f}</div>
     <div class="rm-kpi-delta">{_delta_html(revpar, py_revpar)}</div>
+    <div class="rm-kpi-desc">Room revenue &divide; total inventory (incl. OOO)</div>
   </div>
   <div class="rm-kpi" style="border-top-color:#e8854a;">
     <div class="rm-kpi-lbl">Lost Revenue (OOO)</div>
     <div class="rm-kpi-val">${total_lost_rev:,.0f}</div>
     <div class="rm-kpi-delta">{_delta_html(total_lost_rev, py_lost_rev, invert=True)}</div>
+    <div class="rm-kpi-desc">OOO nights &times; ADR &mdash; opportunity cost</div>
   </div>
 </div>
 """, unsafe_allow_html=True)

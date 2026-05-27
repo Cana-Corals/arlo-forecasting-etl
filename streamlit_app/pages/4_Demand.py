@@ -243,7 +243,7 @@ ROOM_TYPE_NAMES = {
     "SS":   "Studio Suite",
     "SSRS": "Accesible Studio Suite",
     "PLS":  "City View Loft Suite",
-    "PSS":  "City View Studio Suite",
+    "PSS":  "City Viiew Studio Suite",
     "CVQ":  "City View Queen",
     "Q":    "Standard Queen",
     "QT":   "Queen Terrace",

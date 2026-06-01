@@ -11,7 +11,7 @@ from components.sidebar import render_sidebar
 from components.forecast_engine import generate_future_predictions
 
 BASE  = Path(__file__).resolve().parents[2]
-TODAY = date(2026, 5, 27)
+TODAY = date.today()
 
 # ── CSS ───────────────────────────────────────────────────────────────────────
 st.markdown(
@@ -53,6 +53,11 @@ st.markdown("""
 
 .rm-section { padding:16px 20px 0; }
 .rm-section-ttl { font-size:9px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.rm-live-bar { display:flex; align-items:center; gap:10px; padding:0 20px 10px; }
+.rm-live-dot { width:7px; height:7px; border-radius:50%; background:#3ecf8e; box-shadow:0 0 6px #3ecf8e; animation:pulse 1.8s ease-in-out infinite; flex-shrink:0; }
+.rm-live-lbl { font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#3ecf8e; }
+.rm-live-dates { font-size:10px; color:rgba(245,245,240,0.5); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
 </style>
 """, unsafe_allow_html=True)
 
@@ -494,8 +499,12 @@ components.html(_rt_html, height=_rt_height, scrolling=False)
 st.markdown('<div class="rm-section"><div class="rm-section-ttl">Room Type Revenue Forecast</div></div>',
             unsafe_allow_html=True)
 st.markdown(
-    '<div style="padding:0 20px 10px;font-size:10px;color:rgba(245,245,240,0.45);">'
-    'Ranked by projected revenue — use to prioritize HSK deep-clean and Engineering rounds before each window.</div>',
+    f'<div class="rm-live-bar">'
+    f'<div class="rm-live-dot"></div>'
+    f'<span class="rm-live-lbl">Live</span>'
+    f'<span class="rm-live-dates">Today is {TODAY.strftime("%A, %b %-d, %Y")} &nbsp;·&nbsp; '
+    f'select a window below to see which rooms to prioritize</span>'
+    f'</div>',
     unsafe_allow_html=True,
 )
 
@@ -572,7 +581,7 @@ if not rt_w.empty:
 
     RCOLORS  = ["#38bdf8", "#0ea5e9", "#4a6fa5", "#3ecf8e"] + ["rgba(245,245,240,0.22)"] * 20
     date_rng = f"{rt_s.strftime('%b %-d')} – {rt_e.strftime('%b %-d, %Y')}"
-    gf_note  = f"{gf:.2f}× growth factor vs {rt_base_yr}"
+    gf_note  = f"base: {rt_base_yr} actuals · {gf:.2f}× growth factor"
 
     rows_html = ""
     for idx, r in rt_agg.iterrows():

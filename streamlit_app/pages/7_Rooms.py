@@ -499,13 +499,19 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-_rw_col, _ = st.columns([4, 5])
+_rw_col, _yr_col, _ = st.columns([4, 2, 3])
 with _rw_col:
     rt_hz = st.segmented_control(
         "Room window",
         ["This Week", "This Weekend", "Next Week", "Next 30d"],
         default="This Week",
         key="rm_rt_hz",
+        label_visibility="collapsed",
+    )
+with _yr_col:
+    rt_base_yr = st.selectbox(
+        "Base year", [2025, 2024],
+        key="rm_rt_yr",
         label_visibility="collapsed",
     )
 
@@ -525,13 +531,15 @@ def _rt_window(w):
 rt_s, rt_e = _rt_window(rt_hz or "This Week")
 
 try:
-    rt_s25, rt_e25 = rt_s.replace(year=2025), rt_e.replace(year=2025)
+    rt_s_base = rt_s.replace(year=rt_base_yr)
+    rt_e_base = rt_e.replace(year=rt_base_yr)
 except ValueError:
-    rt_s25, rt_e25 = rt_s.replace(year=2025, day=28), rt_e.replace(year=2025, day=28)
+    rt_s_base = rt_s.replace(year=rt_base_yr, day=28)
+    rt_e_base = rt_e.replace(year=rt_base_yr, day=28)
 
 rt_w = rt_df[
-    (rt_df["business_date"] >= pd.Timestamp(rt_s25)) &
-    (rt_df["business_date"] <= pd.Timestamp(rt_e25))
+    (rt_df["business_date"] >= pd.Timestamp(rt_s_base)) &
+    (rt_df["business_date"] <= pd.Timestamp(rt_e_base))
 ].copy()
 
 fc_win = forecast[
@@ -539,8 +547,8 @@ fc_win = forecast[
     (forecast["business_date"] <= pd.Timestamp(rt_e))
 ]["pred_revenue"].sum()
 act_win = actuals[
-    (actuals["business_date"] >= pd.Timestamp(rt_s25)) &
-    (actuals["business_date"] <= pd.Timestamp(rt_e25))
+    (actuals["business_date"] >= pd.Timestamp(rt_s_base)) &
+    (actuals["business_date"] <= pd.Timestamp(rt_e_base))
 ]["actual_revenue"].sum()
 gf = fc_win / act_win if act_win > 0 else 1.0
 
@@ -564,7 +572,7 @@ if not rt_w.empty:
 
     RCOLORS  = ["#38bdf8", "#0ea5e9", "#4a6fa5", "#3ecf8e"] + ["rgba(245,245,240,0.22)"] * 20
     date_rng = f"{rt_s.strftime('%b %-d')} – {rt_e.strftime('%b %-d, %Y')}"
-    gf_note  = f"{gf:.2f}× YoY growth factor applied"
+    gf_note  = f"{gf:.2f}× growth factor vs {rt_base_yr}"
 
     rows_html = ""
     for idx, r in rt_agg.iterrows():

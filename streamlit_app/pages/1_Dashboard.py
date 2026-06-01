@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import plotly.graph_objects as go
 from pathlib import Path
 import sys
 
@@ -10,6 +11,8 @@ from components.data import load_master, load_events, load_str, load_source_stat
 # ── Session state ─────────────────────────────────────────────────────────────
 if "sb_collapsed" not in st.session_state:
     st.session_state["sb_collapsed"] = False
+if "db_dow_filter" not in st.session_state:
+    st.session_state["db_dow_filter"] = None
 COLLAPSED = st.session_state["sb_collapsed"]
 SB_W      = "52px" if COLLAPSED else "220px"
 
@@ -346,21 +349,32 @@ else:
 # keep alias for any downstream refs
 latest_yr = _sel_yr
 
+# ── DOW filter ────────────────────────────────────────────────────────────────
+_dow_filter = st.session_state["db_dow_filter"]
+_dow_names  = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+if _dow_filter is not None:
+    curr_kpi = curr[curr["day_of_week"] == _dow_filter].copy()
+    prev_kpi = prev_ytd[prev_ytd["day_of_week"] == _dow_filter].copy() if not prev_ytd.empty else prev_ytd
+else:
+    curr_kpi = curr
+    prev_kpi = prev_ytd
+
 def pct(a, b):
     return (a - b) / abs(b) * 100 if b else 0.0
 
-rev_c  = curr["total_revenue"].sum()
-occ_c  = curr["occupancy_rate"].mean() * 100
-adr_c  = curr["adr"].mean()
-rp_c   = curr["revpar"].mean()
-trp_c  = (curr["total_revenue"] / curr["available_rooms"]).mean()
+rev_c  = curr_kpi["total_revenue"].sum()
+occ_c  = curr_kpi["occupancy_rate"].mean() * 100
+adr_c  = curr_kpi["adr"].mean()
+rp_c   = curr_kpi["revpar"].mean()
+trp_c  = (curr_kpi["total_revenue"] / curr_kpi["available_rooms"]).mean()
 
-if not prev_ytd.empty:
-    rev_p  = prev_ytd["total_revenue"].sum()
-    occ_p  = prev_ytd["occupancy_rate"].mean() * 100
-    adr_p  = prev_ytd["adr"].mean()
-    rp_p   = prev_ytd["revpar"].mean()
-    trp_p  = (prev_ytd["total_revenue"] / prev_ytd["available_rooms"]).mean()
+if not prev_kpi.empty:
+    rev_p  = prev_kpi["total_revenue"].sum()
+    occ_p  = prev_kpi["occupancy_rate"].mean() * 100
+    adr_p  = prev_kpi["adr"].mean()
+    rp_p   = prev_kpi["revpar"].mean()
+    trp_p  = (prev_kpi["total_revenue"] / prev_kpi["available_rooms"]).mean()
     rev_d, occ_d, adr_d, rp_d, trp_d = (
         pct(rev_c, rev_p), pct(occ_c, occ_p), pct(adr_c, adr_p),
         pct(rp_c, rp_p),   pct(trp_c, trp_p),
@@ -403,7 +417,7 @@ else:
     str_adr_val = adr_c; comp_adr_val = comp_occ_val = comp_rp_val = None
 
 # Medallia
-med = curr[curr["medallia_overall_satisfaction"].notna()]
+med = curr_kpi[curr_kpi["medallia_overall_satisfaction"].notna()]
 if not med.empty:
     med_overall = med["medallia_overall_satisfaction"].mean()
     med_clean   = med["medallia_hotel_cleanliness"].mean()   if "medallia_hotel_cleanliness"   in med else None
@@ -418,13 +432,13 @@ if not med.empty:
 else:
     med_overall = None
 
-# Sparklines
-curr["month"] = curr["business_date"].dt.month
-rev_spark  = curr.groupby("month")["total_revenue"].sum().values
-occ_spark  = curr.groupby("month")["occupancy_rate"].mean().values * 100
-adr_spark  = curr.groupby("month")["adr"].mean().values
-rp_spark   = curr.groupby("month")["revpar"].mean().values
-trp_spark  = curr.groupby("month").apply(
+# Sparklines (use DOW-filtered data so they match the KPIs)
+curr_kpi["month"] = curr_kpi["business_date"].dt.month
+rev_spark  = curr_kpi.groupby("month")["total_revenue"].sum().values
+occ_spark  = curr_kpi.groupby("month")["occupancy_rate"].mean().values * 100
+adr_spark  = curr_kpi.groupby("month")["adr"].mean().values
+rp_spark   = curr_kpi.groupby("month")["revpar"].mean().values
+trp_spark  = curr_kpi.groupby("month").apply(
     lambda g: g["total_revenue"].sum() / g["available_rooms"].sum()
 ).values
 
@@ -439,12 +453,9 @@ def svg_spark(vals, color):
     )
     return f'<svg width="100%" height="20" viewBox="0 0 80 20" preserveAspectRatio="none"><polyline points="{pts}" fill="none" stroke="{color}" stroke-width="1.5" stroke-linejoin="round"/></svg>'
 
-# DOW occupancy
-curr["dow"] = curr["business_date"].dt.dayofweek
-dow_avg  = curr.groupby("dow")["occupancy_rate"].mean() * 100
+# DOW occupancy (always use full unfiltered curr so all 7 bars show)
+dow_avg  = curr.groupby("day_of_week")["occupancy_rate"].mean() * 100
 dow_vals = [float(dow_avg.get(i, 0)) for i in range(7)]
-dow_max  = max(dow_vals) or 100.0
-dow_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 # NYC events: next 4 upcoming major events
 today_ts = pd.Timestamp.today().normalize()
@@ -645,6 +656,26 @@ if _hz_new and _hz_new != _hz:
     st.session_state["db_horizon"] = _hz_new
     st.rerun()
 
+# ── DOW filter badge ──────────────────────────────────────────────────────────
+if _dow_filter is not None:
+    _fc1, _fc2 = st.columns([8, 1])
+    with _fc1:
+        st.markdown(
+            f'<div style="padding:4px 20px 0;display:flex;align-items:center;gap:8px;">'
+            f'<span style="font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;'
+            f'color:rgba(245,245,240,0.35);">Filtered by</span>'
+            f'<span style="background:#e8854a;color:#111;font-size:9px;font-weight:700;'
+            f'letter-spacing:.1em;text-transform:uppercase;padding:2px 9px;border-radius:2px;">'
+            f'{_dow_names[_dow_filter]}s</span>'
+            f'<span style="font-size:9px;color:rgba(245,245,240,0.35);">'
+            f'— showing all {_dow_names[_dow_filter]}s in the selected period</span>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+    with _fc2:
+        if st.button("✕ Clear", key="clear_dow_filter"):
+            st.session_state["db_dow_filter"] = None
+            st.rerun()
 
 # ── Core performance KPIs ─────────────────────────────────────────────────────
 def _delta_html(d, hero=False):
@@ -738,21 +769,11 @@ st.html("""
 """)
 
 # ── Booking pace + DOW occupancy ──────────────────────────────────────────────
-dow_bars = "".join(
-    f"""<div class="dow-col">
-      <div class="dow-wrap">
-        <div class="dow-bar" style="height:{v/dow_max*100:.0f}%;background:{'var(--arlo-accent)' if v/dow_max > 0.92 else f'rgba(232,133,74,{0.3+v/dow_max*0.4:.2f})'};">
-        </div>
-      </div>
-      <div class="dow-day">{n}</div>
-      <div class="dow-pct">{v:.0f}%</div>
-    </div>"""
-    for v, n in zip(dow_vals, dow_names)
-)
+_bp_col, _dow_col = st.columns([1.5, 1])
 
-st.html(f"""
-<div style="padding:0 20px;">
-<div class="row2">
+with _bp_col:
+    st.html("""
+<div style="padding:0 20px 0 20px;">
   <div class="panel">
     <div class="pt">Booking pace — next 30 days</div>
     <div class="ps">On-books vs same point last year</div>
@@ -787,15 +808,64 @@ st.html(f"""
       <div class="pace-pill" style="background:var(--arlo-slate2);color:var(--arlo-slate);">Early</div>
     </div>
   </div>
-
-  <div class="panel">
-    <div class="pt">Occupancy by day of week</div>
-    <div class="ps">YTD {latest_yr} average</div>
-    <div class="dow-grid">{dow_bars}</div>
-  </div>
-</div>
 </div>
 """)
+
+with _dow_col:
+    st.markdown(
+        f'<div style="padding:0 20px 4px 0;">'
+        f'<div style="font-size:9px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;'
+        f'color:rgba(245,245,240,0.38);padding:0 0 4px 2px;">Occupancy by day of week</div>'
+        f'<div style="font-size:9px;color:rgba(245,245,240,0.35);padding:0 0 4px 2px;">'
+        f'Click a bar to filter all KPIs · click again to clear</div></div>',
+        unsafe_allow_html=True,
+    )
+    _dow_bar_colors = []
+    for i in range(7):
+        if _dow_filter == i:
+            _dow_bar_colors.append("#e8854a")          # selected — solid accent
+        elif _dow_filter is not None:
+            _dow_bar_colors.append("rgba(232,133,74,0.18)")  # dimmed
+        else:
+            v = dow_vals[i]
+            _max = max(dow_vals) or 100.0
+            _dow_bar_colors.append(
+                "#e8854a" if v / _max > 0.92 else f"rgba(232,133,74,{0.3 + v/_max*0.4:.2f})"
+            )
+
+    fig_dow = go.Figure()
+    fig_dow.add_trace(go.Bar(
+        x=_dow_names, y=dow_vals,
+        marker_color=_dow_bar_colors,
+        hovertemplate="%{x}: %{y:.1f}%<extra></extra>",
+        text=[f"{v:.0f}%" for v in dow_vals],
+        textposition="outside",
+        textfont=dict(size=9, color="rgba(245,245,240,0.6)"),
+    ))
+    fig_dow.update_layout(
+        paper_bgcolor="#222222", plot_bgcolor="#222222",
+        margin=dict(l=4, r=4, t=8, b=4),
+        height=160,
+        showlegend=False,
+        xaxis=dict(tickfont=dict(size=9, color="rgba(245,245,240,0.45)"),
+                   showgrid=False, fixedrange=True),
+        yaxis=dict(visible=False, fixedrange=True),
+        bargap=0.25,
+    )
+
+    _dow_event = st.plotly_chart(
+        fig_dow,
+        on_select="rerun",
+        key="dow_bar_chart",
+        use_container_width=True,
+        config={"displayModeBar": False},
+    )
+    if _dow_event and _dow_event.selection and _dow_event.selection.points:
+        _clicked = _dow_event.selection.points[0]["point_index"]
+        _new_filter = None if _clicked == _dow_filter else _clicked
+        if _new_filter != _dow_filter:
+            st.session_state["db_dow_filter"] = _new_filter
+            st.rerun()
 
 # ── Revenue by segment + Channel mix + NYC Events ────────────────────────────
 ev_rows_html = ""

@@ -508,7 +508,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-_rw_col, _yr_col, _ = st.columns([4, 2, 3])
+_rw_col, _ = st.columns([4, 5])
 with _rw_col:
     rt_hz = st.segmented_control(
         "Room window",
@@ -517,12 +517,7 @@ with _rw_col:
         key="rm_rt_hz",
         label_visibility="collapsed",
     )
-with _yr_col:
-    rt_base_yr = st.selectbox(
-        "Base year", [2025, 2024],
-        key="rm_rt_yr",
-        label_visibility="collapsed",
-    )
+rt_base_yr = 2025
 
 def _rt_window(w):
     if w == "This Week":
@@ -581,7 +576,7 @@ if not rt_w.empty:
 
     RCOLORS  = ["#38bdf8", "#0ea5e9", "#4a6fa5", "#3ecf8e"] + ["rgba(245,245,240,0.22)"] * 20
     date_rng = f"{rt_s.strftime('%b %-d')} – {rt_e.strftime('%b %-d, %Y')}"
-    gf_note  = f"base: {rt_base_yr} actuals · {gf:.2f}× growth factor"
+    gf_note  = f"{gf:.2f}× YoY growth factor applied"
 
     rows_html = ""
     for idx, r in rt_agg.iterrows():

@@ -142,12 +142,12 @@ def preset_dates(h):
 if horizon == "Custom":
     _c1, _c2, _ = st.columns([2, 2, 5])
     with _c1:
-        start = st.date_input("From", value=date(2026, 7, 1),
+        start = st.date_input("From", value=date(2026, 1, 1),
                               min_value=date(2024, 1, 1), max_value=date(2026, 12, 31),
                               key="fc_start", format="MM/DD/YYYY",
                               label_visibility="collapsed")
     with _c2:
-        end = st.date_input("To", value=date(2026, 9, 30),
+        end = st.date_input("To", value=date(2026, 12, 31),
                             min_value=date(2024, 1, 1), max_value=date(2026, 12, 31),
                             key="fc_end", format="MM/DD/YYYY",
                             label_visibility="collapsed")

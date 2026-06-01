@@ -209,14 +209,6 @@ section[data-testid="stSidebar"] .stButton:not(:first-of-type) > button:hover {
 
             # Dev panel — julio only
             if st.session_state.get("username") == "julio":
-                st.markdown('<div style="margin:8px 6px 0;border-top:1px solid rgba(255,255,255,.06);"></div>',
-                            unsafe_allow_html=True)
-                st.markdown('<div style="padding:10px 16px 4px;font-size:9px;font-weight:600;'
-                            'letter-spacing:.18em;text-transform:uppercase;'
-                            'color:rgba(255,255,255,.22);">Dev</div>', unsafe_allow_html=True)
-                if st.button("Clear Cache", key="sb_clear_cache", use_container_width=True):
-                    st.cache_data.clear()
-                    st.success("Cache cleared")
 
             # Footer — logout
             st.markdown('<div style="margin:12px 6px 0;border-top:1px solid rgba(255,255,255,.06);"></div>',

@@ -487,129 +487,129 @@ else:
         fig_rp.update_yaxes(tickprefix="$", tickformat=",.0f")
         st.plotly_chart(fig_rp, use_container_width=True, config={"displayModeBar": False})
 
-# ── Channel Revenue Forecast ──────────────────────────────────────────────────
-st.markdown('<div class="fc-section"><div class="fc-section-ttl">Booking Channel Revenue Forecast</div></div>',
-            unsafe_allow_html=True)
-st.markdown(
-    '<div style="padding:0 20px 10px;font-size:10px;color:rgba(245,245,240,0.45);">'
-    'Projected by applying the ML growth factor to the 2025 channel mix. '
-    'Use to anticipate OTA, direct, and corporate contributions for the selected period.</div>',
-    unsafe_allow_html=True,
-)
+    # ── Channel Revenue Forecast ──────────────────────────────────────────────
+    st.divider()
+    st.markdown('<div class="fc-section"><div class="fc-section-ttl">Booking Channel Revenue Forecast</div></div>',
+                unsafe_allow_html=True)
+    st.markdown(
+        '<div style="padding:0 20px 10px;font-size:10px;color:rgba(245,245,240,0.45);">'
+        'Projected by applying the ML growth factor to the 2025 channel mix. '
+        'Use to anticipate OTA, direct, and corporate contributions for the selected period.</div>',
+        unsafe_allow_html=True,
+    )
 
-_CHANNEL_MAP = {
-    "EXTRA": "OTA", "EBL": "OTA", "GTA": "OTA", "GLOB": "OTA",
-    "WEBSITE": "Direct / Web", "WEBBOOK": "Direct / Web",
-    "MOBILE": "Direct / Web", "FD": "Direct / Web",
-    "GDSS": "GDS / Corporate", "EXEC": "GDS / Corporate", "SLS": "GDS / Corporate",
-    "CALL": "Voice / Other", "PHONE": "Voice / Other", "WHLS": "Voice / Other",
-    "INP": "Voice / Other", "EVENTS": "Voice / Other",
-}
-_CH_COLORS = {
-    "OTA":             ACCENT,
-    "Direct / Web":    GREEN,
-    "GDS / Corporate": SLATE,
-    "Voice / Other":   "#9b6fd4",
-}
+    _CHANNEL_MAP = {
+        "EXTRA": "OTA", "EBL": "OTA", "GTA": "OTA", "GLOB": "OTA",
+        "WEBSITE": "Direct / Web", "WEBBOOK": "Direct / Web",
+        "MOBILE": "Direct / Web", "FD": "Direct / Web",
+        "GDSS": "GDS / Corporate", "EXEC": "GDS / Corporate", "SLS": "GDS / Corporate",
+        "CALL": "Voice / Other", "PHONE": "Voice / Other", "WHLS": "Voice / Other",
+        "INP": "Voice / Other", "EVENTS": "Voice / Other",
+    }
+    _CH_COLORS = {
+        "OTA":             ACCENT,
+        "Direct / Web":    GREEN,
+        "GDS / Corporate": SLATE,
+        "Voice / Other":   "#9b6fd4",
+    }
 
-_src = src_df.copy()
-_src["source_code"] = _src["source_code"].fillna("UNKNOWN")
-_src["channel"] = _src["source_code"].map(_CHANNEL_MAP).fillna("Voice / Other")
+    _src = src_df.copy()
+    _src["source_code"] = _src["source_code"].fillna("UNKNOWN")
+    _src["channel"] = _src["source_code"].map(_CHANNEL_MAP).fillna("Voice / Other")
 
-# For 2026 horizons: map to 2025 equivalent and apply ML growth factor
-if start.year >= 2026:
+    # For 2026 horizons: map to 2025 equivalent and apply ML growth factor
+    if start.year >= 2026:
+        try:
+            _cb_s = pd.Timestamp(start.replace(year=2025))
+            _cb_e = pd.Timestamp(end.replace(year=2025))
+        except ValueError:
+            _cb_s = pd.Timestamp(start.replace(year=2025, day=28))
+            _cb_e = pd.Timestamp(end.replace(year=2025, day=28))
+        _gf = rev_fc / rev_py if rev_py > 0 else 1.0
+        _ch_fc_lbl = "2026 Forecast"
+    else:
+        _cb_s, _cb_e = s_ts, e_ts
+        _gf = 1.0
+        _ch_fc_lbl = f"{start.year} Actual"
+
+    # Prior year window for comparison
     try:
-        _cb_s = pd.Timestamp(start.replace(year=2025))
-        _cb_e = pd.Timestamp(end.replace(year=2025))
+        _cb_py_s = pd.Timestamp(_cb_s.date().replace(year=_cb_s.year - 1))
+        _cb_py_e = pd.Timestamp(_cb_e.date().replace(year=_cb_e.year - 1))
     except ValueError:
-        _cb_s = pd.Timestamp(start.replace(year=2025, day=28))
-        _cb_e = pd.Timestamp(end.replace(year=2025, day=28))
-    _gf = rev_fc / rev_py if rev_py > 0 else 1.0
-    _ch_fc_lbl = "2026 Forecast"
-else:
-    _cb_s, _cb_e = s_ts, e_ts
-    _gf = 1.0
-    _ch_fc_lbl = f"{start.year} Actual"
+        _cb_py_s = pd.Timestamp(_cb_s.date().replace(year=_cb_s.year - 1, day=28))
+        _cb_py_e = pd.Timestamp(_cb_e.date().replace(year=_cb_e.year - 1, day=28))
 
-# Prior year window for comparison
-try:
-    _cb_py_s = pd.Timestamp(_cb_s.date().replace(year=_cb_s.year - 1))
-    _cb_py_e = pd.Timestamp(_cb_e.date().replace(year=_cb_e.year - 1))
-except ValueError:
-    _cb_py_s = pd.Timestamp(_cb_s.date().replace(year=_cb_s.year - 1, day=28))
-    _cb_py_e = pd.Timestamp(_cb_e.date().replace(year=_cb_e.year - 1, day=28))
+    _ch_base = _src[(_src["business_date"] >= _cb_s) & (_src["business_date"] <= _cb_e)].copy()
+    _ch_pydf = _src[(_src["business_date"] >= _cb_py_s) & (_src["business_date"] <= _cb_py_e)].copy()
 
-_ch_base = _src[(_src["business_date"] >= _cb_s) & (_src["business_date"] <= _cb_e)].copy()
-_ch_pydf = _src[(_src["business_date"] >= _cb_py_s) & (_src["business_date"] <= _cb_py_e)].copy()
+    _fk = "D" if freq == "D" else ("W" if freq == "W" else "M")
+    _ch_base["period"] = _ch_base["business_date"].dt.to_period(_fk)
+    _ch_base_agg = _ch_base.groupby(["period", "channel"])["total_revenue"].sum().reset_index()
+    _ch_base_agg["proj_rev"] = _ch_base_agg["total_revenue"] * _gf
 
-_fk = "D" if freq == "D" else ("W" if freq == "W" else "M")
-_ch_base["period"] = _ch_base["business_date"].dt.to_period(_fk)
-_ch_base_agg = _ch_base.groupby(["period", "channel"])["total_revenue"].sum().reset_index()
-_ch_base_agg["proj_rev"] = _ch_base_agg["total_revenue"] * _gf
+    _ch_py_totals = (_ch_pydf.groupby("channel")["total_revenue"].sum()
+                     if not _ch_pydf.empty else pd.Series(dtype=float))
+    _ch_fc_totals = _ch_base_agg.groupby("channel")["proj_rev"].sum().sort_values(ascending=False)
+    _total_proj   = float(_ch_fc_totals.sum()) or 1.0
 
-_ch_py_totals = (_ch_pydf.groupby("channel")["total_revenue"].sum()
-                 if not _ch_pydf.empty else pd.Series(dtype=float))
-_ch_fc_totals = _ch_base_agg.groupby("channel")["proj_rev"].sum().sort_values(ascending=False)
-_total_proj   = float(_ch_fc_totals.sum()) or 1.0
+    _ps_sorted = sorted(_ch_base_agg["period"].unique())
+    _pl        = period_labels(_ps_sorted)
 
-# Stacked bar chart by period
-_ps_sorted = sorted(_ch_base_agg["period"].unique())
-_pl        = period_labels(_ps_sorted)
-
-fig_ch = go.Figure()
-for _ch_name, _ch_color in _CH_COLORS.items():
-    _d  = _ch_base_agg[_ch_base_agg["channel"] == _ch_name]
-    _yv = []
-    for _p in _ps_sorted:
-        _r = _d[_d["period"] == _p]
-        _yv.append(float(_r["proj_rev"].values[0]) if len(_r) else 0.0)
-    fig_ch.add_trace(go.Bar(
-        x=_pl, y=_yv, name=_ch_name, marker_color=_ch_color,
-        hovertemplate=f"{_ch_name}: $%{{y:,.0f}}<extra></extra>",
-    ))
-
-_ch_lay = chart_layout(h=260)
-_ch_lay["barmode"] = "stack"
-_ch_lay["title"] = dict(
-    text=f"Revenue by Booking Channel — {_ch_fc_lbl}",
-    font=dict(size=11, color="rgba(245,245,240,0.7)"),
-    x=0, xanchor="left", pad=dict(l=4),
-)
-_ch_lay["yaxis"]["tickprefix"] = "$"
-_ch_lay["yaxis"]["tickformat"] = ",.0f"
-fig_ch.update_layout(**_ch_lay)
-
-_cha_col, _chb_col = st.columns([2, 1])
-with _cha_col:
-    st.plotly_chart(fig_ch, use_container_width=True, config={"displayModeBar": False})
-
-with _chb_col:
-    _cards_ch = ""
+    fig_ch = go.Figure()
     for _ch_name, _ch_color in _CH_COLORS.items():
-        _proj  = float(_ch_fc_totals.get(_ch_name, 0))
-        _py_v  = float(_ch_py_totals.get(_ch_name, 0)) if not _ch_py_totals.empty else 0.0
-        _share = _proj / _total_proj * 100
-        _diff_html = ""
-        if _py_v > 0:
-            _diff = (_proj - _py_v) / _py_v * 100
-            _dc   = "#3ecf8e" if _diff >= 0 else "#e05252"
-            _ds   = "▲" if _diff >= 0 else "▼"
-            _diff_html = (
-                f'<div style="font-size:9px;color:{_dc};margin-top:2px;">'
-                f'{_ds} {abs(_diff):.1f}% vs prior year</div>'
+        _d  = _ch_base_agg[_ch_base_agg["channel"] == _ch_name]
+        _yv = []
+        for _p in _ps_sorted:
+            _r = _d[_d["period"] == _p]
+            _yv.append(float(_r["proj_rev"].values[0]) if len(_r) else 0.0)
+        fig_ch.add_trace(go.Bar(
+            x=_pl, y=_yv, name=_ch_name, marker_color=_ch_color,
+            hovertemplate=f"{_ch_name}: $%{{y:,.0f}}<extra></extra>",
+        ))
+
+    _ch_lay = chart_layout(h=260)
+    _ch_lay["barmode"] = "stack"
+    _ch_lay["title"] = dict(
+        text=f"Revenue by Booking Channel — {_ch_fc_lbl}",
+        font=dict(size=11, color="rgba(245,245,240,0.7)"),
+        x=0, xanchor="left", pad=dict(l=4),
+    )
+    _ch_lay["yaxis"]["tickprefix"] = "$"
+    _ch_lay["yaxis"]["tickformat"] = ",.0f"
+    fig_ch.update_layout(**_ch_lay)
+
+    _cha_col, _chb_col = st.columns([2, 1])
+    with _cha_col:
+        st.plotly_chart(fig_ch, use_container_width=True, config={"displayModeBar": False})
+
+    with _chb_col:
+        _cards_ch = ""
+        for _ch_name, _ch_color in _CH_COLORS.items():
+            _proj  = float(_ch_fc_totals.get(_ch_name, 0))
+            _py_v  = float(_ch_py_totals.get(_ch_name, 0)) if not _ch_py_totals.empty else 0.0
+            _share = _proj / _total_proj * 100
+            _diff_html = ""
+            if _py_v > 0:
+                _diff = (_proj - _py_v) / _py_v * 100
+                _dc   = "#3ecf8e" if _diff >= 0 else "#e05252"
+                _ds   = "▲" if _diff >= 0 else "▼"
+                _diff_html = (
+                    f'<div style="font-size:9px;color:{_dc};margin-top:2px;">'
+                    f'{_ds} {abs(_diff):.1f}% vs prior year</div>'
+                )
+            _cards_ch += (
+                f'<div style="border-left:3px solid {_ch_color};padding:10px 12px;'
+                f'margin-bottom:8px;background:rgba(255,255,255,0.02);border-radius:0 4px 4px 0;">'
+                f'<div style="font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;'
+                f'color:{_ch_color};margin-bottom:4px;">{_ch_name}</div>'
+                f'<div style="display:flex;align-items:baseline;gap:10px;">'
+                f'<span style="font-size:15px;font-weight:600;color:#f5f5f0;">${_proj:,.0f}</span>'
+                f'<span style="font-size:9px;color:rgba(245,245,240,0.4);">{_share:.1f}%</span>'
+                f'</div>'
+                f'{_diff_html}'
+                f'</div>'
             )
-        _cards_ch += (
-            f'<div style="border-left:3px solid {_ch_color};padding:10px 12px;'
-            f'margin-bottom:8px;background:rgba(255,255,255,0.02);border-radius:0 4px 4px 0;">'
-            f'<div style="font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;'
-            f'color:{_ch_color};margin-bottom:4px;">{_ch_name}</div>'
-            f'<div style="display:flex;align-items:baseline;gap:10px;">'
-            f'<span style="font-size:15px;font-weight:600;color:#f5f5f0;">${_proj:,.0f}</span>'
-            f'<span style="font-size:9px;color:rgba(245,245,240,0.4);">{_share:.1f}%</span>'
-            f'</div>'
-            f'{_diff_html}'
-            f'</div>'
-        )
-    st.markdown(f'<div style="padding:28px 0 0;">{_cards_ch}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="padding:28px 0 0;">{_cards_ch}</div>', unsafe_allow_html=True)
 
 st.markdown("<div style='height:32px'></div>", unsafe_allow_html=True)

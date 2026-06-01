@@ -207,9 +207,6 @@ section[data-testid="stSidebar"] .stButton:not(:first-of-type) > button:hover {
                              disabled=not full_path.exists()):
                     st.switch_page(path)
 
-            # Dev panel — julio only
-            if st.session_state.get("username") == "julio":
-
             # Footer — logout
             st.markdown('<div style="margin:12px 6px 0;border-top:1px solid rgba(255,255,255,.06);"></div>',
                         unsafe_allow_html=True)

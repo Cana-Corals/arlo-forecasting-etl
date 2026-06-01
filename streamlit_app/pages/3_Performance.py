@@ -191,8 +191,8 @@ st.markdown(f"""
 <div class="pf-kpi-grid">
   <div class="pf-kpi">
     <div class="pf-kpi-lbl">Total Revenue</div>
-    <div class="pf-kpi-val">${rev_c/1e6:,.1f}M</div>
-    <div class="pf-kpi-row"><span class="{rc}">{rd}</span><span class="pf-kpi-py">vs <span>${rev_p/1e6:,.1f}M</span></span></div>
+    <div class="pf-kpi-val">{f"${rev_c/1e6:,.1f}M" if rev_c >= 1e6 else f"${rev_c/1e3:,.1f}k"}</div>
+    <div class="pf-kpi-row"><span class="{rc}">{rd}</span><span class="pf-kpi-py">vs <span>{f"${rev_p/1e6:,.1f}M" if rev_p >= 1e6 else f"${rev_p/1e3:,.1f}k"}</span></span></div>
   </div>
   <div class="pf-kpi">
     <div class="pf-kpi-lbl">Occupancy</div>

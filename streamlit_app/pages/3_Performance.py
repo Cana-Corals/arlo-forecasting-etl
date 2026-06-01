@@ -97,7 +97,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Horizon selector ──────────────────────────────────────────────────────────
-HORIZONS = ["1M", "Q1", "Q2", "Q3", "Q4", "Full Year", "Custom"]
+HORIZONS = ["1W", "1M", "Q1", "Q2", "Q3", "Q4", "Full Year", "Custom"]
 if "pf_hz" not in st.session_state:
     st.session_state["pf_hz"] = "Full Year"
 
@@ -115,6 +115,12 @@ with _yc1:
                             label_visibility="collapsed")
 
 def preset_dates(h, yr):
+    if h == "1W":
+        # Last complete Mon–Sun week within the selected year
+        last_day = date(yr, 12, 31)
+        sun = last_day - timedelta(days=(last_day.weekday() + 1) % 7)
+        mon = sun - timedelta(days=6)
+        return mon, sun
     if h == "1M":       return date(yr, 12, 1),  date(yr, 12, 31)
     if h == "Q1":       return date(yr, 1, 1),   date(yr, 3, 31)
     if h == "Q2":       return date(yr, 4, 1),   date(yr, 6, 30)

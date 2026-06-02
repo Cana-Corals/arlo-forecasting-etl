@@ -587,12 +587,18 @@ def home_page():
     with col_logout:
         authenticator.logout("Logout", location="main")
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown(f'<div class="arlo-title">{greeting}, {name.split()[0]}.</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="arlo-date">{date_str}</div>', unsafe_allow_html=True)
-
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="arlo-title" style="text-align:center;">{greeting}, {name.split()[0]}.</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f'<div class="arlo-date" style="text-align:center;">{date_str}</div>',
+            unsafe_allow_html=True,
+        )
+
         # Fixed-height scrollable chat box
         chat_box = st.container(height=420, border=False)
         with chat_box:
@@ -622,12 +628,6 @@ def home_page():
             '<div class="search-hint">Press Enter to ask · Powered by Claude AI</div>',
             unsafe_allow_html=True,
         )
-
-        with st.expander("📊 Available charts", expanded=False):
-            for section, charts in _CHART_CATALOG_DISPLAY:
-                st.markdown(f"**{section}**")
-                for name, desc in charts:
-                    st.markdown(f"- `{name}` — {desc}")
 
         # Only trigger on actual form submission — not on reruns after processing
         if submitted and question.strip():

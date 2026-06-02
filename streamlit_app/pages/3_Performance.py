@@ -277,9 +277,12 @@ def base_layout(h=280, ytitle="", yprefix="", ysuffix=""):
     )
 
 # Auto-granularity
-n_days = (end - start).days + 1
-freq   = "D" if n_days <= 14 else ("W" if n_days <= 60 else "ME")
-dfmt   = "%b %d" if n_days <= 60 else "%b"
+n_days   = (end - start).days + 1
+freq     = "D" if n_days <= 14 else ("W" if n_days <= 60 else "ME")
+dfmt     = "%b %d" if n_days <= 60 else ("%b '%y" if n_days > 365 else "%b")
+_show_py = not _all_years          # suppress prior-year traces in All Years mode
+_cur_lbl = "2024–2025" if _all_years else str(sel_year)
+_py_lbl  = str(py_yr) if py_yr else ""
 
 def agg(d, col, fn, f=None):
     d = d.copy()
@@ -314,19 +317,21 @@ with _col1:
 
     fig = go.Figure()
     if rev_t == "📈":
-        fig.add_trace(go.Scatter(x=xl, y=r_cur["total_revenue"], name=str(sel_year),
+        fig.add_trace(go.Scatter(x=xl, y=r_cur["total_revenue"], name=_cur_lbl,
                                  line=dict(color=ACCENT, width=2), mode="lines+markers",
-                                 hovertemplate="$%{y:,.0f}<extra>" + str(sel_year) + "</extra>"))
-        fig.add_trace(go.Scatter(x=xl, y=py_v, name=str(py_yr),
-                                 line=dict(color=ACCENT_F, width=1.5, dash="dot"), mode="lines+markers",
-                                 hovertemplate="$%{y:,.0f}<extra>" + str(py_yr) + "</extra>"))
+                                 hovertemplate="$%{y:,.0f}<extra>" + _cur_lbl + "</extra>"))
+        if _show_py:
+            fig.add_trace(go.Scatter(x=xl, y=py_v, name=_py_lbl,
+                                     line=dict(color=ACCENT_F, width=1.5, dash="dot"), mode="lines+markers",
+                                     hovertemplate="$%{y:,.0f}<extra>" + _py_lbl + "</extra>"))
     else:
-        fig.add_trace(go.Bar(x=xl, y=r_cur["total_revenue"], name=str(sel_year),
+        fig.add_trace(go.Bar(x=xl, y=r_cur["total_revenue"], name=_cur_lbl,
                              marker_color=ACCENT,
-                             hovertemplate="$%{y:,.0f}<extra>" + str(sel_year) + "</extra>"))
-        fig.add_trace(go.Bar(x=xl, y=py_v, name=str(py_yr),
-                             marker_color=ACCENT_F, marker_line=dict(color=ACCENT, width=1),
-                             hovertemplate="$%{y:,.0f}<extra>" + str(py_yr) + "</extra>"))
+                             hovertemplate="$%{y:,.0f}<extra>" + _cur_lbl + "</extra>"))
+        if _show_py:
+            fig.add_trace(go.Bar(x=xl, y=py_v, name=_py_lbl,
+                                 marker_color=ACCENT_F, marker_line=dict(color=ACCENT, width=1),
+                                 hovertemplate="$%{y:,.0f}<extra>" + _py_lbl + "</extra>"))
     lay = base_layout(h=260, yprefix="$")
     fig.update_layout(**lay)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
@@ -344,19 +349,21 @@ with _col2:
 
     fig2 = go.Figure()
     if occ_t == "📈":
-        fig2.add_trace(go.Scatter(x=xl, y=o_cur["occupancy_rate"]*100, name=str(sel_year),
+        fig2.add_trace(go.Scatter(x=xl, y=o_cur["occupancy_rate"]*100, name=_cur_lbl,
                                   line=dict(color=GREEN, width=2), mode="lines+markers",
-                                  hovertemplate="%{y:.1f}%<extra>" + str(sel_year) + "</extra>"))
-        fig2.add_trace(go.Scatter(x=xl, y=py_ov, name=str(py_yr),
-                                  line=dict(color=GREEN_F, width=1.5, dash="dot"), mode="lines+markers",
-                                  hovertemplate="%{y:.1f}%<extra>" + str(py_yr) + "</extra>"))
+                                  hovertemplate="%{y:.1f}%<extra>" + _cur_lbl + "</extra>"))
+        if _show_py:
+            fig2.add_trace(go.Scatter(x=xl, y=py_ov, name=_py_lbl,
+                                      line=dict(color=GREEN_F, width=1.5, dash="dot"), mode="lines+markers",
+                                      hovertemplate="%{y:.1f}%<extra>" + _py_lbl + "</extra>"))
     else:
-        fig2.add_trace(go.Bar(x=xl, y=o_cur["occupancy_rate"]*100, name=str(sel_year),
+        fig2.add_trace(go.Bar(x=xl, y=o_cur["occupancy_rate"]*100, name=_cur_lbl,
                               marker_color=GREEN,
-                              hovertemplate="%{y:.1f}%<extra>" + str(sel_year) + "</extra>"))
-        fig2.add_trace(go.Bar(x=xl, y=py_ov, name=str(py_yr),
-                              marker_color=GREEN_F, marker_line=dict(color=GREEN, width=1),
-                              hovertemplate="%{y:.1f}%<extra>" + str(py_yr) + "</extra>"))
+                              hovertemplate="%{y:.1f}%<extra>" + _cur_lbl + "</extra>"))
+        if _show_py:
+            fig2.add_trace(go.Bar(x=xl, y=py_ov, name=_py_lbl,
+                                  marker_color=GREEN_F, marker_line=dict(color=GREEN, width=1),
+                                  hovertemplate="%{y:.1f}%<extra>" + _py_lbl + "</extra>"))
     lay2 = base_layout(h=260, ysuffix="%")
     lay2["yaxis"]["range"] = [0, 105]
     fig2.update_layout(**lay2)
@@ -378,19 +385,21 @@ with _col3:
 
     fig3 = go.Figure()
     if adr_t == "📊":
-        fig3.add_trace(go.Bar(x=xl, y=a_cur["adr"], name=str(sel_year),
+        fig3.add_trace(go.Bar(x=xl, y=a_cur["adr"], name=_cur_lbl,
                               marker_color=ACCENT,
-                              hovertemplate="$%{y:,.0f}<extra>" + str(sel_year) + "</extra>"))
-        fig3.add_trace(go.Bar(x=xl, y=py_av, name=str(py_yr),
-                              marker_color=ACCENT_F, marker_line=dict(color=ACCENT, width=1),
-                              hovertemplate="$%{y:,.0f}<extra>" + str(py_yr) + "</extra>"))
+                              hovertemplate="$%{y:,.0f}<extra>" + _cur_lbl + "</extra>"))
+        if _show_py:
+            fig3.add_trace(go.Bar(x=xl, y=py_av, name=_py_lbl,
+                                  marker_color=ACCENT_F, marker_line=dict(color=ACCENT, width=1),
+                                  hovertemplate="$%{y:,.0f}<extra>" + _py_lbl + "</extra>"))
     else:
-        fig3.add_trace(go.Scatter(x=xl, y=a_cur["adr"], name=str(sel_year),
+        fig3.add_trace(go.Scatter(x=xl, y=a_cur["adr"], name=_cur_lbl,
                                   line=dict(color=ACCENT, width=2),
-                                  hovertemplate="$%{y:,.0f}<extra>" + str(sel_year) + "</extra>"))
-        fig3.add_trace(go.Scatter(x=xl, y=py_av, name=str(py_yr),
-                                  line=dict(color=ACCENT_F, width=1.5, dash="dot"),
-                                  hovertemplate="$%{y:,.0f}<extra>" + str(py_yr) + "</extra>"))
+                                  hovertemplate="$%{y:,.0f}<extra>" + _cur_lbl + "</extra>"))
+        if _show_py:
+            fig3.add_trace(go.Scatter(x=xl, y=py_av, name=_py_lbl,
+                                      line=dict(color=ACCENT_F, width=1.5, dash="dot"),
+                                      hovertemplate="$%{y:,.0f}<extra>" + _py_lbl + "</extra>"))
     lay3 = base_layout(h=220, yprefix="$")
     fig3.update_layout(**lay3)
     st.plotly_chart(fig3, use_container_width=True, config={"displayModeBar": False})
@@ -408,19 +417,21 @@ with _col4:
 
     fig4 = go.Figure()
     if rp_t == "📊":
-        fig4.add_trace(go.Bar(x=xl, y=rp_cur["revpar"], name=str(sel_year),
+        fig4.add_trace(go.Bar(x=xl, y=rp_cur["revpar"], name=_cur_lbl,
                               marker_color=SLATE,
-                              hovertemplate="$%{y:,.0f}<extra>" + str(sel_year) + "</extra>"))
-        fig4.add_trace(go.Bar(x=xl, y=py_rpv, name=str(py_yr),
-                              marker_color=SLATE_F, marker_line=dict(color=SLATE, width=1),
-                              hovertemplate="$%{y:,.0f}<extra>" + str(py_yr) + "</extra>"))
+                              hovertemplate="$%{y:,.0f}<extra>" + _cur_lbl + "</extra>"))
+        if _show_py:
+            fig4.add_trace(go.Bar(x=xl, y=py_rpv, name=_py_lbl,
+                                  marker_color=SLATE_F, marker_line=dict(color=SLATE, width=1),
+                                  hovertemplate="$%{y:,.0f}<extra>" + _py_lbl + "</extra>"))
     else:
-        fig4.add_trace(go.Scatter(x=xl, y=rp_cur["revpar"], name=str(sel_year),
+        fig4.add_trace(go.Scatter(x=xl, y=rp_cur["revpar"], name=_cur_lbl,
                                   line=dict(color=SLATE, width=2),
-                                  hovertemplate="$%{y:,.0f}<extra>" + str(sel_year) + "</extra>"))
-        fig4.add_trace(go.Scatter(x=xl, y=py_rpv, name=str(py_yr),
-                                  line=dict(color=SLATE_F, width=1.5, dash="dot"),
-                                  hovertemplate="$%{y:,.0f}<extra>" + str(py_yr) + "</extra>"))
+                                  hovertemplate="$%{y:,.0f}<extra>" + _cur_lbl + "</extra>"))
+        if _show_py:
+            fig4.add_trace(go.Scatter(x=xl, y=py_rpv, name=_py_lbl,
+                                      line=dict(color=SLATE_F, width=1.5, dash="dot"),
+                                      hovertemplate="$%{y:,.0f}<extra>" + _py_lbl + "</extra>"))
     lay4 = base_layout(h=220, yprefix="$")
     fig4.update_layout(**lay4)
     st.plotly_chart(fig4, use_container_width=True, config={"displayModeBar": False})
@@ -447,18 +458,20 @@ with _dow_col:
 
     fig_dow = go.Figure()
     if dow_t == "📈":
-        fig_dow.add_trace(go.Scatter(x=xl_dow, y=yc, name=str(sel_year),
+        fig_dow.add_trace(go.Scatter(x=xl_dow, y=yc, name=_cur_lbl,
                                      line=dict(color=GREEN, width=2), mode="lines+markers",
-                                     hovertemplate="%{x}: %{y:.1f}%<extra>" + str(sel_year) + "</extra>"))
-        fig_dow.add_trace(go.Scatter(x=xl_dow, y=yp, name=str(py_yr),
-                                     line=dict(color=GREEN_F, width=1.5, dash="dot"), mode="lines+markers",
-                                     hovertemplate="%{x}: %{y:.1f}%<extra>" + str(py_yr) + "</extra>"))
+                                     hovertemplate="%{x}: %{y:.1f}%<extra>" + _cur_lbl + "</extra>"))
+        if _show_py:
+            fig_dow.add_trace(go.Scatter(x=xl_dow, y=yp, name=_py_lbl,
+                                         line=dict(color=GREEN_F, width=1.5, dash="dot"), mode="lines+markers",
+                                         hovertemplate="%{x}: %{y:.1f}%<extra>" + _py_lbl + "</extra>"))
     else:
-        fig_dow.add_trace(go.Bar(x=xl_dow, y=yc, name=str(sel_year), marker_color=GREEN,
-                                 hovertemplate="%{x}: %{y:.1f}%<extra>" + str(sel_year) + "</extra>"))
-        fig_dow.add_trace(go.Bar(x=xl_dow, y=yp, name=str(py_yr), marker_color=GREEN_F,
-                                 marker_line=dict(color=GREEN, width=1),
-                                 hovertemplate="%{x}: %{y:.1f}%<extra>" + str(py_yr) + "</extra>"))
+        fig_dow.add_trace(go.Bar(x=xl_dow, y=yc, name=_cur_lbl, marker_color=GREEN,
+                                 hovertemplate="%{x}: %{y:.1f}%<extra>" + _cur_lbl + "</extra>"))
+        if _show_py:
+            fig_dow.add_trace(go.Bar(x=xl_dow, y=yp, name=_py_lbl, marker_color=GREEN_F,
+                                     marker_line=dict(color=GREEN, width=1),
+                                     hovertemplate="%{x}: %{y:.1f}%<extra>" + _py_lbl + "</extra>"))
     dow_lay = base_layout(h=220, ysuffix="%")
     dow_lay["bargroupgap"] = 0.1
     dow_lay["xaxis"]["tickangle"] = 0
@@ -625,12 +638,13 @@ mkt_py_v   = [float(mkt_py.get(c, 0)) for c in mkt_cur.index]
 
 fig_mkt = go.Figure()
 fig_mkt.add_trace(go.Bar(y=mkt_labels, x=mkt_cur.values, orientation="h",
-                         name=str(sel_year), marker_color=SLATE,
-                         hovertemplate="%{y}: $%{x:,.0f}<extra>" + str(sel_year) + "</extra>"))
-fig_mkt.add_trace(go.Bar(y=mkt_labels, x=mkt_py_v, orientation="h",
-                         name=str(py_yr), marker_color=SLATE_F,
-                         marker_line=dict(color=SLATE, width=1),
-                         hovertemplate="%{y}: $%{x:,.0f}<extra>" + str(py_yr) + "</extra>"))
+                         name=_cur_lbl, marker_color=SLATE,
+                         hovertemplate="%{y}: $%{x:,.0f}<extra>" + _cur_lbl + "</extra>"))
+if _show_py:
+    fig_mkt.add_trace(go.Bar(y=mkt_labels, x=mkt_py_v, orientation="h",
+                             name=_py_lbl, marker_color=SLATE_F,
+                             marker_line=dict(color=SLATE, width=1),
+                             hovertemplate="%{y}: $%{x:,.0f}<extra>" + _py_lbl + "</extra>"))
 mkt_lay = base_layout(h=320)
 mkt_lay["barmode"] = "group"
 mkt_lay["margin"]["l"] = 160

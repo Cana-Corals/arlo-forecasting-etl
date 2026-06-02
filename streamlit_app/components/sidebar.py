@@ -48,7 +48,15 @@ section[data-testid="stSidebar"] .stButton > button:hover {
   background:rgba(255,255,255,.05) !important;
   color:rgba(245,245,240,1) !important;
 }
-[data-testid="collapsedControl"] { display:none !important; }
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="stSidebarUserContent"] ~ div,
+button[title="Collapse sidebar"],
+button[title="collapse sidebar"],
+button[aria-label="Collapse sidebar"],
+section[data-testid="stSidebar"] > div > div > div > button:first-child {
+  display:none !important;
+}
 #MainMenu, footer, header { visibility:hidden; }
 </style>
 """, unsafe_allow_html=True)

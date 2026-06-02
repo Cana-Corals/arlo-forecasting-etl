@@ -38,7 +38,11 @@ st.markdown(f"""
 *, *::before, *::after {{ font-family:'Inter',system-ui,sans-serif !important; -webkit-font-smoothing:antialiased; box-sizing:border-box; }}
 .material-symbols-rounded {{ font-family:'Material Symbols Rounded' !important; }}
 #MainMenu, footer, header {{ visibility:hidden; }}
-[data-testid="collapsedControl"] {{ display:none; }}
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapsedControl"],
+button[title="Collapse sidebar"],
+button[aria-label="Collapse sidebar"],
+section[data-testid="stSidebar"] > div > div > div > button:first-child {{ display:none !important; }}
 .stApp {{ background:var(--arlo-dark2) !important; }}
 .block-container {{ padding:0 !important; max-width:1300px !important; margin:0 auto !important; }}
 [data-testid="stAppViewContainer"] {{ background:var(--arlo-dark2) !important; }}

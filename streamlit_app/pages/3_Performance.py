@@ -679,60 +679,59 @@ if not med.empty:
     }
     _MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
-    # Controls: metric selector + chart type toggle
+    # Controls: metric multiselect + chart type toggle
     _sc1, _sc2 = st.columns([5, 1.5])
     with _sc1:
-        sat_metric = st.segmented_control(
-            "Metric", list(_MED_METRICS.keys()),
-            default="Overall", key="pf_sat_metric", label_visibility="collapsed",
-        ) or "Overall"
+        sat_metrics = st.multiselect(
+            "Metrics", list(_MED_METRICS.keys()),
+            default=["Overall"], key="pf_sat_metrics", label_visibility="collapsed",
+        ) or ["Overall"]
     with _sc2:
         sat_t = st.segmented_control("", ["📈", "📊"], default="📈",
                                      key="pf_sat_t", label_visibility="collapsed")
 
-    _sat_col, _sat_color = _MED_METRICS[sat_metric]
-
     # Monthly averages — grouped by calendar month (1-12)
-    def _med_monthly(source_df):
-        d = source_df[source_df[_sat_col].notna()].copy()
+    def _med_monthly(source_df, col):
+        d = source_df[source_df[col].notna()].copy()
         d["mo"] = d["business_date"].dt.month
-        return d.groupby("mo")[_sat_col].mean()
-
-    med_cur_m = _med_monthly(df)
-    med_py_m  = _med_monthly(df_py) if not df_py.empty else pd.Series(dtype=float)
-
-    y_cur = [float(med_cur_m.loc[m]) if m in med_cur_m.index else None for m in range(1, 13)]
-    y_py  = [float(med_py_m.loc[m])  if m in med_py_m.index  else None for m in range(1, 13)]
+        return d.groupby("mo")[col].mean()
 
     fig_sat = go.Figure()
-
     fig_sat.add_hline(y=8.0, line_dash="dot", line_color="rgba(255,255,255,0.12)",
                       annotation_text="8.0", annotation_position="right",
                       annotation_font=dict(size=9, color="rgba(255,255,255,0.3)"))
 
-    _c_faded = f"rgba({','.join(str(int(c*255)) for c in [0.91, 0.52, 0.29])}, 0.25)"  # fallback
+    for label in sat_metrics:
+        col, color = _MED_METRICS[label]
+        cur_m = _med_monthly(df, col)
+        py_m  = _med_monthly(df_py, col) if not df_py.empty else pd.Series(dtype=float)
+        y_cur = [float(cur_m.loc[m]) if m in cur_m.index else None for m in range(1, 13)]
+        y_py  = [float(py_m.loc[m])  if m in py_m.index  else None for m in range(1, 13)]
 
-    if sat_t == "📊":
-        fig_sat.add_trace(go.Bar(x=_MONTH_LABELS, y=y_cur, name=str(sel_year),
-                                 marker_color=_sat_color,
-                                 hovertemplate=f"{sat_metric}: %{{y:.2f}}<extra>{sel_year}</extra>"))
-        if any(v is not None for v in y_py):
-            fig_sat.add_trace(go.Bar(x=_MONTH_LABELS, y=y_py, name=str(py_yr),
-                                     marker_color=_sat_color, opacity=0.35,
-                                     marker_line=dict(color=_sat_color, width=1),
-                                     hovertemplate=f"{sat_metric}: %{{y:.2f}}<extra>{py_yr}</extra>"))
-    else:
-        fig_sat.add_trace(go.Scatter(x=_MONTH_LABELS, y=y_cur, name=str(sel_year),
-                                     line=dict(color=_sat_color, width=2),
-                                     mode="lines+markers", marker=dict(size=5),
-                                     hovertemplate=f"{sat_metric}: %{{y:.2f}}<extra>{sel_year}</extra>",
-                                     connectgaps=True))
-        if any(v is not None for v in y_py):
-            fig_sat.add_trace(go.Scatter(x=_MONTH_LABELS, y=y_py, name=str(py_yr),
-                                         line=dict(color=_sat_color, width=1.5, dash="dot"),
-                                         mode="lines+markers", marker=dict(size=4), opacity=0.6,
-                                         hovertemplate=f"{sat_metric}: %{{y:.2f}}<extra>{py_yr}</extra>",
+        if sat_t == "📊":
+            fig_sat.add_trace(go.Bar(x=_MONTH_LABELS, y=y_cur,
+                                     name=f"{label} {sel_year}", marker_color=color,
+                                     hovertemplate=f"{label}: %{{y:.2f}}<extra>{sel_year}</extra>"))
+            if any(v is not None for v in y_py):
+                fig_sat.add_trace(go.Bar(x=_MONTH_LABELS, y=y_py,
+                                         name=f"{label} {py_yr}",
+                                         marker_color=color, opacity=0.35,
+                                         marker_line=dict(color=color, width=1),
+                                         hovertemplate=f"{label}: %{{y:.2f}}<extra>{py_yr}</extra>"))
+        else:
+            fig_sat.add_trace(go.Scatter(x=_MONTH_LABELS, y=y_cur,
+                                         name=f"{label} {sel_year}",
+                                         line=dict(color=color, width=2),
+                                         mode="lines+markers", marker=dict(size=5),
+                                         hovertemplate=f"{label}: %{{y:.2f}}<extra>{sel_year}</extra>",
                                          connectgaps=True))
+            if any(v is not None for v in y_py):
+                fig_sat.add_trace(go.Scatter(x=_MONTH_LABELS, y=y_py,
+                                             name=f"{label} {py_yr}",
+                                             line=dict(color=color, width=1.5, dash="dot"),
+                                             mode="lines+markers", marker=dict(size=4), opacity=0.6,
+                                             hovertemplate=f"{label}: %{{y:.2f}}<extra>{py_yr}</extra>",
+                                             connectgaps=True))
 
     sat_lay = base_layout(h=260)
     if sat_t == "📊":
@@ -741,7 +740,7 @@ if not med.empty:
     sat_lay["yaxis"]["tickvals"]  = [0, 2, 4, 6, 8, 10]
     sat_lay["xaxis"]["tickangle"] = 0
     sat_lay["title"] = dict(
-        text=f"{sat_metric} / 10 — {sel_year} vs {py_yr}",
+        text=f"Score / 10 — {sel_year} (solid) vs {py_yr} (dashed)",
         font=dict(size=10, color="rgba(245,245,240,0.4)"),
         x=0, xanchor="left", pad=dict(l=4),
     )

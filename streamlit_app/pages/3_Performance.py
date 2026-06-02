@@ -667,13 +667,8 @@ if not med.empty:
     st.markdown(cards_html, unsafe_allow_html=True)
 
     # ── Satisfaction trend chart ───────────────────────────────────────────────
-    st.markdown('<div class="pf-section"><div class="pf-section-ttl">Satisfaction Trend Over Time</div></div>',
+    st.markdown('<div class="pf-section"><div class="pf-section-ttl">Satisfaction Trend — Monthly Average</div></div>',
                 unsafe_allow_html=True)
-
-    _sl, _st = st.columns([3, 1.5])
-    with _st:
-        sat_t = st.segmented_control("", ["📈", "📊"], default="📈",
-                                     key="pf_sat_t", label_visibility="collapsed")
 
     _MED_METRICS = {
         "Overall":     ("medallia_overall_satisfaction",      ACCENT),
@@ -682,48 +677,87 @@ if not med.empty:
         "Value":       ("medallia_value_for_price",           "#9b6fd4"),
         "Return":      ("medallia_likelihood_to_return",      "#d4903a"),
     }
+    _MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
-    # Aggregate monthly — mean of daily values (weekly data stamped daily cancels out in mean)
-    med_trend = med.copy()
-    med_trend["month"] = med_trend["business_date"].dt.to_period("M")
-    med_monthly = med_trend.groupby("month")[
-        [col for _, (col, _) in _MED_METRICS.items() if col in med_trend.columns]
-    ].mean().reset_index()
-    xl_sat = [str(p) for p in med_monthly["month"]]
+    # Controls row: metric picker + chart type toggle
+    _sc1, _sc2, _sc3 = st.columns([3, 2, 1.5])
+    with _sc1:
+        _avail_metrics = [k for k, (col, _) in _MED_METRICS.items() if col in df.columns]
+        sat_metrics = st.multiselect(
+            "Metrics", _avail_metrics, default=_avail_metrics,
+            key="pf_sat_metrics", label_visibility="collapsed",
+        )
+    with _sc3:
+        sat_t = st.segmented_control("", ["📈", "📊"], default="📈",
+                                     key="pf_sat_t", label_visibility="collapsed")
+
+    sat_metrics = sat_metrics or _avail_metrics
+
+    # Monthly averages — current year and prior year, grouped by calendar month (1-12)
+    def _med_monthly(source_df):
+        d = source_df[source_df["medallia_overall_satisfaction"].notna()].copy()
+        d["mo"] = d["business_date"].dt.month
+        cols = [col for _, (col, _) in _MED_METRICS.items() if col in d.columns]
+        return d.groupby("mo")[cols].mean()
+
+    med_cur_m = _med_monthly(df)
+    med_py_m  = _med_monthly(df_py) if not df_py.empty else pd.DataFrame()
 
     fig_sat = go.Figure()
 
-    # Reference line at 8.0
+    # Dashed reference line at 8.0
     fig_sat.add_hline(y=8.0, line_dash="dot", line_color="rgba(255,255,255,0.12)",
                       annotation_text="8.0", annotation_position="right",
                       annotation_font=dict(size=9, color="rgba(255,255,255,0.3)"))
 
-    for label, (col, color) in _MED_METRICS.items():
-        if col not in med_monthly.columns:
+    for label in sat_metrics:
+        col, color = _MED_METRICS[label]
+        if col not in med_cur_m.columns:
             continue
-        y_vals = med_monthly[col].tolist()
+
+        # Build aligned month series for current year
+        y_cur = [float(med_cur_m.loc[m, col]) if m in med_cur_m.index else None for m in range(1, 13)]
+        y_py  = ([float(med_py_m.loc[m, col])  if m in med_py_m.index  else None for m in range(1, 13)]
+                 if not med_py_m.empty and col in med_py_m.columns else [])
+
         if sat_t == "📊":
             fig_sat.add_trace(go.Bar(
-                x=xl_sat, y=y_vals, name=label,
+                x=_MONTH_LABELS, y=y_cur, name=f"{label} {sel_year}",
                 marker_color=color,
-                hovertemplate=f"{label}: %{{y:.2f}}<extra></extra>",
+                hovertemplate=f"{label}: %{{y:.2f}}<extra>{sel_year}</extra>",
             ))
+            if y_py:
+                fig_sat.add_trace(go.Bar(
+                    x=_MONTH_LABELS, y=y_py, name=f"{label} {py_yr}",
+                    marker_color=color, opacity=0.35,
+                    marker_line=dict(color=color, width=1),
+                    hovertemplate=f"{label}: %{{y:.2f}}<extra>{py_yr}</extra>",
+                ))
         else:
             fig_sat.add_trace(go.Scatter(
-                x=xl_sat, y=y_vals, name=label,
+                x=_MONTH_LABELS, y=y_cur, name=f"{label} {sel_year}",
                 line=dict(color=color, width=2),
-                mode="lines+markers",
-                marker=dict(size=5),
-                hovertemplate=f"{label}: %{{y:.2f}}<extra></extra>",
+                mode="lines+markers", marker=dict(size=5),
+                hovertemplate=f"{label}: %{{y:.2f}}<extra>{sel_year}</extra>",
+                connectgaps=True,
             ))
+            if y_py:
+                fig_sat.add_trace(go.Scatter(
+                    x=_MONTH_LABELS, y=y_py, name=f"{label} {py_yr}",
+                    line=dict(color=color, width=1.5, dash="dot"),
+                    mode="lines+markers", marker=dict(size=4), opacity=0.6,
+                    hovertemplate=f"{label}: %{{y:.2f}}<extra>{py_yr}</extra>",
+                    connectgaps=True,
+                ))
 
     sat_lay = base_layout(h=280)
     if sat_t == "📊":
         sat_lay["barmode"] = "group"
-    sat_lay["yaxis"]["range"] = [0, 10.5]
+    sat_lay["yaxis"]["range"]    = [0, 10.5]
     sat_lay["yaxis"]["tickvals"] = [0, 2, 4, 6, 8, 10]
+    sat_lay["xaxis"]["tickangle"] = 0
     sat_lay["title"] = dict(
-        text="Score out of 10 — monthly average",
+        text=f"Score out of 10 — {sel_year} (solid) vs {py_yr} (dashed)",
         font=dict(size=10, color="rgba(245,245,240,0.4)"),
         x=0, xanchor="left", pad=dict(l=4),
     )

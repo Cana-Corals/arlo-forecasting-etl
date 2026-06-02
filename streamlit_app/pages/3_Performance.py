@@ -266,37 +266,63 @@ st.markdown('<div class="pf-section"><div class="pf-section-ttl">Revenue & Occup
 _col1, _col2 = st.columns(2)
 
 with _col1:
+    _rl, _rt = st.columns([3, 1.5])
+    with _rl:
+        st.markdown('<div class="pf-section-ttl" style="padding:4px 0 2px;">Revenue</div>', unsafe_allow_html=True)
+    with _rt:
+        rev_t = st.segmented_control("", ["📊", "📈"], default="📊", key="pf_rev_t", label_visibility="collapsed")
+
     r_cur = agg(df,    "total_revenue", "sum")
     r_py  = agg(df_py, "total_revenue", "sum")
     xl = xlabels(r_cur["p"])
     py_v = (list(r_py["total_revenue"].values) + [0]*len(xl))[:len(xl)]
 
     fig = go.Figure()
-    fig.add_trace(go.Bar(x=xl, y=r_cur["total_revenue"], name=str(sel_year),
-                         marker_color=ACCENT,
-                         hovertemplate="$%{y:,.0f}<extra>" + str(sel_year) + "</extra>"))
-    fig.add_trace(go.Bar(x=xl, y=py_v, name=str(py_yr),
-                         marker_color=ACCENT_F, marker_line=dict(color=ACCENT, width=1),
-                         hovertemplate="$%{y:,.0f}<extra>" + str(py_yr) + "</extra>"))
+    if rev_t == "📈":
+        fig.add_trace(go.Scatter(x=xl, y=r_cur["total_revenue"], name=str(sel_year),
+                                 line=dict(color=ACCENT, width=2), mode="lines+markers",
+                                 hovertemplate="$%{y:,.0f}<extra>" + str(sel_year) + "</extra>"))
+        fig.add_trace(go.Scatter(x=xl, y=py_v, name=str(py_yr),
+                                 line=dict(color=ACCENT_F, width=1.5, dash="dot"), mode="lines+markers",
+                                 hovertemplate="$%{y:,.0f}<extra>" + str(py_yr) + "</extra>"))
+    else:
+        fig.add_trace(go.Bar(x=xl, y=r_cur["total_revenue"], name=str(sel_year),
+                             marker_color=ACCENT,
+                             hovertemplate="$%{y:,.0f}<extra>" + str(sel_year) + "</extra>"))
+        fig.add_trace(go.Bar(x=xl, y=py_v, name=str(py_yr),
+                             marker_color=ACCENT_F, marker_line=dict(color=ACCENT, width=1),
+                             hovertemplate="$%{y:,.0f}<extra>" + str(py_yr) + "</extra>"))
     lay = base_layout(h=260, yprefix="$")
-    lay["title"] = dict(text="Revenue", font=dict(size=11, color="rgba(245,245,240,0.7)"), x=0, xanchor="left", pad=dict(l=4))
     fig.update_layout(**lay)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 with _col2:
+    _ol, _ot = st.columns([3, 1.5])
+    with _ol:
+        st.markdown('<div class="pf-section-ttl" style="padding:4px 0 2px;">Occupancy</div>', unsafe_allow_html=True)
+    with _ot:
+        occ_t = st.segmented_control("", ["📊", "📈"], default="📊", key="pf_occ_t", label_visibility="collapsed")
+
     o_cur = agg(df,    "occupancy_rate", "mean")
     o_py  = agg(df_py, "occupancy_rate", "mean")
     py_ov = (list((o_py["occupancy_rate"]*100).values) + [0]*len(xl))[:len(xl)]
 
     fig2 = go.Figure()
-    fig2.add_trace(go.Bar(x=xl, y=o_cur["occupancy_rate"]*100, name=str(sel_year),
-                          marker_color=GREEN,
-                          hovertemplate="%{y:.1f}%<extra>" + str(sel_year) + "</extra>"))
-    fig2.add_trace(go.Bar(x=xl, y=py_ov, name=str(py_yr),
-                          marker_color=GREEN_F, marker_line=dict(color=GREEN, width=1),
-                          hovertemplate="%{y:.1f}%<extra>" + str(py_yr) + "</extra>"))
+    if occ_t == "📈":
+        fig2.add_trace(go.Scatter(x=xl, y=o_cur["occupancy_rate"]*100, name=str(sel_year),
+                                  line=dict(color=GREEN, width=2), mode="lines+markers",
+                                  hovertemplate="%{y:.1f}%<extra>" + str(sel_year) + "</extra>"))
+        fig2.add_trace(go.Scatter(x=xl, y=py_ov, name=str(py_yr),
+                                  line=dict(color=GREEN_F, width=1.5, dash="dot"), mode="lines+markers",
+                                  hovertemplate="%{y:.1f}%<extra>" + str(py_yr) + "</extra>"))
+    else:
+        fig2.add_trace(go.Bar(x=xl, y=o_cur["occupancy_rate"]*100, name=str(sel_year),
+                              marker_color=GREEN,
+                              hovertemplate="%{y:.1f}%<extra>" + str(sel_year) + "</extra>"))
+        fig2.add_trace(go.Bar(x=xl, y=py_ov, name=str(py_yr),
+                              marker_color=GREEN_F, marker_line=dict(color=GREEN, width=1),
+                              hovertemplate="%{y:.1f}%<extra>" + str(py_yr) + "</extra>"))
     lay2 = base_layout(h=260, ysuffix="%")
-    lay2["title"] = dict(text="Occupancy", font=dict(size=11, color="rgba(245,245,240,0.7)"), x=0, xanchor="left", pad=dict(l=4))
     lay2["yaxis"]["range"] = [0, 105]
     fig2.update_layout(**lay2)
     st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
@@ -305,36 +331,62 @@ with _col2:
 _col3, _col4 = st.columns(2)
 
 with _col3:
+    _al, _at = st.columns([3, 1.5])
+    with _al:
+        st.markdown('<div class="pf-section-ttl" style="padding:4px 0 2px;">ADR</div>', unsafe_allow_html=True)
+    with _at:
+        adr_t = st.segmented_control("", ["📊", "📈"], default="📈", key="pf_adr_t", label_visibility="collapsed")
+
     a_cur = agg(df,    "adr", "mean")
     a_py  = agg(df_py, "adr", "mean")
     py_av = (list(a_py["adr"].values) + [0]*len(xl))[:len(xl)]
 
     fig3 = go.Figure()
-    fig3.add_trace(go.Scatter(x=xl, y=a_cur["adr"], name=str(sel_year),
-                              line=dict(color=ACCENT, width=2),
+    if adr_t == "📊":
+        fig3.add_trace(go.Bar(x=xl, y=a_cur["adr"], name=str(sel_year),
+                              marker_color=ACCENT,
                               hovertemplate="$%{y:,.0f}<extra>" + str(sel_year) + "</extra>"))
-    fig3.add_trace(go.Scatter(x=xl, y=py_av, name=str(py_yr),
-                              line=dict(color=ACCENT_F, width=1.5, dash="dot"),
+        fig3.add_trace(go.Bar(x=xl, y=py_av, name=str(py_yr),
+                              marker_color=ACCENT_F, marker_line=dict(color=ACCENT, width=1),
                               hovertemplate="$%{y:,.0f}<extra>" + str(py_yr) + "</extra>"))
+    else:
+        fig3.add_trace(go.Scatter(x=xl, y=a_cur["adr"], name=str(sel_year),
+                                  line=dict(color=ACCENT, width=2),
+                                  hovertemplate="$%{y:,.0f}<extra>" + str(sel_year) + "</extra>"))
+        fig3.add_trace(go.Scatter(x=xl, y=py_av, name=str(py_yr),
+                                  line=dict(color=ACCENT_F, width=1.5, dash="dot"),
+                                  hovertemplate="$%{y:,.0f}<extra>" + str(py_yr) + "</extra>"))
     lay3 = base_layout(h=220, yprefix="$")
-    lay3["title"] = dict(text="ADR", font=dict(size=11, color="rgba(245,245,240,0.7)"), x=0, xanchor="left", pad=dict(l=4))
     fig3.update_layout(**lay3)
     st.plotly_chart(fig3, use_container_width=True, config={"displayModeBar": False})
 
 with _col4:
+    _rl2, _rt2 = st.columns([3, 1.5])
+    with _rl2:
+        st.markdown('<div class="pf-section-ttl" style="padding:4px 0 2px;">RevPAR</div>', unsafe_allow_html=True)
+    with _rt2:
+        rp_t = st.segmented_control("", ["📊", "📈"], default="📈", key="pf_rp_t", label_visibility="collapsed")
+
     rp_cur = agg(df,    "revpar", "mean")
     rp_py  = agg(df_py, "revpar", "mean")
     py_rpv = (list(rp_py["revpar"].values) + [0]*len(xl))[:len(xl)]
 
     fig4 = go.Figure()
-    fig4.add_trace(go.Scatter(x=xl, y=rp_cur["revpar"], name=str(sel_year),
-                              line=dict(color=SLATE, width=2),
+    if rp_t == "📊":
+        fig4.add_trace(go.Bar(x=xl, y=rp_cur["revpar"], name=str(sel_year),
+                              marker_color=SLATE,
                               hovertemplate="$%{y:,.0f}<extra>" + str(sel_year) + "</extra>"))
-    fig4.add_trace(go.Scatter(x=xl, y=py_rpv, name=str(py_yr),
-                              line=dict(color=SLATE_F, width=1.5, dash="dot"),
+        fig4.add_trace(go.Bar(x=xl, y=py_rpv, name=str(py_yr),
+                              marker_color=SLATE_F, marker_line=dict(color=SLATE, width=1),
                               hovertemplate="$%{y:,.0f}<extra>" + str(py_yr) + "</extra>"))
+    else:
+        fig4.add_trace(go.Scatter(x=xl, y=rp_cur["revpar"], name=str(sel_year),
+                                  line=dict(color=SLATE, width=2),
+                                  hovertemplate="$%{y:,.0f}<extra>" + str(sel_year) + "</extra>"))
+        fig4.add_trace(go.Scatter(x=xl, y=py_rpv, name=str(py_yr),
+                                  line=dict(color=SLATE_F, width=1.5, dash="dot"),
+                                  hovertemplate="$%{y:,.0f}<extra>" + str(py_yr) + "</extra>"))
     lay4 = base_layout(h=220, yprefix="$")
-    lay4["title"] = dict(text="RevPAR", font=dict(size=11, color="rgba(245,245,240,0.7)"), x=0, xanchor="left", pad=dict(l=4))
     fig4.update_layout(**lay4)
     st.plotly_chart(fig4, use_container_width=True, config={"displayModeBar": False})
 
@@ -344,25 +396,34 @@ st.markdown('<div class="pf-section"><div class="pf-section-ttl">Occupancy by Da
 
 _dow_col, _ = st.columns(2)
 with _dow_col:
+    _dl, _dt = st.columns([3, 1.5])
+    with _dl:
+        st.markdown('<div class="pf-section-ttl" style="padding:4px 0 2px;">By Day of Week</div>', unsafe_allow_html=True)
+    with _dt:
+        dow_t = st.segmented_control("", ["📊", "📈"], default="📊", key="pf_dow_t", label_visibility="collapsed")
+
     dow_cur = df.groupby("day_of_week")["occupancy_rate"].mean() * 100
     dow_py  = df_py.groupby("day_of_week")["occupancy_rate"].mean() * 100
     DOW_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     days = list(range(7))
+    xl_dow = [DOW_LABELS[i] for i in days]
+    yc     = [float(dow_cur.get(i, 0)) for i in days]
+    yp     = [float(dow_py.get(i, 0)) for i in days]
 
     fig_dow = go.Figure()
-    fig_dow.add_trace(go.Bar(
-        x=[DOW_LABELS[i] for i in days],
-        y=[float(dow_cur.get(i, 0)) for i in days],
-        name=str(sel_year), marker_color=GREEN,
-        hovertemplate="%{x}: %{y:.1f}%<extra>" + str(sel_year) + "</extra>",
-    ))
-    fig_dow.add_trace(go.Bar(
-        x=[DOW_LABELS[i] for i in days],
-        y=[float(dow_py.get(i, 0)) for i in days],
-        name=str(py_yr), marker_color=GREEN_F,
-        marker_line=dict(color=GREEN, width=1),
-        hovertemplate="%{x}: %{y:.1f}%<extra>" + str(py_yr) + "</extra>",
-    ))
+    if dow_t == "📈":
+        fig_dow.add_trace(go.Scatter(x=xl_dow, y=yc, name=str(sel_year),
+                                     line=dict(color=GREEN, width=2), mode="lines+markers",
+                                     hovertemplate="%{x}: %{y:.1f}%<extra>" + str(sel_year) + "</extra>"))
+        fig_dow.add_trace(go.Scatter(x=xl_dow, y=yp, name=str(py_yr),
+                                     line=dict(color=GREEN_F, width=1.5, dash="dot"), mode="lines+markers",
+                                     hovertemplate="%{x}: %{y:.1f}%<extra>" + str(py_yr) + "</extra>"))
+    else:
+        fig_dow.add_trace(go.Bar(x=xl_dow, y=yc, name=str(sel_year), marker_color=GREEN,
+                                 hovertemplate="%{x}: %{y:.1f}%<extra>" + str(sel_year) + "</extra>"))
+        fig_dow.add_trace(go.Bar(x=xl_dow, y=yp, name=str(py_yr), marker_color=GREEN_F,
+                                 marker_line=dict(color=GREEN, width=1),
+                                 hovertemplate="%{x}: %{y:.1f}%<extra>" + str(py_yr) + "</extra>"))
     dow_lay = base_layout(h=220, ysuffix="%")
     dow_lay["bargroupgap"] = 0.1
     dow_lay["xaxis"]["tickangle"] = 0

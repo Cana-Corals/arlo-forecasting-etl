@@ -9,12 +9,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from components.data import load_master, load_events, load_str, load_source_stats
 
 # ── Session state ─────────────────────────────────────────────────────────────
-if "sb_collapsed" not in st.session_state:
-    st.session_state["sb_collapsed"] = False
 if "db_dow_filter" not in st.session_state:
     st.session_state["db_dow_filter"] = None
-COLLAPSED = st.session_state["sb_collapsed"]
-SB_W      = "52px" if COLLAPSED else "220px"
+SB_W = "200px"
 
 
 # ── CDN: Inter font + Tabler Icons ────────────────────────────────────────────
@@ -113,10 +110,9 @@ section[data-testid="stSidebar"] .stButton:first-of-type > button:hover {{
 }}
 /* Pinned user footer at sidebar bottom */
 .sb-footer-fixed {{
-    position:fixed; bottom:0; left:0; width:{SB_W};
+    position:fixed; bottom:0; left:0; width:200px;
     background:var(--arlo-dark); border-top:1px solid rgba(255,255,255,.08);
-    padding:0; z-index:200;
-    transition:width .22s ease; overflow:hidden; white-space:nowrap;
+    padding:0; z-index:200; overflow:hidden; white-space:nowrap;
 }}
 
 /* ── Date input dark theme ── */
@@ -497,125 +493,55 @@ initials = "".join(p[0].upper() for p in name.split()[:2]) if name else "JR"
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    # ── Header: brand + hamburger toggle ──────────────────────────────────────
-    if COLLAPSED:
-        st.markdown("""
-        <div style="display:flex;align-items:center;justify-content:center;
-                    padding:18px 0 20px;border-bottom:1px solid rgba(255,255,255,.08);">
-          <div style="width:32px;height:32px;border-radius:6px;background:#e8854a;
-                      display:flex;align-items:center;justify-content:center;
-                      font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em;">AW</div>
-        </div>
-        """, unsafe_allow_html=True)
-        st.markdown('<div style="height:12px;"></div>', unsafe_allow_html=True)
-        if st.button("☰", key="sb_tog", use_container_width=True):
-            st.session_state["sb_collapsed"] = False
-            st.rerun()
-    else:
-        _col_brand, _col_ham = st.columns([4, 1])
-        with _col_brand:
-            st.markdown("""
-            <div style="display:flex;align-items:center;gap:10px;padding:12px 0 10px 14px;">
-              <div style="width:32px;height:32px;border-radius:6px;background:#e8854a;
-                          display:flex;align-items:center;justify-content:center;
-                          font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em;flex-shrink:0;">AW</div>
-              <div style="overflow:hidden;white-space:nowrap;flex:1;min-width:0;">
-                <div style="font-size:13px;font-weight:600;color:#f5f5f0;letter-spacing:.01em;line-height:1.2;">Arlo Williamsburg</div>
-                <div style="font-size:9px;font-weight:500;letter-spacing:.14em;color:rgba(245,245,240,.38);text-transform:uppercase;margin-top:2px;">Revenue Intelligence</div>
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-        with _col_ham:
-            if st.button("☰", key="sb_tog"):
-                st.session_state["sb_collapsed"] = True
-                st.rerun()
-        st.markdown('<div style="height:1px;background:rgba(255,255,255,.08);margin:0;"></div>', unsafe_allow_html=True)
+    st.markdown("""
+<div style="display:flex;align-items:center;gap:9px;padding:14px 14px 12px;
+            border-bottom:1px solid rgba(255,255,255,.08);">
+  <div style="width:28px;height:28px;border-radius:6px;
+              background:rgba(232,133,74,.15);border:1px solid rgba(232,133,74,.3);
+              display:flex;align-items:center;justify-content:center;
+              font-size:11px;font-weight:700;color:#e8854a;flex-shrink:0;">AW</div>
+  <div>
+    <div style="font-size:11px;font-weight:600;color:rgba(245,245,240,.9);">Arlo Williamsburg</div>
+    <div style="font-size:9px;color:rgba(245,245,240,.35);letter-spacing:.06em;">REVENUE INTELLIGENCE</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
-    # ── Nav ───────────────────────────────────────────────────────────────────
-    if COLLAPSED:
-        # st.button + st.switch_page: 100% Streamlit-native, bypasses React Router
-        # Unicode chars inherit CSS `color` → turn orange on hover via the rule below
-        st.markdown("""<style>
-        section[data-testid="stSidebar"] .stButton:not(:first-of-type) > button {
-            text-align:center !important; justify-content:center !important;
-            padding:0 !important; font-size:17px !important;
-            height:40px !important; line-height:1 !important;
-            letter-spacing:0 !important;
-        }
-        section[data-testid="stSidebar"] .stButton:not(:first-of-type) > button:hover {
-            color:#e8854a !important;
-            background:rgba(232,133,74,.1) !important;
-            border:none !important;
-        }
-        </style>""", unsafe_allow_html=True)
+    if st.button("← Home", key="nav_home", use_container_width=True):
+        _pg = st.session_state.get("_pg_home")
+        if _pg: st.switch_page(_pg)
 
-        _nav_items = [
-            ("✦", "Home",           None),
-            (None, None,            None),
-            ("↗", "Forecast",       "pages/2_Forecast.py"),
-            ("≡", "Performance",    "pages/3_Performance.py"),
-            ("◇", "Demand",         "pages/4_Demand.py"),
-            (None, None,            None),
-            ("⊞", "Competitive",    "pages/5_Competitive.py"),
-            ("◎", "Model Insights", "pages/6_Model_Insights.py"),
-        ]
-        for icon, label, path in _nav_items:
-            if icon is None:
-                st.markdown('<div style="height:1px;background:rgba(255,255,255,.06);'
-                            'margin:4px 10px;"></div>', unsafe_allow_html=True)
-            else:
-                if st.button(icon, key=f"sb_nav_{label.replace(' ','_')}",
-                             use_container_width=True, help=label):
-                    if path is None:
-                        _pg = st.session_state.get("_pg_home")
-                        if _pg: st.switch_page(_pg)
-                    else:
-                        st.switch_page(path)
-    else:
-        if st.button("← Home", key="nav_home", use_container_width=True):
-            _pg = st.session_state.get("_pg_home")
-            if _pg: st.switch_page(_pg)
-        st.markdown('<div style="height:1px;background:rgba(255,255,255,.06);margin:6px 10px 2px;"></div>', unsafe_allow_html=True)
-        st.markdown('<div style="padding:10px 16px 6px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Analytics</div>', unsafe_allow_html=True)
-        for lbl, path in [("Forecast","pages/2_Forecast.py"),("Performance","pages/3_Performance.py"),("Demand","pages/4_Demand.py")]:
-            if st.button(lbl, key=f"nav_{lbl}", use_container_width=True):
-                st.switch_page(path)
-        st.markdown('<div style="padding:10px 16px 6px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);">Intelligence</div>', unsafe_allow_html=True)
-        for lbl, path in [("Competitive","pages/5_Competitive.py"),("Model Insights","pages/6_Model_Insights.py")]:
-            if st.button(lbl, key=f"nav_{lbl.replace(' ','_')}", use_container_width=True):
-                st.switch_page(path)
+    st.markdown('<div style="padding:10px 16px 6px;font-size:9px;font-weight:600;'
+                'letter-spacing:.18em;text-transform:uppercase;'
+                'color:rgba(255,255,255,.22);">Overview</div>', unsafe_allow_html=True)
+    st.markdown('<div style="padding:7px 10px 7px 16px;margin:3px 6px;font-size:12px;'
+                'color:rgba(245,245,240,.9);background:rgba(255,255,255,.05);'
+                'border-radius:4px;">● Dashboard</div>', unsafe_allow_html=True)
 
-    # User footer — fixed at sidebar bottom (includes Logout above user info)
-    if COLLAPSED:
-        st.markdown(f'''
-        <div class="sb-footer-fixed" style="display:flex;justify-content:center;align-items:center;padding:12px 0;">
-          <div style="width:28px;height:28px;border-radius:50%;background:rgba(232,133,74,.15);
-                      border:1px solid rgba(232,133,74,.3);display:flex;align-items:center;
-                      justify-content:center;font-size:12px;font-weight:600;color:#e8854a;">{initials}</div>
-        </div>
-        ''', unsafe_allow_html=True)
-    else:
-        st.markdown(f'''
-        <div class="sb-footer-fixed">
-          <div onclick="window.location.href='/'"
-               style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;"
-               onmouseover="this.style.background='rgba(255,255,255,.05)'"
-               onmouseout="this.style.background='transparent'">
-            <i class="ti ti-logout" style="font-size:14px;color:rgba(245,245,240,.35);flex-shrink:0;"></i>
-            <span style="font-size:11px;color:rgba(245,245,240,.45);">Logout</span>
-          </div>
-          <div style="height:1px;background:rgba(255,255,255,.08);margin:0 14px;"></div>
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;">
-            <div style="width:28px;height:28px;border-radius:50%;background:rgba(232,133,74,.15);
-                        border:1px solid rgba(232,133,74,.3);display:flex;align-items:center;
-                        justify-content:center;font-size:10px;font-weight:600;color:#e8854a;flex-shrink:0;">{initials}</div>
-            <div>
-              <div style="font-size:11px;font-weight:500;color:rgba(245,245,240,.8);">{name}</div>
-              <div style="font-size:9px;color:rgba(245,245,240,.35);letter-spacing:.06em;margin-top:1px;">REVENUE MANAGER</div>
-            </div>
-          </div>
-        </div>
-        ''', unsafe_allow_html=True)
+    st.markdown('<div style="padding:10px 16px 6px;font-size:9px;font-weight:600;'
+                'letter-spacing:.18em;text-transform:uppercase;'
+                'color:rgba(255,255,255,.22);">Analytics</div>', unsafe_allow_html=True)
+    for lbl, path in [("Forecast","pages/2_Forecast.py"),
+                      ("Performance","pages/3_Performance.py"),
+                      ("Demand","pages/4_Demand.py"),
+                      ("Rooms","pages/7_Rooms.py")]:
+        if st.button(lbl, key=f"nav_{lbl}", use_container_width=True):
+            st.switch_page(path)
+
+    st.markdown('<div style="padding:10px 16px 6px;font-size:9px;font-weight:600;'
+                'letter-spacing:.18em;text-transform:uppercase;'
+                'color:rgba(255,255,255,.22);">Intelligence</div>', unsafe_allow_html=True)
+    for lbl, path in [("Competitive","pages/5_Competitive.py"),
+                      ("Model Insights","pages/6_Model_Insights.py")]:
+        if st.button(lbl, key=f"nav_{lbl.replace(' ','_')}", use_container_width=True):
+            st.switch_page(path)
+
+    st.markdown('<div style="margin:12px 6px 0;border-top:1px solid rgba(255,255,255,.06);"></div>',
+                unsafe_allow_html=True)
+    if st.button("Logout", key="sb_logout", use_container_width=True):
+        for k in ["authentication_status", "name", "username", "logout", "_auth"]:
+            st.session_state.pop(k, None)
+        st.rerun()
 
 # ── Top bar ───────────────────────────────────────────────────────────────────
 st.markdown('<div class="arlo-topbar-row">', unsafe_allow_html=True)

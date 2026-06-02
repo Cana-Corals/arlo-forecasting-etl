@@ -131,14 +131,14 @@ def preset_dates(h, yr):
     return None, None
 
 if _all_years:
-    start    = date(2025, 1, 1)
-    end      = date(2025, 12, 31)
-    sel_year = 2025
-    py_yr    = 2024
-    s_ts     = pd.Timestamp(start)
-    e_ts     = pd.Timestamp(end)
-    py_s     = pd.Timestamp(date(2024, 1, 1))
-    py_e     = pd.Timestamp(date(2024, 12, 31))
+    s_ts     = master["business_date"].min()
+    e_ts     = master["business_date"].max()
+    start    = s_ts.date()
+    end      = e_ts.date()
+    sel_year = int(e_ts.year)
+    py_yr    = None
+    py_s     = pd.Timestamp("2099-01-01")  # no prior year — will yield empty df_py
+    py_e     = pd.Timestamp("2099-01-01")
 elif horizon == "Custom":
     _c1, _c2, _ = st.columns([2, 2, 4])
     with _c1:
@@ -197,38 +197,57 @@ adr_p  = df_py["adr"].mean()            if not df_py.empty else 0
 rp_p   = df_py["revpar"].mean()         if not df_py.empty else 0
 trp_p  = safe(df_py["total_revenue"].sum() / (147 * len(df_py))) if not df_py.empty else 0
 
-rc,rd = delta(rev_c, rev_p)
-oc,od = delta(occ_c, occ_p)
-ac,ad = delta(adr_c, adr_p)
-rpc,rpd = delta(rp_c, rp_p)
-tc,td = delta(trp_c, trp_p)
+if _all_years:
+    _kpi_sub = '<span class="pf-kpi-py">2024 – 2025 combined</span>'
+    _kpi_rows = {k: ("", _kpi_sub) for k in ["rev","occ","adr","rp","trp"]}
+else:
+    rc,rd   = delta(rev_c, rev_p)
+    oc,od   = delta(occ_c, occ_p)
+    ac,ad   = delta(adr_c, adr_p)
+    rpc,rpd = delta(rp_c,  rp_p)
+    tc,td   = delta(trp_c, trp_p)
+    _py_lbl = str(py_yr)
+    _kpi_rows = {
+        "rev": (f'<span class="{rc}">{rd}</span>',
+                f'<span class="pf-kpi-py">vs <span>{f"${rev_p/1e6:,.1f}M" if rev_p >= 1e6 else f"${rev_p/1e3:,.1f}k"}</span> in {_py_lbl}</span>'),
+        "occ": (f'<span class="{oc}">{od}</span>',
+                f'<span class="pf-kpi-py">vs <span>{occ_p:.1f}%</span> in {_py_lbl}</span>'),
+        "adr": (f'<span class="{ac}">{ad}</span>',
+                f'<span class="pf-kpi-py">vs <span>${adr_p:,.0f}</span> in {_py_lbl}</span>'),
+        "rp":  (f'<span class="{rpc}">{rpd}</span>',
+                f'<span class="pf-kpi-py">vs <span>${rp_p:,.0f}</span> in {_py_lbl}</span>'),
+        "trp": (f'<span class="{tc}">{td}</span>',
+                f'<span class="pf-kpi-py">vs <span>${trp_p:,.0f}</span> in {_py_lbl}</span>'),
+    }
+
+_rev_val = f"${rev_c/1e6:,.1f}M" if rev_c >= 1e6 else f"${rev_c/1e3:,.1f}k"
 
 st.markdown(f"""
 <div class="pf-kpi-grid">
   <div class="pf-kpi">
     <div class="pf-kpi-lbl">Total Revenue</div>
-    <div class="pf-kpi-val">{f"${rev_c/1e6:,.1f}M" if rev_c >= 1e6 else f"${rev_c/1e3:,.1f}k"}</div>
-    <div class="pf-kpi-row"><span class="{rc}">{rd}</span><span class="pf-kpi-py">vs <span>{f"${rev_p/1e6:,.1f}M" if rev_p >= 1e6 else f"${rev_p/1e3:,.1f}k"}</span></span></div>
+    <div class="pf-kpi-val">{_rev_val}</div>
+    <div class="pf-kpi-row">{_kpi_rows["rev"][0]}{_kpi_rows["rev"][1]}</div>
   </div>
   <div class="pf-kpi">
     <div class="pf-kpi-lbl">Occupancy</div>
     <div class="pf-kpi-val">{occ_c:.1f}%</div>
-    <div class="pf-kpi-row"><span class="{oc}">{od}</span><span class="pf-kpi-py">vs <span>{occ_p:.1f}%</span></span></div>
+    <div class="pf-kpi-row">{_kpi_rows["occ"][0]}{_kpi_rows["occ"][1]}</div>
   </div>
   <div class="pf-kpi">
     <div class="pf-kpi-lbl">ADR</div>
     <div class="pf-kpi-val">${adr_c:,.0f}</div>
-    <div class="pf-kpi-row"><span class="{ac}">{ad}</span><span class="pf-kpi-py">vs <span>${adr_p:,.0f}</span></span></div>
+    <div class="pf-kpi-row">{_kpi_rows["adr"][0]}{_kpi_rows["adr"][1]}</div>
   </div>
   <div class="pf-kpi">
     <div class="pf-kpi-lbl">RevPAR</div>
     <div class="pf-kpi-val">${rp_c:,.0f}</div>
-    <div class="pf-kpi-row"><span class="{rpc}">{rpd}</span><span class="pf-kpi-py">vs <span>${rp_p:,.0f}</span></span></div>
+    <div class="pf-kpi-row">{_kpi_rows["rp"][0]}{_kpi_rows["rp"][1]}</div>
   </div>
   <div class="pf-kpi">
     <div class="pf-kpi-lbl">TRevPAR</div>
     <div class="pf-kpi-val">${trp_c:,.0f}</div>
-    <div class="pf-kpi-row"><span class="{tc}">{td}</span><span class="pf-kpi-py">vs <span>${trp_p:,.0f}</span></span></div>
+    <div class="pf-kpi-row">{_kpi_rows["trp"][0]}{_kpi_rows["trp"][1]}</div>
   </div>
 </div>
 """, unsafe_allow_html=True)

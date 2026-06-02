@@ -679,17 +679,24 @@ if not med.empty:
     }
     _MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
-    # Chart type toggle
-    _sc1, _sc2 = st.columns([6, 1.5])
+    # Controls: metric selector + chart type toggle
+    _sc1, _sc2 = st.columns([5, 1.5])
+    with _sc1:
+        sat_metric = st.segmented_control(
+            "Metric", list(_MED_METRICS.keys()),
+            default="Overall", key="pf_sat_metric", label_visibility="collapsed",
+        ) or "Overall"
     with _sc2:
         sat_t = st.segmented_control("", ["📈", "📊"], default="📈",
                                      key="pf_sat_t", label_visibility="collapsed")
 
+    _sat_col, _sat_color = _MED_METRICS[sat_metric]
+
     # Monthly averages — grouped by calendar month (1-12)
     def _med_monthly(source_df):
-        d = source_df[source_df["medallia_overall_satisfaction"].notna()].copy()
+        d = source_df[source_df[_sat_col].notna()].copy()
         d["mo"] = d["business_date"].dt.month
-        return d.groupby("mo")["medallia_overall_satisfaction"].mean()
+        return d.groupby("mo")[_sat_col].mean()
 
     med_cur_m = _med_monthly(df)
     med_py_m  = _med_monthly(df_py) if not df_py.empty else pd.Series(dtype=float)
@@ -703,25 +710,28 @@ if not med.empty:
                       annotation_text="8.0", annotation_position="right",
                       annotation_font=dict(size=9, color="rgba(255,255,255,0.3)"))
 
+    _c_faded = f"rgba({','.join(str(int(c*255)) for c in [0.91, 0.52, 0.29])}, 0.25)"  # fallback
+
     if sat_t == "📊":
         fig_sat.add_trace(go.Bar(x=_MONTH_LABELS, y=y_cur, name=str(sel_year),
-                                 marker_color=ACCENT,
-                                 hovertemplate="Overall: %{y:.2f}<extra>" + str(sel_year) + "</extra>"))
+                                 marker_color=_sat_color,
+                                 hovertemplate=f"{sat_metric}: %{{y:.2f}}<extra>{sel_year}</extra>"))
         if any(v is not None for v in y_py):
             fig_sat.add_trace(go.Bar(x=_MONTH_LABELS, y=y_py, name=str(py_yr),
-                                     marker_color=ACCENT_F, marker_line=dict(color=ACCENT, width=1),
-                                     hovertemplate="Overall: %{y:.2f}<extra>" + str(py_yr) + "</extra>"))
+                                     marker_color=_sat_color, opacity=0.35,
+                                     marker_line=dict(color=_sat_color, width=1),
+                                     hovertemplate=f"{sat_metric}: %{{y:.2f}}<extra>{py_yr}</extra>"))
     else:
         fig_sat.add_trace(go.Scatter(x=_MONTH_LABELS, y=y_cur, name=str(sel_year),
-                                     line=dict(color=ACCENT, width=2),
+                                     line=dict(color=_sat_color, width=2),
                                      mode="lines+markers", marker=dict(size=5),
-                                     hovertemplate="Overall: %{y:.2f}<extra>" + str(sel_year) + "</extra>",
+                                     hovertemplate=f"{sat_metric}: %{{y:.2f}}<extra>{sel_year}</extra>",
                                      connectgaps=True))
         if any(v is not None for v in y_py):
             fig_sat.add_trace(go.Scatter(x=_MONTH_LABELS, y=y_py, name=str(py_yr),
-                                         line=dict(color=ACCENT_F, width=1.5, dash="dot"),
-                                         mode="lines+markers", marker=dict(size=4),
-                                         hovertemplate="Overall: %{y:.2f}<extra>" + str(py_yr) + "</extra>",
+                                         line=dict(color=_sat_color, width=1.5, dash="dot"),
+                                         mode="lines+markers", marker=dict(size=4), opacity=0.6,
+                                         hovertemplate=f"{sat_metric}: %{{y:.2f}}<extra>{py_yr}</extra>",
                                          connectgaps=True))
 
     sat_lay = base_layout(h=260)
@@ -731,7 +741,7 @@ if not med.empty:
     sat_lay["yaxis"]["tickvals"]  = [0, 2, 4, 6, 8, 10]
     sat_lay["xaxis"]["tickangle"] = 0
     sat_lay["title"] = dict(
-        text=f"Overall satisfaction / 10 — {sel_year} vs {py_yr}",
+        text=f"{sat_metric} / 10 — {sel_year} vs {py_yr}",
         font=dict(size=10, color="rgba(245,245,240,0.4)"),
         x=0, xanchor="left", pad=dict(l=4),
     )

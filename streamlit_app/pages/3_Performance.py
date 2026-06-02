@@ -642,17 +642,18 @@ if not _src.empty:
 med = df[df["medallia_overall_satisfaction"].notna()]
 if not med.empty:
     scores = {
-        "Overall": med["medallia_overall_satisfaction"].mean(),
-        "Cleanliness": med["medallia_hotel_cleanliness"].mean()       if "medallia_hotel_cleanliness" in med else None,
-        "Value": med["medallia_value_for_price"].mean()               if "medallia_value_for_price"  in med else None,
-        "Recommend": med["medallia_likelihood_to_recommend"].mean()   if "medallia_likelihood_to_recommend" in med else None,
-        "Return": med["medallia_likelihood_to_return"].mean()         if "medallia_likelihood_to_return" in med else None,
+        "Overall":     med["medallia_overall_satisfaction"].mean(),
+        "Cleanliness": med["medallia_hotel_cleanliness"].mean()          if "medallia_hotel_cleanliness"      in med else None,
+        "Value":       med["medallia_value_for_price"].mean()            if "medallia_value_for_price"        in med else None,
+        "Recommend":   med["medallia_likelihood_to_recommend"].mean()    if "medallia_likelihood_to_recommend" in med else None,
+        "Return":      med["medallia_likelihood_to_return"].mean()       if "medallia_likelihood_to_return"   in med else None,
     }
     scores = {k: v for k, v in scores.items() if v is not None}
 
     st.markdown('<div class="pf-section"><div class="pf-section-ttl">Guest Satisfaction — Medallia</div></div>',
                 unsafe_allow_html=True)
 
+    # Score cards
     cards_html = '<div class="pf-medal-grid">'
     for label, score in scores.items():
         pct = min(score / 10 * 100, 100)
@@ -664,5 +665,69 @@ if not med.empty:
         </div>"""
     cards_html += '</div>'
     st.markdown(cards_html, unsafe_allow_html=True)
+
+    # ── Satisfaction trend chart ───────────────────────────────────────────────
+    st.markdown('<div class="pf-section"><div class="pf-section-ttl">Satisfaction Trend Over Time</div></div>',
+                unsafe_allow_html=True)
+
+    _sl, _st = st.columns([3, 1.5])
+    with _st:
+        sat_t = st.segmented_control("", ["📈", "📊"], default="📈",
+                                     key="pf_sat_t", label_visibility="collapsed")
+
+    _MED_METRICS = {
+        "Overall":     ("medallia_overall_satisfaction",      ACCENT),
+        "Cleanliness": ("medallia_hotel_cleanliness",         GREEN),
+        "Recommend":   ("medallia_likelihood_to_recommend",   SLATE),
+        "Value":       ("medallia_value_for_price",           "#9b6fd4"),
+        "Return":      ("medallia_likelihood_to_return",      "#d4903a"),
+    }
+
+    # Aggregate monthly — mean of daily values (weekly data stamped daily cancels out in mean)
+    med_trend = med.copy()
+    med_trend["month"] = med_trend["business_date"].dt.to_period("M")
+    med_monthly = med_trend.groupby("month")[
+        [col for _, (col, _) in _MED_METRICS.items() if col in med_trend.columns]
+    ].mean().reset_index()
+    xl_sat = [str(p) for p in med_monthly["month"]]
+
+    fig_sat = go.Figure()
+
+    # Reference line at 8.0
+    fig_sat.add_hline(y=8.0, line_dash="dot", line_color="rgba(255,255,255,0.12)",
+                      annotation_text="8.0", annotation_position="right",
+                      annotation_font=dict(size=9, color="rgba(255,255,255,0.3)"))
+
+    for label, (col, color) in _MED_METRICS.items():
+        if col not in med_monthly.columns:
+            continue
+        y_vals = med_monthly[col].tolist()
+        if sat_t == "📊":
+            fig_sat.add_trace(go.Bar(
+                x=xl_sat, y=y_vals, name=label,
+                marker_color=color,
+                hovertemplate=f"{label}: %{{y:.2f}}<extra></extra>",
+            ))
+        else:
+            fig_sat.add_trace(go.Scatter(
+                x=xl_sat, y=y_vals, name=label,
+                line=dict(color=color, width=2),
+                mode="lines+markers",
+                marker=dict(size=5),
+                hovertemplate=f"{label}: %{{y:.2f}}<extra></extra>",
+            ))
+
+    sat_lay = base_layout(h=280)
+    if sat_t == "📊":
+        sat_lay["barmode"] = "group"
+    sat_lay["yaxis"]["range"] = [0, 10.5]
+    sat_lay["yaxis"]["tickvals"] = [0, 2, 4, 6, 8, 10]
+    sat_lay["title"] = dict(
+        text="Score out of 10 — monthly average",
+        font=dict(size=10, color="rgba(245,245,240,0.4)"),
+        x=0, xanchor="left", pad=dict(l=4),
+    )
+    fig_sat.update_layout(**sat_lay)
+    st.plotly_chart(fig_sat, use_container_width=True, config={"displayModeBar": False})
 
 st.markdown("<div style='height:32px'></div>", unsafe_allow_html=True)

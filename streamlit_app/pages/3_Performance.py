@@ -131,14 +131,15 @@ def preset_dates(h, yr):
     return None, None
 
 if _all_years:
-    s_ts     = master["business_date"].min()
-    e_ts     = master["business_date"].max()
-    start    = s_ts.date()
-    end      = e_ts.date()
-    sel_year = int(e_ts.year)
-    py_yr    = None
-    py_s     = pd.Timestamp("2099-01-01")  # no prior year — will yield empty df_py
-    py_e     = pd.Timestamp("2099-01-01")
+    # Show 2025 vs 2024 side-by-side, forced monthly
+    start    = date(2025, 1, 1)
+    end      = date(2025, 12, 31)
+    sel_year = 2025
+    py_yr    = 2024
+    s_ts     = pd.Timestamp(start)
+    e_ts     = pd.Timestamp(end)
+    py_s     = pd.Timestamp(date(2024, 1, 1))
+    py_e     = pd.Timestamp(date(2024, 12, 31))
 elif horizon == "Custom":
     _c1, _c2, _ = st.columns([2, 2, 4])
     with _c1:
@@ -197,28 +198,23 @@ adr_p  = df_py["adr"].mean()            if not df_py.empty else 0
 rp_p   = df_py["revpar"].mean()         if not df_py.empty else 0
 trp_p  = safe(df_py["total_revenue"].sum() / (147 * len(df_py))) if not df_py.empty else 0
 
-if _all_years:
-    _kpi_sub = '<span class="pf-kpi-py">2024 – 2025 combined</span>'
-    _kpi_rows = {k: ("", _kpi_sub) for k in ["rev","occ","adr","rp","trp"]}
-else:
-    rc,rd   = delta(rev_c, rev_p)
-    oc,od   = delta(occ_c, occ_p)
-    ac,ad   = delta(adr_c, adr_p)
-    rpc,rpd = delta(rp_c,  rp_p)
-    tc,td   = delta(trp_c, trp_p)
-    _py_lbl = str(py_yr)
-    _kpi_rows = {
-        "rev": (f'<span class="{rc}">{rd}</span>',
-                f'<span class="pf-kpi-py">vs <span>{f"${rev_p/1e6:,.1f}M" if rev_p >= 1e6 else f"${rev_p/1e3:,.1f}k"}</span> in {_py_lbl}</span>'),
-        "occ": (f'<span class="{oc}">{od}</span>',
-                f'<span class="pf-kpi-py">vs <span>{occ_p:.1f}%</span> in {_py_lbl}</span>'),
-        "adr": (f'<span class="{ac}">{ad}</span>',
-                f'<span class="pf-kpi-py">vs <span>${adr_p:,.0f}</span> in {_py_lbl}</span>'),
-        "rp":  (f'<span class="{rpc}">{rpd}</span>',
-                f'<span class="pf-kpi-py">vs <span>${rp_p:,.0f}</span> in {_py_lbl}</span>'),
-        "trp": (f'<span class="{tc}">{td}</span>',
-                f'<span class="pf-kpi-py">vs <span>${trp_p:,.0f}</span> in {_py_lbl}</span>'),
-    }
+rc,rd   = delta(rev_c, rev_p)
+oc,od   = delta(occ_c, occ_p)
+ac,ad   = delta(adr_c, adr_p)
+rpc,rpd = delta(rp_c,  rp_p)
+tc,td   = delta(trp_c, trp_p)
+_kpi_rows = {
+    "rev": (f'<span class="{rc}">{rd}</span>',
+            f'<span class="pf-kpi-py">vs <span>{f"${rev_p/1e6:,.1f}M" if rev_p >= 1e6 else f"${rev_p/1e3:,.1f}k"}</span> in {py_yr}</span>'),
+    "occ": (f'<span class="{oc}">{od}</span>',
+            f'<span class="pf-kpi-py">vs <span>{occ_p:.1f}%</span> in {py_yr}</span>'),
+    "adr": (f'<span class="{ac}">{ad}</span>',
+            f'<span class="pf-kpi-py">vs <span>${adr_p:,.0f}</span> in {py_yr}</span>'),
+    "rp":  (f'<span class="{rpc}">{rpd}</span>',
+            f'<span class="pf-kpi-py">vs <span>${rp_p:,.0f}</span> in {py_yr}</span>'),
+    "trp": (f'<span class="{tc}">{td}</span>',
+            f'<span class="pf-kpi-py">vs <span>${trp_p:,.0f}</span> in {py_yr}</span>'),
+}
 
 _rev_val = f"${rev_c/1e6:,.1f}M" if rev_c >= 1e6 else f"${rev_c/1e3:,.1f}k"
 
@@ -276,13 +272,13 @@ def base_layout(h=280, ytitle="", yprefix="", ysuffix=""):
         hovermode="x unified",
     )
 
-# Auto-granularity
+# Auto-granularity (All Years forces monthly so both years compare on same month labels)
 n_days   = (end - start).days + 1
-freq     = "D" if n_days <= 14 else ("W" if n_days <= 60 else "ME")
-dfmt     = "%b %d" if n_days <= 60 else ("%b '%y" if n_days > 365 else "%b")
-_show_py = not _all_years          # suppress prior-year traces in All Years mode
-_cur_lbl = "2024–2025" if _all_years else str(sel_year)
-_py_lbl  = str(py_yr) if py_yr else ""
+freq     = "ME" if _all_years else ("D" if n_days <= 14 else ("W" if n_days <= 60 else "ME"))
+dfmt     = "%b"  if _all_years else ("%b %d" if n_days <= 60 else "%b")
+_show_py = True   # always show both series
+_cur_lbl = str(sel_year)
+_py_lbl  = str(py_yr)
 
 def agg(d, col, fn, f=None):
     d = d.copy()

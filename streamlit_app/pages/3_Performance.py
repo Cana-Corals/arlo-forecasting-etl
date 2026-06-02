@@ -176,6 +176,15 @@ else:
 df    = master[(master["business_date"] >= s_ts) & (master["business_date"] <= e_ts)].copy()
 df_py = master[(master["business_date"] >= py_s) & (master["business_date"] <= py_e)].copy()
 
+# For All Years, KPIs use the full 2024–2025 combined dataset
+if _all_years:
+    df_kpi = master[
+        (master["business_date"] >= pd.Timestamp("2024-01-01")) &
+        (master["business_date"] <= pd.Timestamp("2025-12-31"))
+    ].copy()
+else:
+    df_kpi = df
+
 # ── KPI helpers ───────────────────────────────────────────────────────────────
 def safe(v, fallback=0.0):
     return float(v) if (v is not None and not np.isnan(v)) else fallback
@@ -186,35 +195,40 @@ def delta(v, base):
     cls = "up" if d >= 0 else "down"
     return cls, f"{'▲' if d>=0 else '▼'} {abs(pct):.1f}%"
 
-rev_c  = df["total_revenue"].sum()
-occ_c  = df["occupancy_rate"].mean() * 100
-adr_c  = df["adr"].mean()
-rp_c   = df["revpar"].mean()
-trp_c  = safe(df["total_revenue"].sum() / (147 * len(df))) if len(df) else 0
+rev_c  = df_kpi["total_revenue"].sum()
+occ_c  = df_kpi["occupancy_rate"].mean() * 100
+adr_c  = df_kpi["adr"].mean()
+rp_c   = df_kpi["revpar"].mean()
+trp_c  = safe(df_kpi["total_revenue"].sum() / (147 * len(df_kpi))) if len(df_kpi) else 0
 
-rev_p  = df_py["total_revenue"].sum()   if not df_py.empty else 0
-occ_p  = df_py["occupancy_rate"].mean() * 100 if not df_py.empty else 0
-adr_p  = df_py["adr"].mean()            if not df_py.empty else 0
-rp_p   = df_py["revpar"].mean()         if not df_py.empty else 0
-trp_p  = safe(df_py["total_revenue"].sum() / (147 * len(df_py))) if not df_py.empty else 0
+if _all_years:
+    # No single prior year — show "2024–2025" label, no delta
+    _kpi_sub = '<span class="pf-kpi-py">2024 – 2025 combined</span>'
+    _kpi_rows = {k: ("", _kpi_sub) for k in ["rev","occ","adr","rp","trp"]}
+else:
+    rev_p  = df_py["total_revenue"].sum()            if not df_py.empty else 0
+    occ_p  = df_py["occupancy_rate"].mean() * 100    if not df_py.empty else 0
+    adr_p  = df_py["adr"].mean()                     if not df_py.empty else 0
+    rp_p   = df_py["revpar"].mean()                  if not df_py.empty else 0
+    trp_p  = safe(df_py["total_revenue"].sum() / (147 * len(df_py))) if not df_py.empty else 0
 
-rc,rd   = delta(rev_c, rev_p)
-oc,od   = delta(occ_c, occ_p)
-ac,ad   = delta(adr_c, adr_p)
-rpc,rpd = delta(rp_c,  rp_p)
-tc,td   = delta(trp_c, trp_p)
-_kpi_rows = {
-    "rev": (f'<span class="{rc}">{rd}</span>',
-            f'<span class="pf-kpi-py">vs <span>{f"${rev_p/1e6:,.1f}M" if rev_p >= 1e6 else f"${rev_p/1e3:,.1f}k"}</span> in {py_yr}</span>'),
-    "occ": (f'<span class="{oc}">{od}</span>',
-            f'<span class="pf-kpi-py">vs <span>{occ_p:.1f}%</span> in {py_yr}</span>'),
-    "adr": (f'<span class="{ac}">{ad}</span>',
-            f'<span class="pf-kpi-py">vs <span>${adr_p:,.0f}</span> in {py_yr}</span>'),
-    "rp":  (f'<span class="{rpc}">{rpd}</span>',
-            f'<span class="pf-kpi-py">vs <span>${rp_p:,.0f}</span> in {py_yr}</span>'),
-    "trp": (f'<span class="{tc}">{td}</span>',
-            f'<span class="pf-kpi-py">vs <span>${trp_p:,.0f}</span> in {py_yr}</span>'),
-}
+    rc,rd   = delta(rev_c, rev_p)
+    oc,od   = delta(occ_c, occ_p)
+    ac,ad   = delta(adr_c, adr_p)
+    rpc,rpd = delta(rp_c,  rp_p)
+    tc,td   = delta(trp_c, trp_p)
+    _kpi_rows = {
+        "rev": (f'<span class="{rc}">{rd}</span>',
+                f'<span class="pf-kpi-py">vs <span>{f"${rev_p/1e6:,.1f}M" if rev_p >= 1e6 else f"${rev_p/1e3:,.1f}k"}</span> in {py_yr}</span>'),
+        "occ": (f'<span class="{oc}">{od}</span>',
+                f'<span class="pf-kpi-py">vs <span>{occ_p:.1f}%</span> in {py_yr}</span>'),
+        "adr": (f'<span class="{ac}">{ad}</span>',
+                f'<span class="pf-kpi-py">vs <span>${adr_p:,.0f}</span> in {py_yr}</span>'),
+        "rp":  (f'<span class="{rpc}">{rpd}</span>',
+                f'<span class="pf-kpi-py">vs <span>${rp_p:,.0f}</span> in {py_yr}</span>'),
+        "trp": (f'<span class="{tc}">{td}</span>',
+                f'<span class="pf-kpi-py">vs <span>${trp_p:,.0f}</span> in {py_yr}</span>'),
+    }
 
 _rev_val = f"${rev_c/1e6:,.1f}M" if rev_c >= 1e6 else f"${rev_c/1e3:,.1f}k"
 

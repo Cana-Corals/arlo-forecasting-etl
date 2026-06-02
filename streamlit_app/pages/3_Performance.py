@@ -97,7 +97,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Horizon selector ──────────────────────────────────────────────────────────
-HORIZONS = ["1W", "1M", "Q1", "Q2", "Q3", "Q4", "Full Year", "Custom"]
+HORIZONS = ["1W", "1M", "Q1", "Q2", "Q3", "Q4", "Full Year", "All Years", "Custom"]
 if "pf_hz" not in st.session_state:
     st.session_state["pf_hz"] = "Full Year"
 
@@ -106,17 +106,18 @@ hz = st.segmented_control("Horizon", HORIZONS,
                            key="pf_hz_ctrl", label_visibility="collapsed")
 if hz:
     st.session_state["pf_hz"] = hz
-horizon = st.session_state["pf_hz"]
+horizon    = st.session_state["pf_hz"]
+_all_years = (horizon == "All Years")
 
 # Year selector alongside horizon
 _yc1, _yc2, _ = st.columns([2, 2, 5])
 with _yc1:
     sel_year = st.selectbox("Year", [2025, 2024], key="pf_year",
-                            label_visibility="collapsed")
+                            label_visibility="collapsed",
+                            disabled=_all_years)
 
 def preset_dates(h, yr):
     if h == "1W":
-        # Last complete Mon–Sun week within the selected year
         last_day = date(yr, 12, 31)
         sun = last_day - timedelta(days=(last_day.weekday() + 1) % 7)
         mon = sun - timedelta(days=6)
@@ -129,7 +130,16 @@ def preset_dates(h, yr):
     if h == "Full Year":return date(yr, 1, 1),   date(yr, 12, 31)
     return None, None
 
-if horizon == "Custom":
+if _all_years:
+    start    = date(2025, 1, 1)
+    end      = date(2025, 12, 31)
+    sel_year = 2025
+    py_yr    = 2024
+    s_ts     = pd.Timestamp(start)
+    e_ts     = pd.Timestamp(end)
+    py_s     = pd.Timestamp(date(2024, 1, 1))
+    py_e     = pd.Timestamp(date(2024, 12, 31))
+elif horizon == "Custom":
     _c1, _c2, _ = st.columns([2, 2, 4])
     with _c1:
         start = st.date_input("From", value=date(sel_year, 1, 1),
@@ -141,20 +151,26 @@ if horizon == "Custom":
                             key="pf_end", format="MM/DD/YYYY", label_visibility="collapsed")
     if isinstance(start, date) and isinstance(end, date) and start > end:
         start, end = end, start
+    s_ts  = pd.Timestamp(start)
+    e_ts  = pd.Timestamp(end)
+    py_yr = sel_year - 1
+    try:
+        py_s = pd.Timestamp(start.replace(year=py_yr))
+        py_e = pd.Timestamp(end.replace(year=py_yr))
+    except ValueError:
+        py_s = pd.Timestamp(start.replace(year=py_yr, day=28))
+        py_e = pd.Timestamp(end.replace(year=py_yr, day=28))
 else:
     start, end = preset_dates(horizon, sel_year)
-
-s_ts = pd.Timestamp(start)
-e_ts = pd.Timestamp(end)
-
-# Prior year (comparison)
-py_yr = sel_year - 1
-try:
-    py_s = pd.Timestamp(start.replace(year=py_yr))
-    py_e = pd.Timestamp(end.replace(year=py_yr))
-except ValueError:
-    py_s = pd.Timestamp(start.replace(year=py_yr, day=28))
-    py_e = pd.Timestamp(end.replace(year=py_yr, day=28))
+    s_ts  = pd.Timestamp(start)
+    e_ts  = pd.Timestamp(end)
+    py_yr = sel_year - 1
+    try:
+        py_s = pd.Timestamp(start.replace(year=py_yr))
+        py_e = pd.Timestamp(end.replace(year=py_yr))
+    except ValueError:
+        py_s = pd.Timestamp(start.replace(year=py_yr, day=28))
+        py_e = pd.Timestamp(end.replace(year=py_yr, day=28))
 
 df    = master[(master["business_date"] >= s_ts) & (master["business_date"] <= e_ts)].copy()
 df_py = master[(master["business_date"] >= py_s) & (master["business_date"] <= py_e)].copy()
@@ -679,22 +695,32 @@ if not med.empty:
     }
     _MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
-    # Controls: metric multiselect + chart type toggle
-    _sc1, _sc2 = st.columns([5, 1.5])
+    # Controls row: metrics · years · chart type
+    _sc1, _sc2, _sc3 = st.columns([3, 2, 1.5])
     with _sc1:
         sat_metrics = st.multiselect(
             "Metrics", list(_MED_METRICS.keys()),
             default=["Overall"], key="pf_sat_metrics", label_visibility="collapsed",
         ) or ["Overall"]
     with _sc2:
+        sat_years = st.multiselect(
+            "Years", [2024, 2025], default=[2024, 2025],
+            key="pf_sat_years", label_visibility="collapsed",
+        ) or [2024, 2025]
+    with _sc3:
         sat_t = st.segmented_control("", ["📈", "📊"], default="📈",
                                      key="pf_sat_t", label_visibility="collapsed")
 
-    # Monthly averages — grouped by calendar month (1-12)
-    def _med_monthly(source_df, col):
-        d = source_df[source_df[col].notna()].copy()
-        d["mo"] = d["business_date"].dt.month
-        return d.groupby("mo")[col].mean()
+    # Pull monthly averages straight from master — independent of page horizon
+    _sat_master = master[master["medallia_overall_satisfaction"].notna()].copy()
+    _sat_master["yr"] = _sat_master["business_date"].dt.year
+    _sat_master["mo"] = _sat_master["business_date"].dt.month
+
+    # One color per year, dimmed for 2024
+    _YEAR_STYLES = {
+        2024: ("rgba(232,133,74,0.5)",  1.5, "dot"),
+        2025: (ACCENT,                  2.0, "solid"),
+    }
 
     fig_sat = go.Figure()
     fig_sat.add_hline(y=8.0, line_dash="dot", line_color="rgba(255,255,255,0.12)",
@@ -702,36 +728,35 @@ if not med.empty:
                       annotation_font=dict(size=9, color="rgba(255,255,255,0.3)"))
 
     for label in sat_metrics:
-        col, color = _MED_METRICS[label]
-        cur_m = _med_monthly(df, col)
-        py_m  = _med_monthly(df_py, col) if not df_py.empty else pd.Series(dtype=float)
-        y_cur = [float(cur_m.loc[m]) if m in cur_m.index else None for m in range(1, 13)]
-        y_py  = [float(py_m.loc[m])  if m in py_m.index  else None for m in range(1, 13)]
+        col, base_color = _MED_METRICS[label]
+        if col not in _sat_master.columns:
+            continue
+        for yr in sorted(sat_years):
+            yr_data = _sat_master[_sat_master["yr"] == yr]
+            monthly  = yr_data.groupby("mo")[col].mean()
+            y_vals   = [float(monthly.loc[m]) if m in monthly.index else None for m in range(1, 13)]
+            yr_color, lw, dash = _YEAR_STYLES.get(yr, (base_color, 1.5, "solid"))
+            # If multiple metrics, use metric color; if single, use year style color
+            trace_color = base_color if len(sat_metrics) > 1 else yr_color
+            opacity     = 1.0 if yr == max(sat_years) else 0.55
 
-        if sat_t == "📊":
-            fig_sat.add_trace(go.Bar(x=_MONTH_LABELS, y=y_cur,
-                                     name=f"{label} {sel_year}", marker_color=color,
-                                     hovertemplate=f"{label}: %{{y:.2f}}<extra>{sel_year}</extra>"))
-            if any(v is not None for v in y_py):
-                fig_sat.add_trace(go.Bar(x=_MONTH_LABELS, y=y_py,
-                                         name=f"{label} {py_yr}",
-                                         marker_color=color, opacity=0.35,
-                                         marker_line=dict(color=color, width=1),
-                                         hovertemplate=f"{label}: %{{y:.2f}}<extra>{py_yr}</extra>"))
-        else:
-            fig_sat.add_trace(go.Scatter(x=_MONTH_LABELS, y=y_cur,
-                                         name=f"{label} {sel_year}",
-                                         line=dict(color=color, width=2),
-                                         mode="lines+markers", marker=dict(size=5),
-                                         hovertemplate=f"{label}: %{{y:.2f}}<extra>{sel_year}</extra>",
-                                         connectgaps=True))
-            if any(v is not None for v in y_py):
-                fig_sat.add_trace(go.Scatter(x=_MONTH_LABELS, y=y_py,
-                                             name=f"{label} {py_yr}",
-                                             line=dict(color=color, width=1.5, dash="dot"),
-                                             mode="lines+markers", marker=dict(size=4), opacity=0.6,
-                                             hovertemplate=f"{label}: %{{y:.2f}}<extra>{py_yr}</extra>",
-                                             connectgaps=True))
+            if sat_t == "📊":
+                fig_sat.add_trace(go.Bar(
+                    x=_MONTH_LABELS, y=y_vals,
+                    name=f"{label} {yr}", marker_color=trace_color, opacity=opacity,
+                    hovertemplate=f"{label}: %{{y:.2f}}<extra>{yr}</extra>",
+                ))
+            else:
+                fig_sat.add_trace(go.Scatter(
+                    x=_MONTH_LABELS, y=y_vals,
+                    name=f"{label} {yr}",
+                    line=dict(color=trace_color, width=lw,
+                              dash="dot" if yr != max(sat_years) else "solid"),
+                    mode="lines+markers", marker=dict(size=5 if yr == max(sat_years) else 4),
+                    opacity=opacity,
+                    hovertemplate=f"{label}: %{{y:.2f}}<extra>{yr}</extra>",
+                    connectgaps=True,
+                ))
 
     sat_lay = base_layout(h=260)
     if sat_t == "📊":
@@ -740,7 +765,7 @@ if not med.empty:
     sat_lay["yaxis"]["tickvals"]  = [0, 2, 4, 6, 8, 10]
     sat_lay["xaxis"]["tickangle"] = 0
     sat_lay["title"] = dict(
-        text=f"Score / 10 — {sel_year} (solid) vs {py_yr} (dashed)",
+        text="Score / 10 — monthly average · solid = most recent year selected",
         font=dict(size=10, color="rgba(245,245,240,0.4)"),
         x=0, xanchor="left", pad=dict(l=4),
     )

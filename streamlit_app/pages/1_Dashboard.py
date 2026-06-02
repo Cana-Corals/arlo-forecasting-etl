@@ -7,11 +7,11 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from components.data import load_master, load_events, load_str, load_source_stats
+from components.sidebar import render_sidebar
 
 # ── Session state ─────────────────────────────────────────────────────────────
 if "db_dow_filter" not in st.session_state:
     st.session_state["db_dow_filter"] = None
-SB_W = "200px"
 
 
 # ── CDN: Inter font + Tabler Icons ────────────────────────────────────────────
@@ -46,78 +46,6 @@ section[data-testid="stSidebar"] > div > div > div > button:first-child {{ displ
 .stApp {{ background:var(--arlo-dark2) !important; }}
 .block-container {{ padding:0 !important; max-width:1300px !important; margin:0 auto !important; }}
 [data-testid="stAppViewContainer"] {{ background:var(--arlo-dark2) !important; }}
-
-/* ── Sidebar ── */
-section[data-testid="stSidebar"] {{
-    background:var(--arlo-dark) !important;
-    width:{SB_W} !important; min-width:{SB_W} !important;
-    transform:none !important; left:0 !important;
-    transition:width .22s ease; overflow:hidden;
-}}
-section[data-testid="stSidebar"] > div:first-child {{
-    background:var(--arlo-dark) !important;
-    width:{SB_W} !important; min-width:{SB_W} !important;
-    padding:0 !important; overflow:hidden;
-}}
-section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {{ gap:0 !important; padding:0 0 94px 0 !important; }}
-/* Remove element-container margins that cause overlapping */
-section[data-testid="stSidebar"] .element-container,
-section[data-testid="stSidebar"] .stElementContainer {{
-    margin:0 !important; padding:0 !important;
-}}
-section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {{
-    margin:0 !important;
-}}
-section[data-testid="stSidebar"] .stButton > button {{
-    background:transparent !important; border:none !important;
-    box-shadow:none !important; outline:none !important;
-    color:var(--arlo-muted2) !important;
-    font-size:12px !important; font-weight:400 !important;
-    text-align:left !important; justify-content:flex-start !important;
-    padding:7px 10px 7px 16px !important; margin:1px 6px !important;
-    width:calc(100% - 12px) !important; border-radius:4px !important;
-    line-height:1.4 !important; transition:background .12s !important;
-}}
-section[data-testid="stSidebar"] .stButton > button:hover {{
-    background:rgba(255,255,255,0.05) !important;
-    color:var(--arlo-white) !important; border:none !important;
-}}
-/* Hamburger toggle inside header column (expanded) */
-section[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] {{
-    border-bottom:1px solid rgba(255,255,255,.08);
-    padding:0 !important; margin:0 !important; gap:0 !important;
-}}
-section[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] [data-testid="column"] {{
-    padding:0 !important; min-width:0 !important;
-}}
-section[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] .stButton > button {{
-    width:100% !important; height:54px !important;
-    padding:0 !important; margin:0 !important;
-    text-align:center !important; justify-content:center !important;
-    font-size:17px !important; letter-spacing:0 !important;
-    color:rgba(245,245,240,.38) !important;
-    background:transparent !important; border:none !important; border-radius:0 !important;
-}}
-section[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] .stButton > button:hover {{
-    color:rgba(245,245,240,.7) !important; background:rgba(255,255,255,.04) !important;
-}}
-/* Collapsed ☰ toggle (sits below AW monogram header) */
-section[data-testid="stSidebar"] .stButton:first-of-type > button {{
-    text-align:center !important; justify-content:center !important;
-    padding:8px 0 !important; margin:0 !important; width:100% !important;
-    border-radius:0 !important; border-bottom:1px solid rgba(255,255,255,.06) !important;
-    color:rgba(245,245,240,.38) !important; font-size:17px !important; letter-spacing:0 !important;
-    background:transparent !important; border-left:none !important; border-right:none !important; border-top:none !important;
-}}
-section[data-testid="stSidebar"] .stButton:first-of-type > button:hover {{
-    background:rgba(255,255,255,.04) !important; color:rgba(245,245,240,.65) !important;
-}}
-/* Pinned user footer at sidebar bottom */
-.sb-footer-fixed {{
-    position:fixed; bottom:0; left:0; width:200px;
-    background:var(--arlo-dark); border-top:1px solid rgba(255,255,255,.08);
-    padding:0; z-index:200; overflow:hidden; white-space:nowrap;
-}}
 
 /* ── Date input dark theme ── */
 .arlo-topbar-row {{ background:var(--arlo-dark); border-bottom:1px solid var(--arlo-border); }}
@@ -496,56 +424,7 @@ name     = st.session_state.get("name", "")
 initials = "".join(p[0].upper() for p in name.split()[:2]) if name else "JR"
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("""
-<div style="display:flex;align-items:center;gap:9px;padding:14px 14px 12px;
-            border-bottom:1px solid rgba(255,255,255,.08);">
-  <div style="width:28px;height:28px;border-radius:6px;
-              background:rgba(232,133,74,.15);border:1px solid rgba(232,133,74,.3);
-              display:flex;align-items:center;justify-content:center;
-              font-size:11px;font-weight:700;color:#e8854a;flex-shrink:0;">AW</div>
-  <div>
-    <div style="font-size:11px;font-weight:600;color:rgba(245,245,240,.9);">Arlo Williamsburg</div>
-    <div style="font-size:9px;color:rgba(245,245,240,.35);letter-spacing:.06em;">REVENUE INTELLIGENCE</div>
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
-    if st.button("← Home", key="nav_home", use_container_width=True):
-        _pg = st.session_state.get("_pg_home")
-        if _pg: st.switch_page(_pg)
-
-    st.markdown('<div style="padding:10px 16px 6px;font-size:9px;font-weight:600;'
-                'letter-spacing:.18em;text-transform:uppercase;'
-                'color:rgba(255,255,255,.22);">Overview</div>', unsafe_allow_html=True)
-    st.markdown('<div style="padding:7px 10px 7px 16px;margin:3px 6px;font-size:12px;'
-                'color:rgba(245,245,240,.9);background:rgba(255,255,255,.05);'
-                'border-radius:4px;">● Dashboard</div>', unsafe_allow_html=True)
-
-    st.markdown('<div style="padding:10px 16px 6px;font-size:9px;font-weight:600;'
-                'letter-spacing:.18em;text-transform:uppercase;'
-                'color:rgba(255,255,255,.22);">Analytics</div>', unsafe_allow_html=True)
-    for lbl, path in [("Forecast","pages/2_Forecast.py"),
-                      ("Performance","pages/3_Performance.py"),
-                      ("Demand","pages/4_Demand.py"),
-                      ("Rooms","pages/7_Rooms.py")]:
-        if st.button(lbl, key=f"nav_{lbl}", use_container_width=True):
-            st.switch_page(path)
-
-    st.markdown('<div style="padding:10px 16px 6px;font-size:9px;font-weight:600;'
-                'letter-spacing:.18em;text-transform:uppercase;'
-                'color:rgba(255,255,255,.22);">Intelligence</div>', unsafe_allow_html=True)
-    for lbl, path in [("Competitive","pages/5_Competitive.py"),
-                      ("Model Insights","pages/6_Model_Insights.py")]:
-        if st.button(lbl, key=f"nav_{lbl.replace(' ','_')}", use_container_width=True):
-            st.switch_page(path)
-
-    st.markdown('<div style="margin:12px 6px 0;border-top:1px solid rgba(255,255,255,.06);"></div>',
-                unsafe_allow_html=True)
-    if st.button("Logout", key="sb_logout", use_container_width=True):
-        for k in ["authentication_status", "name", "username", "logout", "_auth"]:
-            st.session_state.pop(k, None)
-        st.rerun()
+render_sidebar(active="dashboard")
 
 # ── Top bar ───────────────────────────────────────────────────────────────────
 st.markdown('<div class="arlo-topbar-row">', unsafe_allow_html=True)

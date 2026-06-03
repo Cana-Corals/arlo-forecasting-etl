@@ -802,7 +802,7 @@ if not _sat_master.empty:
         _ec1, _ec2 = st.columns([3, 2])
         with _ec1:
             _exp_hz = st.segmented_control(
-                "Horizon", ["1M","Q1","Q2","Q3","Q4","Full Year"],
+                "Horizon", ["1M","Q1","Q2","Q3","Q4","Full Year","All Time"],
                 default=st.session_state["pf_sat_exp_hz"],
                 key="pf_sat_exp_hz_ctrl", label_visibility="collapsed",
             ) or "Full Year"
@@ -811,14 +811,11 @@ if not _sat_master.empty:
             _exp_yr = st.selectbox(
                 "Year", [2025, 2024], key="pf_sat_exp_yr",
                 label_visibility="collapsed",
+                disabled=(_exp_hz == "All Time"),
             )
 
         # Compute date range for expanded chart
         def _exp_dates(h, yr):
-            if h == "1W":
-                ld = date(yr, 12, 31)
-                su = ld - timedelta(days=(ld.weekday() + 1) % 7)
-                return date(yr, 1, 1), date(yr, 12, 31)  # use full year for 1W context
             if h == "1M":       return date(yr, 12, 1),  date(yr, 12, 31)
             if h == "Q1":       return date(yr, 1, 1),   date(yr, 3, 31)
             if h == "Q2":       return date(yr, 4, 1),   date(yr, 6, 30)
@@ -826,12 +823,22 @@ if not _sat_master.empty:
             if h == "Q4":       return date(yr, 10, 1),  date(yr, 12, 31)
             return date(yr, 1, 1), date(yr, 12, 31)
 
-        _es, _ee = _exp_dates(_exp_hz, _exp_yr)
-        _eyr, _eyr_py = _exp_yr, _exp_yr - 1
-        _eps, _epe = date(_eyr_py, _es.month, _es.day), date(_eyr_py, _ee.month, _ee.day)
-        _en_days = (_ee - _es).days + 1
-        _efkey   = "D" if _en_days <= 14 else ("W" if _en_days <= 60 else "M")
-        _edfmt   = "%b %d" if _en_days <= 60 else "%b"
+        if _exp_hz == "All Time":
+            # Full 24-month continuous timeline, no prior-year overlay
+            _es       = _sat_master["business_date"].min().date()
+            _ee       = _sat_master["business_date"].max().date()
+            _eyr      = int(_ee.year)
+            _eyr_py   = _eyr - 1
+            _eps, _epe = date(1900, 1, 1), date(1900, 1, 1)   # yields empty prior year
+            _en_days  = (_ee - _es).days + 1
+            _efkey, _edfmt = "M", "%b '%y"
+        else:
+            _es, _ee = _exp_dates(_exp_hz, _exp_yr)
+            _eyr, _eyr_py = _exp_yr, _exp_yr - 1
+            _eps, _epe = date(_eyr_py, _es.month, _es.day), date(_eyr_py, _ee.month, _ee.day)
+            _en_days = (_ee - _es).days + 1
+            _efkey   = "D" if _en_days <= 14 else ("W" if _en_days <= 60 else "M")
+            _edfmt   = "%b %d" if _en_days <= 60 else "%b"
 
         def _exp_agg(yr_start, yr_end):
             d = _sat_master[

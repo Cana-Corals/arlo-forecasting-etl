@@ -868,7 +868,7 @@ if not _sat_master.empty:
 
         _lbl_cur = "2024–2025" if _exp_hz == "All Years" else str(_eyr)
         _lbl_py  = str(_eyr_py)
-        _show_py_exp = bool(_yv_py) and _exp_hz == "All Years"
+        _show_py_exp = False
 
         _fig_exp = go.Figure()
         _fig_exp.add_hline(y=8.0, line_dash="dot",

@@ -866,9 +866,9 @@ if not _sat_master.empty:
             return f"rgba({r},{g},{b},{alpha})"
         _faded_color = _to_faded(_open_color)
 
-        _lbl_cur = str(_eyr)
+        _lbl_cur = "All Time" if _exp_hz == "All Time" else str(_eyr)
         _lbl_py  = str(_eyr_py)
-        _show_py_exp = bool(_yv_py)
+        _show_py_exp = bool(_yv_py) and _exp_hz != "All Time"
 
         _fig_exp = go.Figure()
         _fig_exp.add_hline(y=8.0, line_dash="dot",

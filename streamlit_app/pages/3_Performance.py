@@ -633,36 +633,6 @@ if not _rt_df.empty:
             height=400,
         )
 
-# ── Market segment ────────────────────────────────────────────────────────────
-st.markdown('<div class="pf-section"><div class="pf-section-ttl">Revenue by Market Segment</div></div>',
-            unsafe_allow_html=True)
-
-mkt_cur = (mkt_df[(mkt_df["business_date"] >= s_ts) & (mkt_df["business_date"] <= e_ts)]
-           .groupby("market_code")["total_revenue"].sum()
-           .nlargest(10).sort_values())
-mkt_py  = (mkt_df[(mkt_df["business_date"] >= py_s) & (mkt_df["business_date"] <= py_e)]
-           .groupby("market_code")["total_revenue"].sum())
-
-mkt_labels = [MARKET_NAMES.get(c, c) for c in mkt_cur.index]
-mkt_py_v   = [float(mkt_py.get(c, 0)) for c in mkt_cur.index]
-
-fig_mkt = go.Figure()
-fig_mkt.add_trace(go.Bar(y=mkt_labels, x=mkt_cur.values, orientation="h",
-                         name=_cur_lbl, marker_color=SLATE,
-                         hovertemplate="%{y}: $%{x:,.0f}<extra>" + _cur_lbl + "</extra>"))
-if _show_py:
-    fig_mkt.add_trace(go.Bar(y=mkt_labels, x=mkt_py_v, orientation="h",
-                             name=_py_lbl, marker_color=SLATE_F,
-                             marker_line=dict(color=SLATE, width=1),
-                             hovertemplate="%{y}: $%{x:,.0f}<extra>" + _py_lbl + "</extra>"))
-mkt_lay = base_layout(h=320)
-mkt_lay["barmode"] = "group"
-mkt_lay["margin"]["l"] = 160
-mkt_lay["xaxis"].update({"tickprefix": "$", "tickformat": ",.0f"})
-fig_mkt.update_layout(**mkt_lay)
-st.plotly_chart(fig_mkt, use_container_width=True, config={"displayModeBar": False})
-
-
 
 # ── Guest satisfaction ────────────────────────────────────────────────────────
 _MED_METRICS = {
@@ -699,6 +669,35 @@ if not _sat_master.empty:
         st.session_state["pf_sat_open"] = None
     if "pf_sat_exp_hz" not in st.session_state:
         st.session_state["pf_sat_exp_hz"] = "Full Year"
+
+# ── Market segment ────────────────────────────────────────────────────────────
+st.markdown('<div class="pf-section"><div class="pf-section-ttl">Revenue by Market Segment</div></div>',
+            unsafe_allow_html=True)
+
+mkt_cur = (mkt_df[(mkt_df["business_date"] >= s_ts) & (mkt_df["business_date"] <= e_ts)]
+           .groupby("market_code")["total_revenue"].sum()
+           .nlargest(10).sort_values())
+mkt_py  = (mkt_df[(mkt_df["business_date"] >= py_s) & (mkt_df["business_date"] <= py_e)]
+           .groupby("market_code")["total_revenue"].sum())
+
+mkt_labels = [MARKET_NAMES.get(c, c) for c in mkt_cur.index]
+mkt_py_v   = [float(mkt_py.get(c, 0)) for c in mkt_cur.index]
+
+fig_mkt = go.Figure()
+fig_mkt.add_trace(go.Bar(y=mkt_labels, x=mkt_cur.values, orientation="h",
+                         name=_cur_lbl, marker_color=SLATE,
+                         hovertemplate="%{y}: $%{x:,.0f}<extra>" + _cur_lbl + "</extra>"))
+if _show_py:
+    fig_mkt.add_trace(go.Bar(y=mkt_labels, x=mkt_py_v, orientation="h",
+                             name=_py_lbl, marker_color=SLATE_F,
+                             marker_line=dict(color=SLATE, width=1),
+                             hovertemplate="%{y}: $%{x:,.0f}<extra>" + _py_lbl + "</extra>"))
+mkt_lay = base_layout(h=320)
+mkt_lay["barmode"] = "group"
+mkt_lay["margin"]["l"] = 160
+mkt_lay["xaxis"].update({"tickprefix": "$", "tickformat": ",.0f"})
+fig_mkt.update_layout(**mkt_lay)
+st.plotly_chart(fig_mkt, use_container_width=True, config={"displayModeBar": False})
 
     # Mini sparkline always uses full 2024-2025 monthly data
     def _mini_series(col):

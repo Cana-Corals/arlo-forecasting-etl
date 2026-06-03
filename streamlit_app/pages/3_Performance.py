@@ -698,121 +698,139 @@ if not _src.empty:
         )
 
 # ── Guest satisfaction ────────────────────────────────────────────────────────
-med = df[df["medallia_overall_satisfaction"].notna()]
+_MED_METRICS = {
+    "Overall":     ("medallia_overall_satisfaction",      ACCENT),
+    "Cleanliness": ("medallia_hotel_cleanliness",         GREEN),
+    "Recommend":   ("medallia_likelihood_to_recommend",   SLATE),
+    "Value":       ("medallia_value_for_price",           "#9b6fd4"),
+    "Return":      ("medallia_likelihood_to_return",      "#d4903a"),
+}
+
+med = df_kpi[df_kpi["medallia_overall_satisfaction"].notna()]
 if not med.empty:
-    scores = {
-        "Overall":     med["medallia_overall_satisfaction"].mean(),
-        "Cleanliness": med["medallia_hotel_cleanliness"].mean()          if "medallia_hotel_cleanliness"      in med else None,
-        "Value":       med["medallia_value_for_price"].mean()            if "medallia_value_for_price"        in med else None,
-        "Recommend":   med["medallia_likelihood_to_recommend"].mean()    if "medallia_likelihood_to_recommend" in med else None,
-        "Return":      med["medallia_likelihood_to_return"].mean()       if "medallia_likelihood_to_return"   in med else None,
-    }
-    scores = {k: v for k, v in scores.items() if v is not None}
-
-    st.markdown('<div class="pf-section"><div class="pf-section-ttl">Guest Satisfaction — Medallia</div></div>',
+    st.markdown('<div class="pf-section"><div class="pf-section-ttl">Guest Satisfaction — Medallia · click a metric to expand</div></div>',
                 unsafe_allow_html=True)
 
-    # Score cards
-    cards_html = '<div class="pf-medal-grid">'
-    for label, score in scores.items():
-        pct = min(score / 10 * 100, 100)
-        cards_html += f"""
-        <div class="pf-medal">
-          <div class="pf-medal-score">{score:.1f}</div>
-          <div class="pf-medal-lbl">{label}</div>
-          <div class="pf-medal-bar"><div class="pf-medal-fill" style="width:{pct:.0f}%"></div></div>
-        </div>"""
-    cards_html += '</div>'
-    st.markdown(cards_html, unsafe_allow_html=True)
+    if "pf_sat_open" not in st.session_state:
+        st.session_state["pf_sat_open"] = None
 
-    # ── Satisfaction trend chart ───────────────────────────────────────────────
-    st.markdown('<div class="pf-section"><div class="pf-section-ttl">Satisfaction Trend — Monthly Average</div></div>',
-                unsafe_allow_html=True)
+    # Helper: aggregate by page time granularity
+    def _sat_spark(source_df, col):
+        d = source_df[source_df[col].notna()].copy()
+        if d.empty:
+            return [], []
+        fkey = "D" if freq == "D" else ("W" if freq == "W" else "M")
+        d["p"] = d["business_date"].dt.to_period(fkey)
+        g = d.groupby("p")[col].mean()
+        lbs = []
+        for p in g.index:
+            try: lbs.append(p.start_time.strftime(dfmt))
+            except: lbs.append(str(p))
+        return list(g.values), lbs
 
-    _MED_METRICS = {
-        "Overall":     ("medallia_overall_satisfaction",      ACCENT),
-        "Cleanliness": ("medallia_hotel_cleanliness",         GREEN),
-        "Recommend":   ("medallia_likelihood_to_recommend",   SLATE),
-        "Value":       ("medallia_value_for_price",           "#9b6fd4"),
-        "Return":      ("medallia_likelihood_to_return",      "#d4903a"),
-    }
-    _MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-
-    # Controls row: metrics · years · chart type
-    _sc1, _sc2, _sc3 = st.columns([3, 2, 1.5])
-    with _sc1:
-        sat_metrics = st.multiselect(
-            "Metrics", list(_MED_METRICS.keys()),
-            default=["Overall"], key="pf_sat_metrics", label_visibility="collapsed",
-        ) or ["Overall"]
-    with _sc2:
-        sat_years = st.multiselect(
-            "Years", [2024, 2025], default=[2024, 2025],
-            key="pf_sat_years", label_visibility="collapsed",
-        ) or [2024, 2025]
-    with _sc3:
-        sat_t = st.segmented_control("", ["📈", "📊"], default="📈",
-                                     key="pf_sat_t", label_visibility="collapsed")
-
-    # Pull monthly averages straight from master — independent of page horizon
-    _sat_master = master[master["medallia_overall_satisfaction"].notna()].copy()
-    _sat_master["yr"] = _sat_master["business_date"].dt.year
-    _sat_master["mo"] = _sat_master["business_date"].dt.month
-
-    # One color per year, dimmed for 2024
-    _YEAR_STYLES = {
-        2024: ("rgba(232,133,74,0.5)",  1.5, "dot"),
-        2025: (ACCENT,                  2.0, "solid"),
-    }
-
-    fig_sat = go.Figure()
-    fig_sat.add_hline(y=8.0, line_dash="dot", line_color="rgba(255,255,255,0.12)",
-                      annotation_text="8.0", annotation_position="right",
-                      annotation_font=dict(size=9, color="rgba(255,255,255,0.3)"))
-
-    for label in sat_metrics:
-        col, base_color = _MED_METRICS[label]
-        if col not in _sat_master.columns:
+    # ── 5 mini cards with sparklines ─────────────────────────────────────────
+    _sat_cols = st.columns(5)
+    for _i, (label, (col, color)) in enumerate(_MED_METRICS.items()):
+        if col not in df_kpi.columns:
             continue
-        for yr in sorted(sat_years):
-            yr_data = _sat_master[_sat_master["yr"] == yr]
-            monthly  = yr_data.groupby("mo")[col].mean()
-            y_vals   = [float(monthly.loc[m]) if m in monthly.index else None for m in range(1, 13)]
-            yr_color, lw, dash = _YEAR_STYLES.get(yr, (base_color, 1.5, "solid"))
-            # If multiple metrics, use metric color; if single, use year style color
-            trace_color = base_color if len(sat_metrics) > 1 else yr_color
-            opacity     = 1.0 if yr == max(sat_years) else 0.55
+        with _sat_cols[_i]:
+            score_val = med[col].mean() if col in med.columns and med[col].notna().any() else None
+            if score_val is None:
+                continue
+            pct       = min(score_val / 10 * 100, 100)
+            is_open   = st.session_state["pf_sat_open"] == label
+            bdr       = f"2px solid {color}" if is_open else "1px solid rgba(255,255,255,0.08)"
 
-            if sat_t == "📊":
-                fig_sat.add_trace(go.Bar(
-                    x=_MONTH_LABELS, y=y_vals,
-                    name=f"{label} {yr}", marker_color=trace_color, opacity=opacity,
-                    hovertemplate=f"{label}: %{{y:.2f}}<extra>{yr}</extra>",
+            st.markdown(
+                f'<div style="background:#111;border:{bdr};border-radius:6px;'
+                f'padding:12px 14px 4px;text-align:center;">'
+                f'<div style="font-size:22px;font-weight:700;color:{color};">{score_val:.1f}</div>'
+                f'<div style="font-size:9px;color:rgba(245,245,240,0.38);margin-top:3px;">{label}</div>'
+                f'<div style="height:3px;border-radius:2px;background:rgba(255,255,255,.08);margin-top:8px;">'
+                f'<div style="height:3px;border-radius:2px;background:{color};width:{pct:.0f}%;"></div>'
+                f'</div></div>',
+                unsafe_allow_html=True,
+            )
+
+            # Mini sparkline
+            _yv, _ = _sat_spark(df_kpi, col)
+            if _yv:
+                _fig_mini = go.Figure()
+                _fig_mini.add_trace(go.Scatter(
+                    y=_yv, mode="lines",
+                    line=dict(color=color, width=1.5),
+                    hoverinfo="skip",
                 ))
-            else:
-                fig_sat.add_trace(go.Scatter(
-                    x=_MONTH_LABELS, y=y_vals,
-                    name=f"{label} {yr}",
-                    line=dict(color=trace_color, width=lw,
-                              dash="dot" if yr != max(sat_years) else "solid"),
-                    mode="lines+markers", marker=dict(size=5 if yr == max(sat_years) else 4),
-                    opacity=opacity,
-                    hovertemplate=f"{label}: %{{y:.2f}}<extra>{yr}</extra>",
+                _fig_mini.update_layout(
+                    paper_bgcolor="rgba(17,17,17,0)",
+                    plot_bgcolor="rgba(17,17,17,0)",
+                    margin=dict(l=2, r=2, t=4, b=2),
+                    height=52,
+                    showlegend=False,
+                    xaxis=dict(visible=False, fixedrange=True),
+                    yaxis=dict(visible=False, fixedrange=True, range=[0, 10]),
+                )
+                st.plotly_chart(_fig_mini, use_container_width=True,
+                                config={"displayModeBar": False}, key=f"mini_{label}")
+
+            # Expand toggle button
+            _btn_lbl = "▲ Close" if is_open else "▼ Expand"
+            if st.button(_btn_lbl, key=f"sat_open_{label}", use_container_width=True):
+                st.session_state["pf_sat_open"] = None if is_open else label
+                st.rerun()
+
+    # ── Expanded detail chart ─────────────────────────────────────────────────
+    _open_metric = st.session_state.get("pf_sat_open")
+    if _open_metric and _open_metric in _MED_METRICS:
+        _open_col, _open_color = _MED_METRICS[_open_metric]
+        if _open_col in df.columns:
+            st.markdown(
+                f'<div style="margin:12px 20px 0;padding:16px;'
+                f'background:#111;border:1px solid rgba(255,255,255,0.1);'
+                f'border-top:2px solid {_open_color};border-radius:6px;'
+                f'animation:fadeIn .25s ease;">',
+                unsafe_allow_html=True,
+            )
+            st.markdown("""<style>@keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}</style>""",
+                        unsafe_allow_html=True)
+
+            _yv_cur, _xl_cur = _sat_spark(df,    _open_col)
+            _yv_py,  _xl_py  = _sat_spark(df_py, _open_col)
+
+            _fig_exp = go.Figure()
+            _fig_exp.add_hline(y=8.0, line_dash="dot",
+                               line_color="rgba(255,255,255,0.12)",
+                               annotation_text="8.0", annotation_position="right",
+                               annotation_font=dict(size=9, color="rgba(255,255,255,0.3)"))
+
+            _fig_exp.add_trace(go.Scatter(
+                x=_xl_cur, y=_yv_cur, name=_cur_lbl,
+                line=dict(color=_open_color, width=2),
+                mode="lines+markers", marker=dict(size=5),
+                hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_cur_lbl}</extra>",
+                connectgaps=True,
+            ))
+            if _show_py and _yv_py:
+                _fig_exp.add_trace(go.Scatter(
+                    x=_xl_cur[:len(_yv_py)], y=_yv_py, name=_py_lbl,
+                    line=dict(color=_open_color, width=1.5, dash="dot"),
+                    mode="lines+markers", marker=dict(size=4), opacity=0.55,
+                    hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_py_lbl}</extra>",
                     connectgaps=True,
                 ))
 
-    sat_lay = base_layout(h=260)
-    if sat_t == "📊":
-        sat_lay["barmode"] = "group"
-    sat_lay["yaxis"]["range"]     = [0, 10.5]
-    sat_lay["yaxis"]["tickvals"]  = [0, 2, 4, 6, 8, 10]
-    sat_lay["xaxis"]["tickangle"] = 0
-    sat_lay["title"] = dict(
-        text="Score / 10 — monthly average · solid = most recent year selected",
-        font=dict(size=10, color="rgba(245,245,240,0.4)"),
-        x=0, xanchor="left", pad=dict(l=4),
-    )
-    fig_sat.update_layout(**sat_lay)
-    st.plotly_chart(fig_sat, use_container_width=True, config={"displayModeBar": False})
+            _exp_lay = base_layout(h=260)
+            _exp_lay["yaxis"]["range"]    = [0, 10.5]
+            _exp_lay["yaxis"]["tickvals"] = [0, 2, 4, 6, 8, 10]
+            _exp_lay["xaxis"]["tickangle"] = -30
+            _exp_lay["title"] = dict(
+                text=f"{_open_metric} — score / 10",
+                font=dict(size=11, color="rgba(245,245,240,0.7)"),
+                x=0, xanchor="left", pad=dict(l=4),
+            )
+            _fig_exp.update_layout(**_exp_lay)
+            st.plotly_chart(_fig_exp, use_container_width=True,
+                            config={"displayModeBar": False})
+            st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("<div style='height:32px'></div>", unsafe_allow_html=True)

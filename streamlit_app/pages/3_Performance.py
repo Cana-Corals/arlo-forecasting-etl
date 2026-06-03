@@ -706,131 +706,210 @@ _MED_METRICS = {
     "Return":      ("medallia_likelihood_to_return",      "#d4903a"),
 }
 
-med = df_kpi[df_kpi["medallia_overall_satisfaction"].notna()]
-if not med.empty:
-    st.markdown('<div class="pf-section"><div class="pf-section-ttl">Guest Satisfaction — Medallia · click a metric to expand</div></div>',
-                unsafe_allow_html=True)
+_sat_master = master[master["medallia_overall_satisfaction"].notna()].copy()
+
+if not _sat_master.empty:
+    st.markdown(
+        '<div class="pf-section"><div class="pf-section-ttl">'
+        'Guest Satisfaction — Medallia · click a card to analyze</div></div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown("""<style>
+    @keyframes satFadeIn {
+      from { opacity:0; transform:translateY(-8px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .sat-expanded {
+      animation: satFadeIn .2s ease;
+      margin: 10px 0 0;
+      padding: 16px 18px;
+      background: #111111;
+      border-radius: 6px;
+    }
+    </style>""", unsafe_allow_html=True)
 
     if "pf_sat_open" not in st.session_state:
         st.session_state["pf_sat_open"] = None
+    if "pf_sat_exp_hz" not in st.session_state:
+        st.session_state["pf_sat_exp_hz"] = "Full Year"
+    if "pf_sat_exp_yr" not in st.session_state:
+        st.session_state["pf_sat_exp_yr"] = 2025
 
-    # Helper: aggregate by page time granularity
-    def _sat_spark(source_df, col):
-        d = source_df[source_df[col].notna()].copy()
-        if d.empty:
-            return [], []
-        fkey = "D" if freq == "D" else ("W" if freq == "W" else "M")
-        d["p"] = d["business_date"].dt.to_period(fkey)
-        g = d.groupby("p")[col].mean()
-        lbs = []
-        for p in g.index:
-            try: lbs.append(p.start_time.strftime(dfmt))
-            except: lbs.append(str(p))
-        return list(g.values), lbs
+    # Mini sparkline always uses full 2024-2025 monthly data
+    def _mini_series(col):
+        d = _sat_master[_sat_master[col].notna()].copy()
+        d["mo"] = d["business_date"].dt.to_period("M")
+        return list(d.groupby("mo")[col].mean().values)
 
-    # ── 5 mini cards with sparklines ─────────────────────────────────────────
+    # ── 5 stock-style mini cards ──────────────────────────────────────────────
     _sat_cols = st.columns(5)
     for _i, (label, (col, color)) in enumerate(_MED_METRICS.items()):
-        if col not in df_kpi.columns:
+        if col not in _sat_master.columns:
             continue
         with _sat_cols[_i]:
-            score_val = med[col].mean() if col in med.columns and med[col].notna().any() else None
-            if score_val is None:
-                continue
-            pct       = min(score_val / 10 * 100, 100)
-            is_open   = st.session_state["pf_sat_open"] == label
-            bdr       = f"2px solid {color}" if is_open else "1px solid rgba(255,255,255,0.08)"
+            _score = _sat_master[col].mean()
+            _is_open = st.session_state["pf_sat_open"] == label
+            _bdr     = f"border:2px solid {color};" if _is_open else "border:1px solid rgba(255,255,255,0.08);"
 
+            # Score header
             st.markdown(
-                f'<div style="background:#111;border:{bdr};border-radius:6px;'
-                f'padding:12px 14px 4px;text-align:center;">'
-                f'<div style="font-size:22px;font-weight:700;color:{color};">{score_val:.1f}</div>'
-                f'<div style="font-size:9px;color:rgba(245,245,240,0.38);margin-top:3px;">{label}</div>'
-                f'<div style="height:3px;border-radius:2px;background:rgba(255,255,255,.08);margin-top:8px;">'
-                f'<div style="height:3px;border-radius:2px;background:{color};width:{pct:.0f}%;"></div>'
-                f'</div></div>',
+                f'<div style="background:#111111;{_bdr}border-radius:6px 6px 0 0;'
+                f'padding:12px 14px 2px;text-align:center;">'
+                f'<div style="font-size:26px;font-weight:300;color:{color};letter-spacing:-.02em;">{_score:.1f}</div>'
+                f'<div style="font-size:8px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;'
+                f'color:rgba(245,245,240,0.35);margin-top:2px;">{label}</div>'
+                f'</div>',
                 unsafe_allow_html=True,
             )
 
-            # Mini sparkline
-            _yv, _ = _sat_spark(df_kpi, col)
+            # Stock-style mini chart — full year trend, no axes
+            _yv = _mini_series(col)
             if _yv:
+                _color_fill = color.replace(")", ", 0.15)").replace("rgb", "rgba") if "rgb" in color else color
                 _fig_mini = go.Figure()
                 _fig_mini.add_trace(go.Scatter(
                     y=_yv, mode="lines",
-                    line=dict(color=color, width=1.5),
+                    line=dict(color=color, width=1.8),
+                    fill="tozeroy",
+                    fillcolor=f"rgba(255,255,255,0.04)",
                     hoverinfo="skip",
                 ))
                 _fig_mini.update_layout(
-                    paper_bgcolor="rgba(17,17,17,0)",
-                    plot_bgcolor="rgba(17,17,17,0)",
-                    margin=dict(l=2, r=2, t=4, b=2),
-                    height=52,
+                    paper_bgcolor="#111111",
+                    plot_bgcolor="#111111",
+                    margin=dict(l=0, r=0, t=0, b=0),
+                    height=70,
                     showlegend=False,
                     xaxis=dict(visible=False, fixedrange=True),
-                    yaxis=dict(visible=False, fixedrange=True, range=[0, 10]),
+                    yaxis=dict(visible=False, fixedrange=True, range=[4, 10]),
                 )
                 st.plotly_chart(_fig_mini, use_container_width=True,
                                 config={"displayModeBar": False}, key=f"mini_{label}")
 
-            # Expand toggle button
-            _btn_lbl = "▲ Close" if is_open else "▼ Expand"
+            # Expand toggle
+            _btn_lbl = "▲ Close" if _is_open else "▼ Analyze"
             if st.button(_btn_lbl, key=f"sat_open_{label}", use_container_width=True):
-                st.session_state["pf_sat_open"] = None if is_open else label
+                st.session_state["pf_sat_open"] = None if _is_open else label
                 st.rerun()
 
-    # ── Expanded detail chart ─────────────────────────────────────────────────
+    # ── Expanded chart with independent controls ──────────────────────────────
     _open_metric = st.session_state.get("pf_sat_open")
     if _open_metric and _open_metric in _MED_METRICS:
         _open_col, _open_color = _MED_METRICS[_open_metric]
-        if _open_col in df.columns:
-            st.markdown(
-                f'<div style="margin:12px 20px 0;padding:16px;'
-                f'background:#111;border:1px solid rgba(255,255,255,0.1);'
-                f'border-top:2px solid {_open_color};border-radius:6px;'
-                f'animation:fadeIn .25s ease;">',
-                unsafe_allow_html=True,
+
+        st.markdown(f'<div class="sat-expanded" style="border-top:2px solid {_open_color};">',
+                    unsafe_allow_html=True)
+
+        # Independent controls
+        _ec1, _ec2, _ec3 = st.columns([3, 2, 1.5])
+        with _ec1:
+            _exp_hz = st.segmented_control(
+                "Horizon", ["1W","1M","Q1","Q2","Q3","Q4","Full Year","All Years"],
+                default=st.session_state["pf_sat_exp_hz"],
+                key="pf_sat_exp_hz_ctrl", label_visibility="collapsed",
+            ) or "Full Year"
+            st.session_state["pf_sat_exp_hz"] = _exp_hz
+        with _ec2:
+            _exp_yr = st.selectbox(
+                "Year", [2025, 2024], key="pf_sat_exp_yr",
+                label_visibility="collapsed",
+                disabled=(_exp_hz == "All Years"),
             )
-            st.markdown("""<style>@keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}</style>""",
-                        unsafe_allow_html=True)
+        with _ec3:
+            _exp_t = st.segmented_control("", ["📈", "📊"], default="📈",
+                                          key="pf_sat_exp_t", label_visibility="collapsed")
 
-            _yv_cur, _xl_cur = _sat_spark(df,    _open_col)
-            _yv_py,  _xl_py  = _sat_spark(df_py, _open_col)
+        # Compute date range for expanded chart
+        def _exp_dates(h, yr):
+            if h == "1W":
+                ld = date(yr, 12, 31)
+                su = ld - timedelta(days=(ld.weekday() + 1) % 7)
+                return date(yr, 1, 1), date(yr, 12, 31)  # use full year for 1W context
+            if h == "1M":       return date(yr, 12, 1),  date(yr, 12, 31)
+            if h == "Q1":       return date(yr, 1, 1),   date(yr, 3, 31)
+            if h == "Q2":       return date(yr, 4, 1),   date(yr, 6, 30)
+            if h == "Q3":       return date(yr, 7, 1),   date(yr, 9, 30)
+            if h == "Q4":       return date(yr, 10, 1),  date(yr, 12, 31)
+            return date(yr, 1, 1), date(yr, 12, 31)
 
-            _fig_exp = go.Figure()
-            _fig_exp.add_hline(y=8.0, line_dash="dot",
-                               line_color="rgba(255,255,255,0.12)",
-                               annotation_text="8.0", annotation_position="right",
-                               annotation_font=dict(size=9, color="rgba(255,255,255,0.3)"))
+        if _exp_hz == "All Years":
+            _es, _ee   = date(2024, 1, 1), date(2025, 12, 31)
+            _eps, _epe = date(2024, 1, 1), date(2024, 12, 31)
+            _eyr, _eyr_py = 2025, 2024
+        else:
+            _es, _ee = _exp_dates(_exp_hz, _exp_yr)
+            _eyr, _eyr_py = _exp_yr, _exp_yr - 1
+            _eps, _epe = date(_eyr_py, _es.month, _es.day), date(_eyr_py, _ee.month, _ee.day)
 
-            _fig_exp.add_trace(go.Scatter(
-                x=_xl_cur, y=_yv_cur, name=_cur_lbl,
-                line=dict(color=_open_color, width=2),
-                mode="lines+markers", marker=dict(size=5),
-                hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_cur_lbl}</extra>",
-                connectgaps=True,
-            ))
-            if _show_py and _yv_py:
-                _fig_exp.add_trace(go.Scatter(
-                    x=_xl_cur[:len(_yv_py)], y=_yv_py, name=_py_lbl,
-                    line=dict(color=_open_color, width=1.5, dash="dot"),
-                    mode="lines+markers", marker=dict(size=4), opacity=0.55,
-                    hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_py_lbl}</extra>",
-                    connectgaps=True,
-                ))
+        _en_days = (_ee - _es).days + 1
+        _efkey   = "D" if _en_days <= 14 else ("W" if _en_days <= 60 else "M")
+        _edfmt   = "%b %d" if _en_days <= 60 else ("%b '%y" if _en_days > 365 else "%b")
 
-            _exp_lay = base_layout(h=260)
-            _exp_lay["yaxis"]["range"]    = [0, 10.5]
-            _exp_lay["yaxis"]["tickvals"] = [0, 2, 4, 6, 8, 10]
-            _exp_lay["xaxis"]["tickangle"] = -30
-            _exp_lay["title"] = dict(
-                text=f"{_open_metric} — score / 10",
-                font=dict(size=11, color="rgba(245,245,240,0.7)"),
-                x=0, xanchor="left", pad=dict(l=4),
-            )
-            _fig_exp.update_layout(**_exp_lay)
-            st.plotly_chart(_fig_exp, use_container_width=True,
-                            config={"displayModeBar": False})
-            st.markdown('</div>', unsafe_allow_html=True)
+        def _exp_agg(yr_start, yr_end):
+            d = _sat_master[
+                (_sat_master["business_date"] >= pd.Timestamp(yr_start)) &
+                (_sat_master["business_date"] <= pd.Timestamp(yr_end)) &
+                (_sat_master[_open_col].notna())
+            ].copy()
+            if d.empty:
+                return [], []
+            d["p"] = d["business_date"].dt.to_period(_efkey)
+            g = d.groupby("p")[_open_col].mean()
+            lbs = []
+            for p in g.index:
+                try: lbs.append(p.start_time.strftime(_edfmt))
+                except: lbs.append(str(p))
+            return list(g.values), lbs
+
+        _yv_cur, _xl_cur = _exp_agg(_es, _ee)
+        _yv_py,  _xl_py  = _exp_agg(_eps, _epe)
+
+        _fig_exp = go.Figure()
+        _fig_exp.add_hline(y=8.0, line_dash="dot",
+                           line_color="rgba(255,255,255,0.12)",
+                           annotation_text="8.0", annotation_position="right",
+                           annotation_font=dict(size=9, color="rgba(255,255,255,0.3)"))
+
+        _lbl_cur = "2024–2025" if _exp_hz == "All Years" else str(_eyr)
+        _lbl_py  = str(_eyr_py)
+
+        if _exp_t == "📊":
+            _fig_exp.add_trace(go.Bar(x=_xl_cur, y=_yv_cur, name=_lbl_cur,
+                                      marker_color=_open_color,
+                                      hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_lbl_cur}</extra>"))
+            if _yv_py and _exp_hz != "All Years":
+                _fig_exp.add_trace(go.Bar(x=_xl_cur[:len(_yv_py)], y=_yv_py, name=_lbl_py,
+                                          marker_color=_open_color, opacity=0.35,
+                                          marker_line=dict(color=_open_color, width=1),
+                                          hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_lbl_py}</extra>"))
+        else:
+            _fig_exp.add_trace(go.Scatter(x=_xl_cur, y=_yv_cur, name=_lbl_cur,
+                                          line=dict(color=_open_color, width=2),
+                                          mode="lines+markers", marker=dict(size=5),
+                                          fill="tozeroy",
+                                          fillcolor=f"rgba(232,133,74,0.06)",
+                                          hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_lbl_cur}</extra>",
+                                          connectgaps=True))
+            if _yv_py and _exp_hz != "All Years":
+                _fig_exp.add_trace(go.Scatter(x=_xl_cur[:len(_yv_py)], y=_yv_py, name=_lbl_py,
+                                              line=dict(color=_open_color, width=1.5, dash="dot"),
+                                              mode="lines+markers", marker=dict(size=4), opacity=0.5,
+                                              hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_lbl_py}</extra>",
+                                              connectgaps=True))
+
+        _exp_lay = base_layout(h=280)
+        if _exp_t == "📊":
+            _exp_lay["barmode"] = "group"
+        _exp_lay["yaxis"]["range"]     = [0, 10.5]
+        _exp_lay["yaxis"]["tickvals"]  = [0, 2, 4, 6, 8, 10]
+        _exp_lay["xaxis"]["tickangle"] = -30 if _en_days > 60 else 0
+        _exp_lay["title"] = dict(
+            text=f"{_open_metric} — score / 10",
+            font=dict(size=11, color="rgba(245,245,240,0.7)"),
+            x=0, xanchor="left", pad=dict(l=4),
+        )
+        _fig_exp.update_layout(**_exp_lay)
+        st.plotly_chart(_fig_exp, use_container_width=True, config={"displayModeBar": False})
+        st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("<div style='height:32px'></div>", unsafe_allow_html=True)

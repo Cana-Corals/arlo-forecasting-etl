@@ -828,17 +828,18 @@ if not _sat_master.empty:
             return date(yr, 1, 1), date(yr, 12, 31)
 
         if _exp_hz == "All Years":
-            _es, _ee   = date(2024, 1, 1), date(2025, 12, 31)
+            # Both years on same Jan–Dec axis for direct comparison
+            _es, _ee   = date(2025, 1, 1), date(2025, 12, 31)
             _eps, _epe = date(2024, 1, 1), date(2024, 12, 31)
             _eyr, _eyr_py = 2025, 2024
+            _efkey, _edfmt, _en_days = "M", "%b", 365
         else:
             _es, _ee = _exp_dates(_exp_hz, _exp_yr)
             _eyr, _eyr_py = _exp_yr, _exp_yr - 1
             _eps, _epe = date(_eyr_py, _es.month, _es.day), date(_eyr_py, _ee.month, _ee.day)
-
-        _en_days = (_ee - _es).days + 1
-        _efkey   = "D" if _en_days <= 14 else ("W" if _en_days <= 60 else "M")
-        _edfmt   = "%b %d" if _en_days <= 60 else ("%b '%y" if _en_days > 365 else "%b")
+            _en_days = (_ee - _es).days + 1
+            _efkey   = "D" if _en_days <= 14 else ("W" if _en_days <= 60 else "M")
+            _edfmt   = "%b %d" if _en_days <= 60 else "%b"
 
         def _exp_agg(yr_start, yr_end):
             d = _sat_master[
@@ -868,7 +869,7 @@ if not _sat_master.empty:
 
         _lbl_cur = "2024–2025" if _exp_hz == "All Years" else str(_eyr)
         _lbl_py  = str(_eyr_py)
-        _show_py_exp = False
+        _show_py_exp = bool(_yv_py) and _exp_hz == "All Years"
 
         _fig_exp = go.Figure()
         _fig_exp.add_hline(y=8.0, line_dash="dot",

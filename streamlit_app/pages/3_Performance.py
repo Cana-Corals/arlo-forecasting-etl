@@ -864,48 +864,93 @@ if not _sat_master.empty:
         _yv_cur, _xl_cur = _exp_agg(_es, _ee)
         _yv_py,  _xl_py  = _exp_agg(_eps, _epe)
 
+        # Faded version of the metric color for prior year
+        def _to_faded(hex_c, alpha=0.38):
+            h = hex_c.lstrip("#")
+            r, g, b = int(h[0:2],16), int(h[2:4],16), int(h[4:6],16)
+            return f"rgba({r},{g},{b},{alpha})"
+        _faded_color = _to_faded(_open_color)
+
+        _lbl_cur = "2024–2025" if _exp_hz == "All Years" else str(_eyr)
+        _lbl_py  = str(_eyr_py)
+        _show_py_exp = bool(_yv_py) and _exp_hz != "All Years"
+
         _fig_exp = go.Figure()
         _fig_exp.add_hline(y=8.0, line_dash="dot",
                            line_color="rgba(255,255,255,0.12)",
                            annotation_text="8.0", annotation_position="right",
                            annotation_font=dict(size=9, color="rgba(255,255,255,0.3)"))
 
-        _lbl_cur = "2024–2025" if _exp_hz == "All Years" else str(_eyr)
-        _lbl_py  = str(_eyr_py)
-
         if _exp_t == "📊":
-            _fig_exp.add_trace(go.Bar(x=_xl_cur, y=_yv_cur, name=_lbl_cur,
-                                      marker_color=_open_color,
-                                      hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_lbl_cur}</extra>"))
-            if _yv_py and _exp_hz != "All Years":
-                _fig_exp.add_trace(go.Bar(x=_xl_cur[:len(_yv_py)], y=_yv_py, name=_lbl_py,
-                                          marker_color=_open_color, opacity=0.35,
-                                          marker_line=dict(color=_open_color, width=1),
-                                          hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_lbl_py}</extra>"))
+            # ── Number chart (Option A) ───────────────────────────────────────
+            # Thin dashed trend line connecting the numbers
+            if _yv_cur:
+                _fig_exp.add_trace(go.Scatter(
+                    x=_xl_cur, y=_yv_cur, mode="lines",
+                    line=dict(color=_open_color, width=1, dash="dot"),
+                    showlegend=False, hoverinfo="skip", connectgaps=True,
+                ))
+            if _show_py_exp:
+                _fig_exp.add_trace(go.Scatter(
+                    x=_xl_cur[:len(_yv_py)], y=_yv_py, mode="lines",
+                    line=dict(color=_faded_color, width=1, dash="dot"),
+                    showlegend=False, hoverinfo="skip", connectgaps=True,
+                ))
+
+            # Current year — large numbers, full color, above the dot
+            _fig_exp.add_trace(go.Scatter(
+                x=_xl_cur, y=_yv_cur,
+                mode="markers+text",
+                text=[f"{v:.1f}" if v is not None else "" for v in _yv_cur],
+                textposition="top center",
+                textfont=dict(size=15, color=_open_color, family="Inter"),
+                marker=dict(size=5, color=_open_color),
+                name=_lbl_cur,
+                hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_lbl_cur}</extra>",
+                connectgaps=True,
+            ))
+
+            # Prior year — small numbers, faded, below the dot
+            if _show_py_exp:
+                _fig_exp.add_trace(go.Scatter(
+                    x=_xl_cur[:len(_yv_py)], y=_yv_py,
+                    mode="markers+text",
+                    text=[f"{v:.1f}" if v is not None else "" for v in _yv_py],
+                    textposition="bottom center",
+                    textfont=dict(size=10, color=_faded_color, family="Inter"),
+                    marker=dict(size=3, color=_faded_color),
+                    name=_lbl_py,
+                    hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_lbl_py}</extra>",
+                    connectgaps=True,
+                ))
+
         else:
-            _fig_exp.add_trace(go.Scatter(x=_xl_cur, y=_yv_cur, name=_lbl_cur,
-                                          line=dict(color=_open_color, width=2),
-                                          mode="lines+markers", marker=dict(size=5),
-                                          fill="tozeroy",
-                                          fillcolor=f"rgba(232,133,74,0.06)",
-                                          hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_lbl_cur}</extra>",
-                                          connectgaps=True))
-            if _yv_py and _exp_hz != "All Years":
-                _fig_exp.add_trace(go.Scatter(x=_xl_cur[:len(_yv_py)], y=_yv_py, name=_lbl_py,
-                                              line=dict(color=_open_color, width=1.5, dash="dot"),
-                                              mode="lines+markers", marker=dict(size=4), opacity=0.5,
-                                              hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_lbl_py}</extra>",
-                                              connectgaps=True))
+            # ── Line chart ───────────────────────────────────────────────────
+            _fig_exp.add_trace(go.Scatter(
+                x=_xl_cur, y=_yv_cur, name=_lbl_cur,
+                line=dict(color=_open_color, width=2),
+                mode="lines+markers", marker=dict(size=5),
+                hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_lbl_cur}</extra>",
+                connectgaps=True,
+            ))
+            if _show_py_exp:
+                _fig_exp.add_trace(go.Scatter(
+                    x=_xl_cur[:len(_yv_py)], y=_yv_py, name=_lbl_py,
+                    line=dict(color=_faded_color, width=1.5, dash="dot"),
+                    mode="lines+markers", marker=dict(size=4),
+                    hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_lbl_py}</extra>",
+                    connectgaps=True,
+                ))
 
-        _exp_lay = base_layout(h=280)
-        if _exp_t == "📊":
-            _exp_lay["barmode"] = "group"
-        _exp_lay["yaxis"]["range"]     = [0, 10.5]
-        _exp_lay["yaxis"]["tickvals"]  = [0, 2, 4, 6, 8, 10]
+        _exp_lay = base_layout(h=300)
+        # Extra headroom so "top center" text labels don't get clipped
+        _exp_lay["yaxis"]["range"]     = [3.5, 11.5]
+        _exp_lay["yaxis"]["tickvals"]  = [4, 5, 6, 7, 8, 9, 10]
         _exp_lay["xaxis"]["tickangle"] = -30 if _en_days > 60 else 0
         _exp_lay["title"] = dict(
-            text=f"{_open_metric} — score / 10",
-            font=dict(size=11, color="rgba(245,245,240,0.7)"),
+            text=f"{_open_metric} — score / 10  ·  {_lbl_cur} (full) vs {_lbl_py} (faded)"
+                 if _show_py_exp else f"{_open_metric} — score / 10",
+            font=dict(size=10, color="rgba(245,245,240,0.45)"),
             x=0, xanchor="left", pad=dict(l=4),
         )
         _fig_exp.update_layout(**_exp_lay)

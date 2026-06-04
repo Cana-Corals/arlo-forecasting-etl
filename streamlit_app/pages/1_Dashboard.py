@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from components.data import load_master, load_events, load_str, load_source_stats
+from components.data import load_master, load_events, load_str
 from components.sidebar import render_sidebar
 
 # ── Session state ─────────────────────────────────────────────────────────────
@@ -311,24 +311,6 @@ else:
     rev_p = occ_p = adr_p = rp_p = trp_p = 0.0
     rev_d = occ_d = adr_d = rp_d = trp_d = None
 
-# Channel mix from source-code stats
-_src = load_source_stats()
-if not _src.empty:
-    _src_f = _src[(_src["business_date"] >= _start) & (_src["business_date"] <= _end)]
-    _ch = (
-        _src_f.groupby("channel")
-              .agg(Bookings=("room_nights", "sum"), Revenue=("room_revenue", "sum"))
-              .reset_index()
-              .rename(columns={"channel": "Channel"})
-    )
-    _total_bk = float(_ch["Bookings"].sum()) or 1.0
-    _ch["Share %"] = (_ch["Bookings"] / _total_bk * 100).round(1)
-    _ch["ADR ($)"] = (_ch["Revenue"] / _ch["Bookings"].replace(0, float("nan"))).round(0)
-    _ch = _ch.sort_values("Bookings", ascending=False)[
-        ["Channel", "Bookings", "Share %", "Revenue", "ADR ($)"]
-    ].reset_index(drop=True)
-else:
-    _ch = pd.DataFrame(columns=["Channel", "Bookings", "Share %", "Revenue", "ADR ($)"])
 
 # STR indices
 if not str_df.empty:
@@ -676,107 +658,45 @@ with _dow_col:
             st.session_state["db_dow_filter"] = _new_filter
             st.rerun()
 
-# ── Revenue by segment + Channel mix + NYC Events ────────────────────────────
-ev_rows_html = ""
-_ev_colors = {"#3ecf8e": ("var(--arlo-green2)", "var(--arlo-green)"),
-              "#e8854a": ("var(--arlo-accent3)", "var(--arlo-accent)"),
-              "#4a6fa5": ("var(--arlo-slate2)",  "var(--arlo-slate)"),
-              "#d4903a": ("var(--arlo-amber2)",  "var(--arlo-amber)")}
-for ev in _ev_display:
-    bg, fg = _ev_colors.get(ev["color"], ("rgba(255,255,255,.05)", "rgba(245,245,240,.6)"))
-    ev_rows_html += f"""
-    <div class="ev-item">
-      <div class="ev-line" style="background:{ev['color']};"></div>
-      <div>
-        <div class="ev-name">{ev['name']}</div>
-        <div class="ev-date">{ev['date'].strftime('%b %-d')}</div>
-      </div>
-      <div class="ev-imp" style="background:{bg};color:{fg};">Major Event</div>
-    </div>"""
-
-if not ev_rows_html:
-    ev_rows_html = '<div style="font-size:10px;color:var(--arlo-muted);padding:8px 0;">No upcoming events found</div>'
-
-# ── Revenue by segment + Channel mix + NYC Events ────────────────────────────
-st.markdown("""<style>
-[data-testid="stHorizontalBlock"]:has(> [data-testid="column"]:nth-child(3)) {
-    padding: 0 20px;
-    gap: 10px !important;
-}
-[data-testid="stHorizontalBlock"]:has(> [data-testid="column"]:nth-child(3)) > [data-testid="column"] {
-    background: #222222 !important;
-    border: 1px solid rgba(255,255,255,.08) !important;
-    border-radius: 4px !important;
-    padding: 14px !important;
-}
-[data-testid="stHorizontalBlock"]:has(> [data-testid="column"]:nth-child(3)) [data-testid="stMarkdownContainer"] p {
-    margin: 0 !important;
-}
-</style>""", unsafe_allow_html=True)
-
-_c1, _c2, _c3 = st.columns([1.3, 1, 1])
-
-with _c1:
-    st.markdown(f"""
-<div class="pt">Revenue by segment</div>
-<div class="ps" style="margin-bottom:10px;">Year to date {latest_yr}</div>
-<div class="seg-rows">
-  <div class="seg-item">
-    <div class="seg-lbl">Transient</div>
-    <div class="seg-track"><div class="seg-fill" style="width:52%;background:#4a6fa5;">
-      <span class="seg-pct" style="color:rgba(255,255,255,.8);">52%</span></div></div>
-    <div class="seg-amt">~$9.1M</div>
-  </div>
-  <div class="seg-item">
-    <div class="seg-lbl">Corporate</div>
-    <div class="seg-track"><div class="seg-fill" style="width:22%;background:#3b7a5c;">
-      <span class="seg-pct" style="color:rgba(255,255,255,.8);">22%</span></div></div>
-    <div class="seg-amt">~$3.9M</div>
-  </div>
-  <div class="seg-item">
-    <div class="seg-lbl">Group</div>
-    <div class="seg-track"><div class="seg-fill" style="width:15%;background:#e8854a;">
-      <span class="seg-pct" style="color:rgba(255,255,255,.9);">15%</span></div></div>
-    <div class="seg-amt">~$2.6M</div>
-  </div>
-  <div class="seg-item">
-    <div class="seg-lbl">Wholesale</div>
-    <div class="seg-track"><div class="seg-fill" style="width:7%;background:#555;"></div></div>
-    <div class="seg-amt">~$1.2M</div>
-  </div>
-  <div class="seg-item">
-    <div class="seg-lbl">Comp / OP</div>
-    <div class="seg-track"><div class="seg-fill" style="width:4%;background:#444;"></div></div>
-    <div class="seg-amt">~$0.7M</div>
+# ── Revenue by segment ───────────────────────────────────────────────────────
+st.html(f"""
+<div style="padding:0 20px;">
+<div class="panel" style="max-width:420px;">
+  <div class="pt">Revenue by segment</div>
+  <div class="ps" style="margin-bottom:10px;">Year to date {latest_yr}</div>
+  <div class="seg-rows">
+    <div class="seg-item">
+      <div class="seg-lbl">Transient</div>
+      <div class="seg-track"><div class="seg-fill" style="width:52%;background:#4a6fa5;">
+        <span class="seg-pct" style="color:rgba(255,255,255,.8);">52%</span></div></div>
+      <div class="seg-amt">~$9.1M</div>
+    </div>
+    <div class="seg-item">
+      <div class="seg-lbl">Corporate</div>
+      <div class="seg-track"><div class="seg-fill" style="width:22%;background:#3b7a5c;">
+        <span class="seg-pct" style="color:rgba(255,255,255,.8);">22%</span></div></div>
+      <div class="seg-amt">~$3.9M</div>
+    </div>
+    <div class="seg-item">
+      <div class="seg-lbl">Group</div>
+      <div class="seg-track"><div class="seg-fill" style="width:15%;background:#e8854a;">
+        <span class="seg-pct" style="color:rgba(255,255,255,.9);">15%</span></div></div>
+      <div class="seg-amt">~$2.6M</div>
+    </div>
+    <div class="seg-item">
+      <div class="seg-lbl">Wholesale</div>
+      <div class="seg-track"><div class="seg-fill" style="width:7%;background:#555;"></div></div>
+      <div class="seg-amt">~$1.2M</div>
+    </div>
+    <div class="seg-item">
+      <div class="seg-lbl">Comp / OP</div>
+      <div class="seg-track"><div class="seg-fill" style="width:4%;background:#444;"></div></div>
+      <div class="seg-amt">~$0.7M</div>
+    </div>
   </div>
 </div>
-""", unsafe_allow_html=True)
-
-with _c2:
-    st.markdown('<div class="pt">Channel mix</div>'
-                '<div class="ps" style="margin-bottom:8px;">By bookings received — click column to sort</div>',
-                unsafe_allow_html=True)
-    if not _ch.empty:
-        st.dataframe(
-            _ch,
-            column_config={
-                "Channel":  st.column_config.TextColumn("Channel"),
-                "Bookings": st.column_config.NumberColumn("Bookings", format="%d"),
-                "Share %":  st.column_config.NumberColumn("Share %",  format="%.1f%%"),
-                "Revenue":  st.column_config.NumberColumn("Revenue",  format="$%,.0f"),
-                "ADR ($)":  st.column_config.NumberColumn("ADR ($)",  format="$%.0f"),
-            },
-            use_container_width=True,
-            hide_index=True,
-            height=218,
-        )
-
-with _c3:
-    st.markdown(f"""
-<div class="pt">NYC events</div>
-<div class="ps" style="margin-bottom:8px;">Demand impact forecast</div>
-<div class="ev-rows">{ev_rows_html}</div>
-""", unsafe_allow_html=True)
+</div>
+""")
 
 # ── Competitive set + Medallia ────────────────────────────────────────────────
 arlo_adr_disp  = f"${str_adr_val:.0f}"  if str_adr_val  else f"${adr_c:.0f}"

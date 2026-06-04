@@ -290,7 +290,7 @@ def base_layout(h=280, ytitle="", yprefix="", ysuffix=""):
 n_days   = (end - start).days + 1
 freq     = "ME" if _all_years else ("D" if n_days <= 14 else ("W" if n_days <= 60 else "ME"))
 dfmt     = "%b"  if _all_years else ("%b %d" if n_days <= 60 else "%b")
-_show_py = True   # always show both series
+_show_py = _all_years  # prior year only shown in All Years mode
 _cur_lbl = str(sel_year)
 _py_lbl  = str(py_yr)
 

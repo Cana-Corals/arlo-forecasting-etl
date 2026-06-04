@@ -501,8 +501,9 @@ _sat_master = master[master["medallia_overall_satisfaction"].notna()].copy()
 
 if not _sat_master.empty:
     st.markdown(
-        '<div class="pf-section"><div class="pf-section-ttl">'
-        'Guest Satisfaction — Medallia · click a card to analyze</div></div>',
+        '<div style="padding:22px 20px 10px;">'
+        '<div class="pf-section-ttl">Guest Satisfaction — Medallia · click a card to analyze</div>'
+        '</div>',
         unsafe_allow_html=True,
     )
     st.markdown("""<style>
@@ -589,25 +590,18 @@ if not _sat_master.empty:
         st.markdown(f'<div class="sat-expanded" style="border-top:2px solid {_open_color};">',
                     unsafe_allow_html=True)
 
-        # Independent controls
-        _ec1, _ec2 = st.columns([3, 2])
-        with _ec1:
-            _exp_hz = st.segmented_control(
-                "Horizon", ["1M","Q1","Q2","Q3","Q4","Full Year","All Time"],
-                default=st.session_state["pf_sat_exp_hz"],
-                key="pf_sat_exp_hz_ctrl", label_visibility="collapsed",
-            ) or "Full Year"
-            st.session_state["pf_sat_exp_hz"] = _exp_hz
-        with _ec2:
-            _exp_yr = st.selectbox(
-                "Year", [2025, 2024], key="pf_sat_exp_yr",
-                label_visibility="collapsed",
-                disabled=(_exp_hz == "All Time"),
-            )
+        # Independent controls — horizon only, year fixed to 2025
+        st.markdown('<div style="height:6px;"></div>', unsafe_allow_html=True)
+        _exp_hz = st.segmented_control(
+            "Horizon", ["Q1","Q2","Q3","Q4","Full Year","All Time"],
+            default=st.session_state["pf_sat_exp_hz"],
+            key="pf_sat_exp_hz_ctrl", label_visibility="collapsed",
+        ) or "Full Year"
+        st.session_state["pf_sat_exp_hz"] = _exp_hz
+        _exp_yr = 2025
 
         # Compute date range for expanded chart
         def _exp_dates(h, yr):
-            if h == "1M":       return date(yr, 12, 1),  date(yr, 12, 31)
             if h == "Q1":       return date(yr, 1, 1),   date(yr, 3, 31)
             if h == "Q2":       return date(yr, 4, 1),   date(yr, 6, 30)
             if h == "Q3":       return date(yr, 7, 1),   date(yr, 9, 30)
@@ -708,7 +702,8 @@ if not _sat_master.empty:
                 connectgaps=True,
             ))
 
-        _exp_lay = base_layout(h=300)
+        _exp_lay = base_layout(h=320)
+        _exp_lay["margin"]["t"] = 48
         _exp_lay["yaxis"]["range"]     = [3.5, 11.5]
         _exp_lay["yaxis"]["tickvals"]  = [4, 5, 6, 7, 8, 9, 10]
         _exp_lay["xaxis"]["tickangle"] = -30 if _en_days > 60 else 0

@@ -703,7 +703,7 @@ if not _sat_master.empty:
             ))
 
         _exp_lay = base_layout(h=320)
-        _exp_lay["margin"]["t"] = 48
+        _exp_lay["margin"]["t"] = 56
         _exp_lay["yaxis"]["range"]     = [3.5, 11.5]
         _exp_lay["yaxis"]["tickvals"]  = [4, 5, 6, 7, 8, 9, 10]
         _exp_lay["xaxis"]["tickangle"] = -30 if _en_days > 60 else 0

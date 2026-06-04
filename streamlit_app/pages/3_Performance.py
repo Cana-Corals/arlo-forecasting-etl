@@ -99,7 +99,7 @@ st.markdown("""
 # ── Horizon selector ──────────────────────────────────────────────────────────
 HORIZONS = ["Q1", "Q2", "Q3", "Q4", "Full Year", "All Years", "Custom"]
 if "pf_hz" not in st.session_state:
-    st.session_state["pf_hz"] = "Full Year"
+    st.session_state["pf_hz"] = "All Years"
 
 hz = st.segmented_control("Horizon", HORIZONS,
                            default=st.session_state["pf_hz"],

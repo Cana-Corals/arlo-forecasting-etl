@@ -97,7 +97,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Horizon selector ──────────────────────────────────────────────────────────
-HORIZONS = ["1W", "1M", "Q1", "Q2", "Q3", "Q4", "Full Year", "All Years", "Custom"]
+HORIZONS = ["Q1", "Q2", "Q3", "Q4", "Full Year", "All Years", "Custom"]
 if "pf_hz" not in st.session_state:
     st.session_state["pf_hz"] = "Full Year"
 

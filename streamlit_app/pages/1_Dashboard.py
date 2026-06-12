@@ -524,13 +524,6 @@ st.html(f"""
       <div class="spark">{svg_spark(rp_spark,"rgba(232,133,74,0.6)")}</div>
     </div>
 
-    <div class="kc">
-      <div class="kpi-lbl">TRevPAR</div>
-      <div class="kpi-val">${_trp_val}</div>
-      {_delta_html(trp_d)}
-      <div class="kpi-sub">Incl. F&amp;B + ancillary</div>
-      <div class="spark">{svg_spark(trp_spark,"rgba(167,139,250,0.5)")}</div>
-    </div>
 
   </div>
 </div>

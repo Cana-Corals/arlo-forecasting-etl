@@ -1,10 +1,11 @@
 """
 Train LightGBM regression models for hotel revenue forecasting.
 
-Three targets:
+Four targets:
   - room_revenue     (primary)
   - occupancy_rate
   - adr
+  - revpar           (direct prediction — not derived from revenue/147)
 
 Temporal split:
   - Train fit  : 2024-01-01 – 2025-09-30  (639 days)
@@ -16,12 +17,13 @@ LightGBM handles NaN natively, so lag-364 nulls in the 2024 train set are fine.
 
 STR feature strategy (optimal — validated by three-way comparison):
   - ADR model      : all STR features — comp rates are a direct causal driver of pricing
+  - RevPAR model   : all STR features — RevPAR = ADR × Occupancy; comp pricing & demand both matter
   - Revenue model  : no STR features — baseline outperformed all STR variants
   - Occupancy model: no STR features — near-zero STR importance confirmed across all experiments
 
 Outputs:
   models/lgbm_{target}.txt             LightGBM booster (text format, portable)
-  outputs/model_predictions_optimal.csv    Date, actuals, predictions for all 3 targets
+  outputs/model_predictions_optimal.csv    Date, actuals, predictions for all 4 targets
   outputs/feature_importance_optimal.csv   Gain-based feature importance for each model
 """
 
@@ -105,12 +107,14 @@ FEATURES = {
     "revenue":   BASE_FEATURES,
     "occupancy": BASE_FEATURES,
     "adr":       BASE_FEATURES + STR_INDEX_FEATURES + STR_RAW_FEATURES,
+    "revpar":    BASE_FEATURES + STR_INDEX_FEATURES + STR_RAW_FEATURES,
 }
 
 TARGETS = {
     "revenue":   "target_room_revenue",
     "occupancy": "target_occupancy_rate",
     "adr":       "target_adr",
+    "revpar":    "target_revpar",
 }
 
 LGBM_PARAMS = {
@@ -202,6 +206,8 @@ def main():
     if missing:
         raise ValueError(f"Missing feature columns: {missing}")
 
+    df["target_revpar"] = df["revpar"]
+
     print(f"  Rows: {len(df):,}  |  Train: {(df['split']=='train').sum()}  |  Test: {(df['split']=='test').sum()}")
     print()
 
@@ -263,7 +269,7 @@ def main():
     print("=" * 65)
     print(f"  {'Model':<12} {'RMSE':>12} {'MAE':>10} {'MAPE':>8} {'R2':>8}")
     print(f"  {'-'*60}")
-    units = {"revenue": "$", "occupancy": "", "adr": "$"}
+    units = {"revenue": "$", "occupancy": "", "adr": "$", "revpar": "$"}
     for name, m in all_metrics.items():
         u = units[name]
         print(f"  {name:<12} {u}{m['rmse']:>10.2f} {u}{m['mae']:>8.2f} {m['mape']:>7.2f}% {m['r2']:>8.4f}")

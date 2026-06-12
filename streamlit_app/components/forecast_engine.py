@@ -53,9 +53,10 @@ def generate_future_predictions(forecast_year: int = 2026) -> pd.DataFrame:
     m_rev = lgb.Booster(model_file=str(BASE / "models" / "lgbm_revenue.txt"))
     m_occ = lgb.Booster(model_file=str(BASE / "models" / "lgbm_occupancy.txt"))
     m_adr = lgb.Booster(model_file=str(BASE / "models" / "lgbm_adr.txt"))
+    m_rp  = lgb.Booster(model_file=str(BASE / "models" / "lgbm_revpar.txt"))
 
     rev_features = m_rev.feature_name()   # 67
-    adr_features = m_adr.feature_name()   # 95
+    adr_features = m_adr.feature_name()   # 95 (same as revpar)
 
     ready_2025 = ready[ready["business_date"].dt.year == 2025].copy()
     ready_2024 = ready[ready["business_date"].dt.year == 2024].copy()
@@ -209,6 +210,6 @@ def generate_future_predictions(forecast_year: int = 2026) -> pd.DataFrame:
     fdf["pred_revenue"]   = m_rev.predict(X_rev)
     fdf["pred_occupancy"] = m_occ.predict(X_rev)
     fdf["pred_adr"]       = m_adr.predict(X_adr)
-    fdf["pred_revpar"]    = fdf["pred_revenue"] / 147
+    fdf["pred_revpar"]    = m_rp.predict(X_adr)   # direct model; same features as ADR
 
     return fdf[["business_date", "pred_revenue", "pred_occupancy", "pred_adr", "pred_revpar"]]

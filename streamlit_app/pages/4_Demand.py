@@ -361,57 +361,7 @@ with _bb2:
     fig_los.update_layout(**los_lay)
     st.plotly_chart(fig_los, use_container_width=True, config={"displayModeBar": False})
 
-# ── Booking pace / pickup ─────────────────────────────────────────────────────
-st.markdown('<div class="dm-section"><div class="dm-section-ttl">Booking Pace — Rooms Picked Up</div></div>',
-            unsafe_allow_html=True)
-
-n_days = (end - start).days + 1
-freq   = "D" if n_days <= 14 else ("W" if n_days <= 60 else "ME")
-fkey   = "D" if freq == "D" else ("W" if freq == "W" else "M")
-dfmt   = "%b %d" if n_days <= 60 else "%b"
-
-def pace_agg(col):
-    d = ready_f.copy()
-    d["p"] = d["business_date"].dt.to_period(fkey)
-    g = d.groupby("p")[col].mean().reset_index()
-    xs = []
-    for p in g["p"]:
-        try: xs.append(p.start_time.strftime(dfmt))
-        except: xs.append(str(p))
-    return xs, list(g[col])
-
-xl7,  v7  = pace_agg("pickup_7d")
-xl14, v14 = pace_agg("pickup_14d")
-xl30, v30 = pace_agg("pickup_30d")
-xl_ob, ob = pace_agg("total_rooms_on_books")
-
-fig_pace = go.Figure()
-fig_pace.add_trace(go.Scatter(x=xl7,  y=v7,  name="7-day pickup",
-                              line=dict(color=ACCENT, width=2),
-                              hovertemplate="%{x}: %{y:.0f} rooms<extra>7d</extra>"))
-fig_pace.add_trace(go.Scatter(x=xl14, y=v14, name="14-day pickup",
-                              line=dict(color=GREEN, width=2),
-                              hovertemplate="%{x}: %{y:.0f} rooms<extra>14d</extra>"))
-fig_pace.add_trace(go.Scatter(x=xl30, y=v30, name="30-day pickup",
-                              line=dict(color=PURPLE, width=2),
-                              hovertemplate="%{x}: %{y:.0f} rooms<extra>30d</extra>"))
-fig_pace.add_trace(go.Scatter(x=xl_ob, y=ob, name="On books",
-                              line=dict(color=SLATE, width=1.5, dash="dot"),
-                              hovertemplate="%{x}: %{y:.0f} rooms<extra>On Books</extra>",
-                              yaxis="y2"))
-
-pace_lay = base_layout(h=260)
-pace_lay["title"] = dict(text="Booking Pickup vs Rooms on Books",
-                         font=dict(size=11, color="rgba(245,245,240,0.7)"),
-                         x=0, xanchor="left", pad=dict(l=4))
-pace_lay["yaxis2"] = dict(
-    overlaying="y", side="right",
-    gridcolor="transparent",
-    tickfont=dict(size=9, color=SLATE),
-    zeroline=False, showgrid=False,
-)
-fig_pace.update_layout(**pace_lay)
-st.plotly_chart(fig_pace, use_container_width=True, config={"displayModeBar": False})
+# ── Booking pace / pickup ── hidden ───────────────────────────────────────────
 
 # ── Channel Mix ───────────────────────────────────────────────────────────────
 st.markdown('<div class="dm-section"><div class="dm-section-ttl">Channel Mix</div></div>',

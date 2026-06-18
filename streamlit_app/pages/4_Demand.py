@@ -321,7 +321,7 @@ with _bb1:
 
     lt_lay = base_layout(h=260, ysuffix="%")
     lt_lay["title"] = dict(text="Lead Time Distribution",
-                           font=dict(size=12, color="rgba(245,245,240,0.7)"),
+                           font=dict(size=13, color="rgba(245,245,240,0.7)"),
                            x=0, xanchor="left", pad=dict(l=4))
     lt_lay["barmode"] = "group"
     lt_lay["xaxis"]["tickangle"] = -20
@@ -355,7 +355,7 @@ with _bb2:
 
     los_lay = base_layout(h=260, ysuffix="%")
     los_lay["title"] = dict(text="Length of Stay Distribution",
-                            font=dict(size=12, color="rgba(245,245,240,0.7)"),
+                            font=dict(size=13, color="rgba(245,245,240,0.7)"),
                             x=0, xanchor="left", pad=dict(l=4))
     los_lay["barmode"] = "group"
     fig_los.update_layout(**los_lay)
@@ -393,7 +393,7 @@ with _cm1:
                     orientation="v", x=0.82, y=0.5,
                     font=dict(size=12, color="rgba(245,245,240,0.6)")),
         title=dict(text="Channel Mix — " + str(sel_year),
-                   font=dict(size=12, color="rgba(245,245,240,0.7)"),
+                   font=dict(size=13, color="rgba(245,245,240,0.7)"),
                    x=0, xanchor="left", pad=dict(l=4)),
     )
     st.plotly_chart(fig_donut, use_container_width=True, config={"displayModeBar": False})
@@ -421,7 +421,7 @@ with _cm2:
         ))
     ota_lay = base_layout(h=280)
     ota_lay["title"] = dict(text="OTA Platform Trend (room-nights)",
-                            font=dict(size=12, color="rgba(245,245,240,0.7)"),
+                            font=dict(size=13, color="rgba(245,245,240,0.7)"),
                             x=0, xanchor="left", pad=dict(l=4))
     ota_lay["xaxis"]["tickangle"] = -30
     fig_ota.update_layout(**ota_lay)
@@ -453,7 +453,7 @@ with _cm3:
     ))
     trend_lay = base_layout(h=280, ysuffix="%")
     trend_lay["title"] = dict(text="Direct vs OTA Share (24-month)",
-                              font=dict(size=12, color="rgba(245,245,240,0.7)"),
+                              font=dict(size=13, color="rgba(245,245,240,0.7)"),
                               x=0, xanchor="left", pad=dict(l=4))
     trend_lay["xaxis"]["tickangle"] = -30
     fig_trend.update_layout(**trend_lay)
@@ -500,7 +500,7 @@ with _can1:
         ))
     can_lay = base_layout(h=280, ysuffix="%")
     can_lay["title"] = dict(text="Monthly Cancellation Rate",
-                            font=dict(size=12, color="rgba(245,245,240,0.7)"),
+                            font=dict(size=13, color="rgba(245,245,240,0.7)"),
                             x=0, xanchor="left", pad=dict(l=4))
     can_lay["xaxis"]["tickangle"] = -30
     fig_can.update_layout(**can_lay)
@@ -524,7 +524,7 @@ with _can2:
     ))
     cch_lay = base_layout(h=280)
     cch_lay["title"] = dict(text="Cancellation Rate by Channel",
-                            font=dict(size=12, color="rgba(245,245,240,0.7)"),
+                            font=dict(size=13, color="rgba(245,245,240,0.7)"),
                             x=0, xanchor="left", pad=dict(l=4))
     cch_lay["margin"]["l"] = 90
     cch_lay["xaxis"].update({"ticksuffix": "%"})
@@ -560,7 +560,7 @@ with _can3:
     ))
     ltc_lay = base_layout(h=280, ysuffix="%")
     ltc_lay["title"] = dict(text="Cancellation Rate by Lead Time",
-                            font=dict(size=12, color="rgba(245,245,240,0.7)"),
+                            font=dict(size=13, color="rgba(245,245,240,0.7)"),
                             x=0, xanchor="left", pad=dict(l=4))
     ltc_lay["xaxis"]["tickangle"] = -20
     ltc_lay["showlegend"] = False
@@ -598,7 +598,7 @@ with _cs1:
         ))
     dow_lay = base_layout(h=260, ysuffix="%")
     dow_lay["title"] = dict(text="Sellout Rate by Day of Week",
-                            font=dict(size=12, color="rgba(245,245,240,0.7)"),
+                            font=dict(size=13, color="rgba(245,245,240,0.7)"),
                             x=0, xanchor="left", pad=dict(l=4))
     dow_lay["barmode"]  = "group"
     dow_lay["bargap"]   = 0.2
@@ -625,7 +625,7 @@ with _cs2:
         ))
     mon_lay = base_layout(h=260)
     mon_lay["title"] = dict(text="Sellout Days by Month",
-                            font=dict(size=12, color="rgba(245,245,240,0.7)"),
+                            font=dict(size=13, color="rgba(245,245,240,0.7)"),
                             x=0, xanchor="left", pad=dict(l=4))
     mon_lay["barmode"] = "group"
     mon_lay["bargap"]  = 0.15
@@ -712,7 +712,7 @@ with _ce1:
     ))
     ev_lay = base_layout(h=300)
     ev_lay["title"] = dict(text="Avg Occupancy: Event Days vs Non-Event Days",
-                           font=dict(size=12, color="rgba(245,245,240,0.7)"),
+                           font=dict(size=13, color="rgba(245,245,240,0.7)"),
                            x=0, xanchor="left", pad=dict(l=4))
     ev_lay["barmode"]     = "overlay"
     ev_lay["bargap"]      = 0.3

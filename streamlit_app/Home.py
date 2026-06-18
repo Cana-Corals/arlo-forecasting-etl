@@ -103,6 +103,7 @@ DARK_LAYOUT = dict(
     paper_bgcolor="#1a1a1a",
     plot_bgcolor="#1a1a1a",
     font=dict(color="rgba(245,245,240,0.7)", family="Inter, system-ui, sans-serif", size=11),
+    title=dict(font=dict(size=13)),
     legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=11)),
     margin=dict(l=10, r=10, t=36, b=10),
     hoverlabel=dict(bgcolor="#222222", bordercolor="rgba(255,255,255,0.15)", font_color="#f5f5f0"),

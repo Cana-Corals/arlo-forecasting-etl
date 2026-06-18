@@ -102,6 +102,7 @@ def compute_metrics(df, split="test"):
 DARK = dict(
     paper_bgcolor="#1a1a1a", plot_bgcolor="#1a1a1a",
     font=dict(color="rgba(245,245,240,0.7)", family="Inter, system-ui", size=12),
+    title=dict(font=dict(size=13)),
     margin=dict(l=10, r=10, t=36, b=10),
     hoverlabel=dict(bgcolor="#222", bordercolor="rgba(255,255,255,.15)", font_color="#f5f5f0"),
     legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=12)),
@@ -239,7 +240,7 @@ with tab_actual:
         )
         _dark(fig)
         fig.update_layout(
-            title=dict(text=title_txt, font=dict(size=12, color="rgba(245,245,240,.8)")),
+            title=dict(text=title_txt, font=dict(size=13, color="rgba(245,245,240,.8)")),
             height=260, margin=dict(l=10, r=10, t=36, b=10),
         )
         if target == "occupancy":
@@ -281,7 +282,7 @@ with tab_fi:
         fig_fi.update_layout(
             title=dict(
                 text=f"Top {top_n} Features — {fi_model} Model (gain-based importance)",
-                font=dict(size=12, color="rgba(245,245,240,.8)")
+                font=dict(size=13, color="rgba(245,245,240,.8)")
             ),
             height=max(360, top_n * 22),
             margin=dict(l=10, r=10, t=36, b=10),
@@ -344,7 +345,7 @@ with tab_scatter:
     fig_sc.update_layout(
         title=dict(
             text=f"{sc_model} — Actual vs Predicted  ·  R²={m['r2']:.4f}  MAPE={m['mape']:.1f}%",
-            font=dict(size=12, color="rgba(245,245,240,.8)")
+            font=dict(size=13, color="rgba(245,245,240,.8)")
         ),
         height=460,
         xaxis_title="Actual",

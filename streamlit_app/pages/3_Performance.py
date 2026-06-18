@@ -710,7 +710,7 @@ if not _sat_master.empty:
         _exp_lay["title"] = dict(
             text=f"{_open_metric} — score / 10  ·  {_lbl_cur} (full) vs {_lbl_py} (faded)"
                  if _show_py_exp else f"{_open_metric} — score / 10",
-            font=dict(size=12, color="rgba(245,245,240,0.45)"),
+            font=dict(size=13, color="rgba(245,245,240,0.45)"),
             x=0, xanchor="left", pad=dict(l=4),
         )
         _fig_exp.update_layout(**_exp_lay)

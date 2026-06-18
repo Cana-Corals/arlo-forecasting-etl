@@ -483,6 +483,9 @@ else:
                                             name=py_bar_label, line=dict(color=SLATE_F, width=1.5, dash="dot"),
                                             mode="lines+markers",
                                             hovertemplate="$%{y:,.0f}<extra>" + py_bar_label + "</extra>"))
+        fig_rp.add_hline(y=500, line=dict(color="rgba(245,245,240,0.35)", width=1, dash="dash"),
+                          annotation_text="$500", annotation_position="top right",
+                          annotation_font=dict(size=11, color="rgba(245,245,240,0.55)"))
         fig_rp.update_layout(**chart_layout())
         fig_rp.update_yaxes(tickprefix="$", tickformat=",.0f")
         st.plotly_chart(fig_rp, use_container_width=True, config={"displayModeBar": False})

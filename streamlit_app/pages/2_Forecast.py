@@ -39,7 +39,7 @@ st.markdown("""
   height:52px; display:flex; align-items:center; padding:0 20px; gap:10px;
 }
 .fc-title { font-size:14px; font-weight:600; color:var(--white); }
-.fc-sub   { font-size:22px; color:var(--muted); }
+.fc-sub   { font-size:16px; color:var(--muted); }
 .fc-rule  { height:2px; background:linear-gradient(90deg,var(--accent) 0%,transparent 60%); }
 .fc-home-btn {
   margin-left:auto; font-size:11px; color:rgba(245,245,240,.45);
@@ -62,11 +62,11 @@ st.markdown("""
 .fc-kpi-row { display:flex; align-items:center; gap:8px; margin-top:6px; padding-top:6px; border-top:1px solid var(--border); }
 .fc-kpi-py  { font-size:10px; color:var(--muted2); }
 .fc-kpi-py span { font-weight:500; }
-.up   { font-size:20px; font-weight:600; color:var(--green); }
-.down { font-size:20px; font-weight:600; color:var(--red); }
+.up   { font-size:14px; font-weight:600; color:var(--green); }
+.down { font-size:14px; font-weight:600; color:var(--red); }
 
 .fc-note {
-  font-size:20px; color:var(--muted); padding:4px 20px 12px;
+  font-size:14px; color:var(--muted); padding:4px 20px 12px;
   display:flex; align-items:center; gap:6px;
 }
 .fc-section { padding:16px 20px 0; }
@@ -296,9 +296,9 @@ def chart_layout(h=280):
                     orientation="h", x=0, y=1.14,
                     font=dict(size=20, color="rgba(245,245,240,0.6)")),
         xaxis=dict(gridcolor=GRID, linecolor="rgba(255,255,255,0.08)",
-                   tickfont=dict(size=18), tickangle=-30),
+                   tickfont=dict(size=14), tickangle=-30),
         yaxis=dict(gridcolor=GRID, linecolor="rgba(255,255,255,0.08)",
-                   tickfont=dict(size=18), zeroline=False),
+                   tickfont=dict(size=14), zeroline=False),
         hovermode="x unified",
     )
 
@@ -492,7 +492,7 @@ else:
     st.markdown('<div class="fc-section"><div class="fc-section-ttl">Booking Channel Revenue Forecast</div></div>',
                 unsafe_allow_html=True)
     st.markdown(
-        '<div style="padding:0 20px 10px;font-size:20px;color:rgba(245,245,240,0.45);">'
+        '<div style="padding:0 20px 10px;font-size:14px;color:rgba(245,245,240,0.45);">'
         'Projected by applying the ML growth factor to the 2025 channel mix. '
         'Use to anticipate OTA, direct, and corporate contributions for the selected period.</div>',
         unsafe_allow_html=True,
@@ -577,7 +577,7 @@ else:
     _cha_col, _chb_col = st.columns([2, 1])
     with _cha_col:
         st.markdown(
-            f'<div style="font-size:22px;color:rgba(245,245,240,0.7);padding:4px 0 6px;">'
+            f'<div style="font-size:16px;color:rgba(245,245,240,0.7);padding:4px 0 6px;">'
             f'Revenue by Booking Channel — {_ch_fc_lbl}</div>',
             unsafe_allow_html=True,
         )

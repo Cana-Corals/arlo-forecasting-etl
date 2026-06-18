@@ -34,7 +34,7 @@ st.markdown("""
 
 .pf-topbar { background:var(--dark); border-bottom:1px solid var(--border); height:52px; display:flex; align-items:center; padding:0 20px; gap:10px; }
 .pf-title  { font-size:14px; font-weight:600; color:var(--white); }
-.pf-sub    { font-size:22px; color:var(--muted); }
+.pf-sub    { font-size:16px; color:var(--muted); }
 .pf-rule   { height:2px; background:linear-gradient(90deg,var(--slate) 0%,transparent 60%); }
 .pf-home-btn { margin-left:auto; font-size:11px; color:rgba(245,245,240,.45); text-decoration:none; padding:5px 11px; border:1px solid rgba(255,255,255,.1); border-radius:4px; transition:color .15s,border-color .15s; }
 .pf-home-btn:hover { color:rgba(245,245,240,.9); border-color:rgba(255,255,255,.25); }
@@ -46,8 +46,8 @@ st.markdown("""
 .pf-kpi-row { display:flex; align-items:center; gap:8px; margin-top:6px; padding-top:6px; border-top:1px solid var(--border); }
 .pf-kpi-py  { font-size:10px; color:var(--muted2); }
 .pf-kpi-py span { font-weight:500; }
-.up   { font-size:20px; font-weight:600; color:var(--green); }
-.down { font-size:20px; font-weight:600; color:var(--red); }
+.up   { font-size:14px; font-weight:600; color:var(--green); }
+.down { font-size:14px; font-weight:600; color:var(--red); }
 
 .pf-section { padding:16px 20px 0; }
 .pf-section-ttl { font-size:18px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
@@ -279,9 +279,9 @@ def base_layout(h=280, ytitle="", yprefix="", ysuffix=""):
                     orientation="h", x=0, y=1.14,
                     font=dict(size=20, color="rgba(245,245,240,0.6)")),
         xaxis=dict(gridcolor=GRID, linecolor="rgba(255,255,255,0.08)",
-                   tickfont=dict(size=18), tickangle=-30),
+                   tickfont=dict(size=14), tickangle=-30),
         yaxis=dict(gridcolor=GRID, linecolor="rgba(255,255,255,0.08)",
-                   tickfont=dict(size=18), zeroline=False,
+                   tickfont=dict(size=14), zeroline=False,
                    title=ytitle, tickprefix=yprefix, ticksuffix=ysuffix),
         hovermode="x unified",
     )
@@ -659,7 +659,7 @@ if not _sat_master.empty:
         _fig_exp.add_hline(y=8.0, line_dash="dot",
                            line_color="rgba(255,255,255,0.12)",
                            annotation_text="8.0", annotation_position="right",
-                           annotation_font=dict(size=18, color="rgba(255,255,255,0.3)"))
+                           annotation_font=dict(size=14, color="rgba(255,255,255,0.3)"))
 
         # Thin dashed trend lines connecting the numbers
         if _yv_cur:
@@ -695,7 +695,7 @@ if not _sat_master.empty:
                 mode="markers+text",
                 text=[f"{v:.1f}" if v is not None else "" for v in _yv_py],
                 textposition="bottom center",
-                textfont=dict(size=20, color=_faded_color, family="Inter"),
+                textfont=dict(size=14, color=_faded_color, family="Inter"),
                 marker=dict(size=3, color=_faded_color),
                 name=_lbl_py,
                 hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_lbl_py}</extra>",

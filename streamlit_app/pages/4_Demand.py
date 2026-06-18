@@ -70,7 +70,7 @@ st.markdown("""
 
 .dm-topbar { background:var(--dark); border-bottom:1px solid var(--border); height:52px; display:flex; align-items:center; padding:0 20px; gap:10px; }
 .dm-title  { font-size:14px; font-weight:600; color:var(--white); }
-.dm-sub    { font-size:22px; color:var(--muted); }
+.dm-sub    { font-size:16px; color:var(--muted); }
 .dm-rule   { height:2px; background:linear-gradient(90deg,var(--purple) 0%,transparent 60%); }
 .dm-home-btn { margin-left:auto; font-size:11px; color:rgba(245,245,240,.45); text-decoration:none; padding:5px 11px; border:1px solid rgba(255,255,255,.1); border-radius:4px; transition:color .15s,border-color .15s; }
 .dm-home-btn:hover { color:rgba(245,245,240,.9); border-color:rgba(255,255,255,.25); }
@@ -79,7 +79,7 @@ st.markdown("""
 .dm-kpi { background:var(--dark); border:1px solid var(--border); border-radius:6px; padding:14px 16px; }
 .dm-kpi-lbl { font-size:9px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
 .dm-kpi-val { font-size:28px; font-weight:600; color:var(--white); line-height:1; }
-.dm-kpi-sub { font-size:20px; color:var(--muted2); margin-top:5px; }
+.dm-kpi-sub { font-size:14px; color:var(--muted2); margin-top:5px; }
 
 .dm-section { padding:16px 20px 0; }
 .dm-section-ttl { font-size:18px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
@@ -281,9 +281,9 @@ def base_layout(h=280, ytitle="", yprefix="", ysuffix=""):
                     orientation="h", x=0, y=1.14,
                     font=dict(size=20, color="rgba(245,245,240,0.6)")),
         xaxis=dict(gridcolor=GRID, linecolor="rgba(255,255,255,0.08)",
-                   tickfont=dict(size=18), tickangle=0),
+                   tickfont=dict(size=14), tickangle=0),
         yaxis=dict(gridcolor=GRID, linecolor="rgba(255,255,255,0.08)",
-                   tickfont=dict(size=18), zeroline=False,
+                   tickfont=dict(size=14), zeroline=False,
                    title=ytitle, tickprefix=yprefix, ticksuffix=ysuffix),
         hovermode="x unified",
     )
@@ -321,7 +321,7 @@ with _bb1:
 
     lt_lay = base_layout(h=260, ysuffix="%")
     lt_lay["title"] = dict(text="Lead Time Distribution",
-                           font=dict(size=22, color="rgba(245,245,240,0.7)"),
+                           font=dict(size=14, color="rgba(245,245,240,0.7)"),
                            x=0, xanchor="left", pad=dict(l=4))
     lt_lay["barmode"] = "group"
     lt_lay["xaxis"]["tickangle"] = -20
@@ -355,7 +355,7 @@ with _bb2:
 
     los_lay = base_layout(h=260, ysuffix="%")
     los_lay["title"] = dict(text="Length of Stay Distribution",
-                            font=dict(size=22, color="rgba(245,245,240,0.7)"),
+                            font=dict(size=14, color="rgba(245,245,240,0.7)"),
                             x=0, xanchor="left", pad=dict(l=4))
     los_lay["barmode"] = "group"
     fig_los.update_layout(**los_lay)
@@ -382,7 +382,7 @@ with _cm1:
         hole=0.55,
         marker=dict(colors=ch_colors, line=dict(color=BG, width=2)),
         textinfo="percent",
-        textfont=dict(size=18, color="#fff"),
+        textfont=dict(size=13, color="#fff"),
         hovertemplate="%{label}: %{value:,} bookings (%{percent})<extra></extra>",
     ))
     fig_donut.update_layout(
@@ -393,7 +393,7 @@ with _cm1:
                     orientation="v", x=0.82, y=0.5,
                     font=dict(size=9, color="rgba(245,245,240,0.6)")),
         title=dict(text="Channel Mix — " + str(sel_year),
-                   font=dict(size=22, color="rgba(245,245,240,0.7)"),
+                   font=dict(size=14, color="rgba(245,245,240,0.7)"),
                    x=0, xanchor="left", pad=dict(l=4)),
     )
     st.plotly_chart(fig_donut, use_container_width=True, config={"displayModeBar": False})
@@ -421,7 +421,7 @@ with _cm2:
         ))
     ota_lay = base_layout(h=280)
     ota_lay["title"] = dict(text="OTA Platform Trend (room-nights)",
-                            font=dict(size=22, color="rgba(245,245,240,0.7)"),
+                            font=dict(size=14, color="rgba(245,245,240,0.7)"),
                             x=0, xanchor="left", pad=dict(l=4))
     ota_lay["xaxis"]["tickangle"] = -30
     fig_ota.update_layout(**ota_lay)
@@ -453,7 +453,7 @@ with _cm3:
     ))
     trend_lay = base_layout(h=280, ysuffix="%")
     trend_lay["title"] = dict(text="Direct vs OTA Share (24-month)",
-                              font=dict(size=22, color="rgba(245,245,240,0.7)"),
+                              font=dict(size=14, color="rgba(245,245,240,0.7)"),
                               x=0, xanchor="left", pad=dict(l=4))
     trend_lay["xaxis"]["tickangle"] = -30
     fig_trend.update_layout(**trend_lay)
@@ -500,7 +500,7 @@ with _can1:
         ))
     can_lay = base_layout(h=280, ysuffix="%")
     can_lay["title"] = dict(text="Monthly Cancellation Rate",
-                            font=dict(size=22, color="rgba(245,245,240,0.7)"),
+                            font=dict(size=14, color="rgba(245,245,240,0.7)"),
                             x=0, xanchor="left", pad=dict(l=4))
     can_lay["xaxis"]["tickangle"] = -30
     fig_can.update_layout(**can_lay)
@@ -524,7 +524,7 @@ with _can2:
     ))
     cch_lay = base_layout(h=280)
     cch_lay["title"] = dict(text="Cancellation Rate by Channel",
-                            font=dict(size=22, color="rgba(245,245,240,0.7)"),
+                            font=dict(size=14, color="rgba(245,245,240,0.7)"),
                             x=0, xanchor="left", pad=dict(l=4))
     cch_lay["margin"]["l"] = 90
     cch_lay["xaxis"].update({"ticksuffix": "%"})
@@ -560,7 +560,7 @@ with _can3:
     ))
     ltc_lay = base_layout(h=280, ysuffix="%")
     ltc_lay["title"] = dict(text="Cancellation Rate by Lead Time",
-                            font=dict(size=22, color="rgba(245,245,240,0.7)"),
+                            font=dict(size=14, color="rgba(245,245,240,0.7)"),
                             x=0, xanchor="left", pad=dict(l=4))
     ltc_lay["xaxis"]["tickangle"] = -20
     ltc_lay["showlegend"] = False
@@ -598,7 +598,7 @@ with _cs1:
         ))
     dow_lay = base_layout(h=260, ysuffix="%")
     dow_lay["title"] = dict(text="Sellout Rate by Day of Week",
-                            font=dict(size=22, color="rgba(245,245,240,0.7)"),
+                            font=dict(size=14, color="rgba(245,245,240,0.7)"),
                             x=0, xanchor="left", pad=dict(l=4))
     dow_lay["barmode"]  = "group"
     dow_lay["bargap"]   = 0.2
@@ -625,7 +625,7 @@ with _cs2:
         ))
     mon_lay = base_layout(h=260)
     mon_lay["title"] = dict(text="Sellout Days by Month",
-                            font=dict(size=22, color="rgba(245,245,240,0.7)"),
+                            font=dict(size=14, color="rgba(245,245,240,0.7)"),
                             x=0, xanchor="left", pad=dict(l=4))
     mon_lay["barmode"] = "group"
     mon_lay["bargap"]  = 0.15
@@ -712,7 +712,7 @@ with _ce1:
     ))
     ev_lay = base_layout(h=300)
     ev_lay["title"] = dict(text="Avg Occupancy: Event Days vs Non-Event Days",
-                           font=dict(size=22, color="rgba(245,245,240,0.7)"),
+                           font=dict(size=14, color="rgba(245,245,240,0.7)"),
                            x=0, xanchor="left", pad=dict(l=4))
     ev_lay["barmode"]     = "overlay"
     ev_lay["bargap"]      = 0.3

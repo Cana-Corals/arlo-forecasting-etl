@@ -200,7 +200,7 @@ section[data-testid="stSidebar"] > div > div > div > button:first-child {{ displ
 .comp-item.self .comp-name {{ color:var(--arlo-accent); font-weight:600; }}
 .comp-bw {{ flex:1; height:3px; background:rgba(255,255,255,.06); border-radius:1px; overflow:hidden; }}
 .comp-bf {{ height:100%; border-radius:1px; }}
-.comp-rate {{ font-size:20px; color:var(--arlo-white); width:36px; text-align:right; flex-shrink:0; }}
+.comp-rate {{ font-size:14px; color:var(--arlo-white); width:36px; text-align:right; flex-shrink:0; }}
 .comp-item.self .comp-rate {{ color:var(--arlo-accent); }}
 .comp-idx {{ display:flex; padding-top:10px; border-top:1px solid var(--arlo-border); margin-top:7px; }}
 .ci   {{ flex:1; text-align:center; }}
@@ -624,14 +624,14 @@ with _dow_col:
         hovertemplate="%{x}: %{y:.1f}%<extra></extra>",
         text=[f"{v:.0f}%" for v in dow_vals],
         textposition="outside",
-        textfont=dict(size=18, color="rgba(245,245,240,0.6)"),
+        textfont=dict(size=13, color="rgba(245,245,240,0.6)"),
     ))
     fig_dow.update_layout(
         paper_bgcolor="#222222", plot_bgcolor="#222222",
         margin=dict(l=4, r=4, t=8, b=4),
         height=160,
         showlegend=False,
-        xaxis=dict(tickfont=dict(size=18, color="rgba(245,245,240,0.45)"),
+        xaxis=dict(tickfont=dict(size=14, color="rgba(245,245,240,0.45)"),
                    showgrid=False, fixedrange=True),
         yaxis=dict(visible=False, fixedrange=True),
         bargap=0.25,
@@ -730,7 +730,7 @@ if med_overall is not None:
         <div class="score-l">/ 10 overall</div>
       </div>
       <div style="width:1px;height:48px;background:var(--arlo-border);"></div>
-      <div style="font-size:20px;color:var(--arlo-muted2);line-height:2.1;">
+      <div style="font-size:14px;color:var(--arlo-muted2);line-height:2.1;">
         <div>Positive <span style="color:var(--arlo-green);font-weight:600;">89%</span></div>
         <div>Neutral  <span style="color:var(--arlo-amber);font-weight:600;">7%</span></div>
         <div>Negative <span style="color:var(--arlo-red);font-weight:600;">4%</span></div>
@@ -738,7 +738,7 @@ if med_overall is not None:
     </div>
     <div class="rev-rows2">{med_rows_html}</div>"""
 else:
-    med_html = '<div style="font-size:20px;color:var(--arlo-muted);padding:8px 0;">No Medallia data available</div>'
+    med_html = '<div style="font-size:14px;color:var(--arlo-muted);padding:8px 0;">No Medallia data available</div>'
 
 samples_label = f"{med_samples:,} responses · year to date" if med_overall is not None else "year to date"
 

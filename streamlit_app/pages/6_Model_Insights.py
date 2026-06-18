@@ -363,6 +363,7 @@ with tab_scatter:
         st.plotly_chart(fig_sc, use_container_width=True)
 
 # ── Model architecture info ───────────────────────────────────────────────────
+st.markdown("<div style='height:32px'></div>", unsafe_allow_html=True)
 with st.expander("Model architecture & training details", expanded=False):
     st.markdown("""
 <div style="padding:12px 4px;color:rgba(245,245,240,.75);font-size:12px;line-height:1.8;">

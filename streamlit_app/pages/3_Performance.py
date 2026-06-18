@@ -273,7 +273,7 @@ def base_layout(h=280, ytitle="", yprefix="", ysuffix=""):
     return dict(
         paper_bgcolor=BG, plot_bgcolor=BG,
         font=dict(family="Inter", color=FONT, size=10),
-        margin=dict(l=4, r=4, t=28, b=4), height=h,
+        margin=dict(l=4, r=4, t=48, b=4), height=h,
         bargap=0.2, bargroupgap=0.08,
         legend=dict(bgcolor="rgba(0,0,0,0)", borderwidth=0,
                     orientation="h", x=0, y=1.14,

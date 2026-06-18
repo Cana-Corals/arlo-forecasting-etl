@@ -51,7 +51,7 @@ st.markdown("""
 .rm-kpi-delta { font-size:10px; color:var(--muted2); margin-top:5px; }
 .rm-kpi-desc  { font-size:9px; color:var(--muted); margin-top:3px; line-height:1.4; }
 
-.rm-section { padding:16px 20px 0; }
+.rm-section { padding:16px 20px 10px; }
 .rm-section-ttl { font-size:9px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
 .rm-live-bar { display:flex; align-items:center; gap:10px; padding:0 20px 10px; }
 .rm-live-dot { width:7px; height:7px; border-radius:50%; background:#3ecf8e; box-shadow:0 0 6px #3ecf8e; animation:pulse 1.8s ease-in-out infinite; flex-shrink:0; }

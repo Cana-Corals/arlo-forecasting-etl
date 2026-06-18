@@ -568,19 +568,19 @@ else:
             hovertemplate=f"{_ch_name}: $%{{y:,.0f}}<extra></extra>",
         ))
 
-    _ch_lay = chart_layout(h=260)
+    _ch_lay = chart_layout(h=340)
     _ch_lay["barmode"] = "stack"
-    _ch_lay["title"] = dict(
-        text=f"Revenue by Booking Channel — {_ch_fc_lbl}",
-        font=dict(size=11, color="rgba(245,245,240,0.7)"),
-        x=0, xanchor="left", pad=dict(l=4),
-    )
     _ch_lay["yaxis"]["tickprefix"] = "$"
     _ch_lay["yaxis"]["tickformat"] = ",.0f"
     fig_ch.update_layout(**_ch_lay)
 
     _cha_col, _chb_col = st.columns([2, 1])
     with _cha_col:
+        st.markdown(
+            f'<div style="font-size:11px;color:rgba(245,245,240,0.7);padding:4px 0 6px;">'
+            f'Revenue by Booking Channel — {_ch_fc_lbl}</div>',
+            unsafe_allow_html=True,
+        )
         st.plotly_chart(fig_ch, use_container_width=True, config={"displayModeBar": False})
 
     with _chb_col:

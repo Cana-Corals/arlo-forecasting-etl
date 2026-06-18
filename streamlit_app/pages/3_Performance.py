@@ -34,7 +34,7 @@ st.markdown("""
 
 .pf-topbar { background:var(--dark); border-bottom:1px solid var(--border); height:52px; display:flex; align-items:center; padding:0 20px; gap:10px; }
 .pf-title  { font-size:14px; font-weight:600; color:var(--white); }
-.pf-sub    { font-size:33px; color:var(--muted); }
+.pf-sub    { font-size:22px; color:var(--muted); }
 .pf-rule   { height:2px; background:linear-gradient(90deg,var(--slate) 0%,transparent 60%); }
 .pf-home-btn { margin-left:auto; font-size:11px; color:rgba(245,245,240,.45); text-decoration:none; padding:5px 11px; border:1px solid rgba(255,255,255,.1); border-radius:4px; transition:color .15s,border-color .15s; }
 .pf-home-btn:hover { color:rgba(245,245,240,.9); border-color:rgba(255,255,255,.25); }
@@ -46,11 +46,11 @@ st.markdown("""
 .pf-kpi-row { display:flex; align-items:center; gap:8px; margin-top:6px; padding-top:6px; border-top:1px solid var(--border); }
 .pf-kpi-py  { font-size:10px; color:var(--muted2); }
 .pf-kpi-py span { font-weight:500; }
-.up   { font-size:30px; font-weight:600; color:var(--green); }
-.down { font-size:30px; font-weight:600; color:var(--red); }
+.up   { font-size:20px; font-weight:600; color:var(--green); }
+.down { font-size:20px; font-weight:600; color:var(--red); }
 
 .pf-section { padding:16px 20px 0; }
-.pf-section-ttl { font-size:27px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.pf-section-ttl { font-size:18px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
 
 .pf-medal-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; padding:16px 20px 0; }
 .pf-medal { background:var(--dark); border:1px solid var(--border); border-radius:6px; padding:12px 14px; text-align:center; }
@@ -272,16 +272,16 @@ SLATE,  SLATE_F  = "#4a6fa5", "rgba(74,111,165,0.22)"
 def base_layout(h=280, ytitle="", yprefix="", ysuffix=""):
     return dict(
         paper_bgcolor=BG, plot_bgcolor=BG,
-        font=dict(family="Inter", color=FONT, size=10),
+        font=dict(family="Inter", color=FONT, size=20),
         margin=dict(l=4, r=4, t=48, b=4), height=h,
         bargap=0.2, bargroupgap=0.08,
         legend=dict(bgcolor="rgba(0,0,0,0)", borderwidth=0,
                     orientation="h", x=0, y=1.14,
-                    font=dict(size=10, color="rgba(245,245,240,0.6)")),
+                    font=dict(size=20, color="rgba(245,245,240,0.6)")),
         xaxis=dict(gridcolor=GRID, linecolor="rgba(255,255,255,0.08)",
-                   tickfont=dict(size=9), tickangle=-30),
+                   tickfont=dict(size=18), tickangle=-30),
         yaxis=dict(gridcolor=GRID, linecolor="rgba(255,255,255,0.08)",
-                   tickfont=dict(size=9), zeroline=False,
+                   tickfont=dict(size=18), zeroline=False,
                    title=ytitle, tickprefix=yprefix, ticksuffix=ysuffix),
         hovermode="x unified",
     )
@@ -659,7 +659,7 @@ if not _sat_master.empty:
         _fig_exp.add_hline(y=8.0, line_dash="dot",
                            line_color="rgba(255,255,255,0.12)",
                            annotation_text="8.0", annotation_position="right",
-                           annotation_font=dict(size=9, color="rgba(255,255,255,0.3)"))
+                           annotation_font=dict(size=18, color="rgba(255,255,255,0.3)"))
 
         # Thin dashed trend lines connecting the numbers
         if _yv_cur:
@@ -695,7 +695,7 @@ if not _sat_master.empty:
                 mode="markers+text",
                 text=[f"{v:.1f}" if v is not None else "" for v in _yv_py],
                 textposition="bottom center",
-                textfont=dict(size=10, color=_faded_color, family="Inter"),
+                textfont=dict(size=20, color=_faded_color, family="Inter"),
                 marker=dict(size=3, color=_faded_color),
                 name=_lbl_py,
                 hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_lbl_py}</extra>",
@@ -710,7 +710,7 @@ if not _sat_master.empty:
         _exp_lay["title"] = dict(
             text=f"{_open_metric} — score / 10  ·  {_lbl_cur} (full) vs {_lbl_py} (faded)"
                  if _show_py_exp else f"{_open_metric} — score / 10",
-            font=dict(size=10, color="rgba(245,245,240,0.45)"),
+            font=dict(size=20, color="rgba(245,245,240,0.45)"),
             x=0, xanchor="left", pad=dict(l=4),
         )
         _fig_exp.update_layout(**_exp_lay)

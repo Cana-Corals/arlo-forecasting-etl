@@ -36,12 +36,12 @@ st.markdown("""
 
 .mi-topbar { background:var(--dark); border-bottom:1px solid var(--border); height:52px; display:flex; align-items:center; padding:0 20px; gap:10px; }
 .mi-title  { font-size:14px; font-weight:600; color:var(--white); }
-.mi-sub    { font-size:33px; color:var(--muted); }
+.mi-sub    { font-size:22px; color:var(--muted); }
 .mi-rule   { height:2px; background:linear-gradient(90deg,var(--purple) 0%,transparent 60%); }
 .mi-home-btn { margin-left:auto; font-size:11px; color:rgba(245,245,240,.45); text-decoration:none; padding:5px 11px; border:1px solid rgba(255,255,255,.1); border-radius:4px; }
 
 .mi-section-hdr {
-  font-size:30px; font-weight:600; letter-spacing:.18em; text-transform:uppercase;
+  font-size:20px; font-weight:600; letter-spacing:.18em; text-transform:uppercase;
   color:rgba(245,245,240,.35); padding:20px 20px 8px;
 }
 
@@ -58,7 +58,7 @@ st.markdown("""
 
 /* ── Feature importance bar ── */
 .fi-row  { display:flex; align-items:center; gap:10px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,.04); }
-.fi-name { font-size:30px; color:rgba(245,245,240,.75); min-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fi-name { font-size:20px; color:rgba(245,245,240,.75); min-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .fi-bar-wrap { flex:1; height:6px; background:rgba(255,255,255,.06); border-radius:3px; }
 .fi-bar  { height:6px; border-radius:3px; }
 .fi-val  { font-size:9px; color:var(--muted); min-width:42px; text-align:right; }
@@ -101,10 +101,10 @@ def compute_metrics(df, split="test"):
 # ── Dark chart theme ──────────────────────────────────────────────────────────
 DARK = dict(
     paper_bgcolor="#1a1a1a", plot_bgcolor="#1a1a1a",
-    font=dict(color="rgba(245,245,240,0.7)", family="Inter, system-ui", size=33),
+    font=dict(color="rgba(245,245,240,0.7)", family="Inter, system-ui", size=22),
     margin=dict(l=10, r=10, t=36, b=10),
     hoverlabel=dict(bgcolor="#222", bordercolor="rgba(255,255,255,.15)", font_color="#f5f5f0"),
-    legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=33)),
+    legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=22)),
 )
 def _dark(fig):
     fig.update_layout(**DARK)
@@ -239,7 +239,7 @@ with tab_actual:
         )
         _dark(fig)
         fig.update_layout(
-            title=dict(text=title_txt, font=dict(size=33, color="rgba(245,245,240,.8)")),
+            title=dict(text=title_txt, font=dict(size=22, color="rgba(245,245,240,.8)")),
             height=260, margin=dict(l=10, r=10, t=36, b=10),
         )
         if target == "occupancy":
@@ -281,7 +281,7 @@ with tab_fi:
         fig_fi.update_layout(
             title=dict(
                 text=f"Top {top_n} Features — {fi_model} Model (gain-based importance)",
-                font=dict(size=33, color="rgba(245,245,240,.8)")
+                font=dict(size=22, color="rgba(245,245,240,.8)")
             ),
             height=max(360, top_n * 22),
             margin=dict(l=10, r=10, t=36, b=10),
@@ -344,7 +344,7 @@ with tab_scatter:
     fig_sc.update_layout(
         title=dict(
             text=f"{sc_model} — Actual vs Predicted  ·  R²={m['r2']:.4f}  MAPE={m['mape']:.1f}%",
-            font=dict(size=33, color="rgba(245,245,240,.8)")
+            font=dict(size=22, color="rgba(245,245,240,.8)")
         ),
         height=460,
         xaxis_title="Actual",

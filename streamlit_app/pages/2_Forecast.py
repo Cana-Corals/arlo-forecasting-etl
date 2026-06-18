@@ -39,7 +39,7 @@ st.markdown("""
   height:52px; display:flex; align-items:center; padding:0 20px; gap:10px;
 }
 .fc-title { font-size:14px; font-weight:600; color:var(--white); }
-.fc-sub   { font-size:33px; color:var(--muted); }
+.fc-sub   { font-size:22px; color:var(--muted); }
 .fc-rule  { height:2px; background:linear-gradient(90deg,var(--accent) 0%,transparent 60%); }
 .fc-home-btn {
   margin-left:auto; font-size:11px; color:rgba(245,245,240,.45);
@@ -62,15 +62,15 @@ st.markdown("""
 .fc-kpi-row { display:flex; align-items:center; gap:8px; margin-top:6px; padding-top:6px; border-top:1px solid var(--border); }
 .fc-kpi-py  { font-size:10px; color:var(--muted2); }
 .fc-kpi-py span { font-weight:500; }
-.up   { font-size:30px; font-weight:600; color:var(--green); }
-.down { font-size:30px; font-weight:600; color:var(--red); }
+.up   { font-size:20px; font-weight:600; color:var(--green); }
+.down { font-size:20px; font-weight:600; color:var(--red); }
 
 .fc-note {
-  font-size:30px; color:var(--muted); padding:4px 20px 12px;
+  font-size:20px; color:var(--muted); padding:4px 20px 12px;
   display:flex; align-items:center; gap:6px;
 }
 .fc-section { padding:16px 20px 0; }
-.fc-section-ttl { font-size:27px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.fc-section-ttl { font-size:18px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -289,16 +289,16 @@ GREEN_F = "rgba(62,207,142,0.20)"
 def chart_layout(h=280):
     return dict(
         paper_bgcolor=BG, plot_bgcolor=BG,
-        font=dict(family="Inter", color=FONT, size=10),
+        font=dict(family="Inter", color=FONT, size=20),
         margin=dict(l=4, r=4, t=48, b=4),
         height=h, bargap=0.18, bargroupgap=0.08,
         legend=dict(bgcolor="rgba(0,0,0,0)", borderwidth=0,
                     orientation="h", x=0, y=1.14,
-                    font=dict(size=10, color="rgba(245,245,240,0.6)")),
+                    font=dict(size=20, color="rgba(245,245,240,0.6)")),
         xaxis=dict(gridcolor=GRID, linecolor="rgba(255,255,255,0.08)",
-                   tickfont=dict(size=9), tickangle=-30),
+                   tickfont=dict(size=18), tickangle=-30),
         yaxis=dict(gridcolor=GRID, linecolor="rgba(255,255,255,0.08)",
-                   tickfont=dict(size=9), zeroline=False),
+                   tickfont=dict(size=18), zeroline=False),
         hovermode="x unified",
     )
 
@@ -492,7 +492,7 @@ else:
     st.markdown('<div class="fc-section"><div class="fc-section-ttl">Booking Channel Revenue Forecast</div></div>',
                 unsafe_allow_html=True)
     st.markdown(
-        '<div style="padding:0 20px 10px;font-size:30px;color:rgba(245,245,240,0.45);">'
+        '<div style="padding:0 20px 10px;font-size:20px;color:rgba(245,245,240,0.45);">'
         'Projected by applying the ML growth factor to the 2025 channel mix. '
         'Use to anticipate OTA, direct, and corporate contributions for the selected period.</div>',
         unsafe_allow_html=True,
@@ -577,7 +577,7 @@ else:
     _cha_col, _chb_col = st.columns([2, 1])
     with _cha_col:
         st.markdown(
-            f'<div style="font-size:33px;color:rgba(245,245,240,0.7);padding:4px 0 6px;">'
+            f'<div style="font-size:22px;color:rgba(245,245,240,0.7);padding:4px 0 6px;">'
             f'Revenue by Booking Channel — {_ch_fc_lbl}</div>',
             unsafe_allow_html=True,
         )

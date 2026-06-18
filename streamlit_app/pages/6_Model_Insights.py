@@ -375,7 +375,7 @@ with st.expander("Model architecture & training details", expanded=False):
 
 **Parameters:** n_estimators=2000 · learning_rate=0.03 · num_leaves=31 · min_child_samples=15 · feature_fraction=0.8 · bagging_fraction=0.8 · early_stopping=50 rounds
 
-**Feature strategy:**
+<div style="font-size:13px;font-weight:600;color:rgba(245,245,240,.85);margin:18px 0 10px;">Feature strategy</div>
 
 | Model | Base (67) | STR Index | STR Raw |
 |---|---|---|---|
@@ -384,8 +384,7 @@ with st.expander("Model architecture & training details", expanded=False):
 | ADR | ✓ | ✓ | ✓ |
 | RevPAR | ✓ | ✓ | ✓ |
 
-Revenue and Occupancy exclude STR features — own booking pace outperformed competitor data.
-ADR and RevPAR include STR because competitor pricing directly drives Arlo's rate decisions.
+Revenue and Occupancy exclude STR
 
 </div>
 """, unsafe_allow_html=True)

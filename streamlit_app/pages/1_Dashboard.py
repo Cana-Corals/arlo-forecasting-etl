@@ -117,7 +117,7 @@ section[data-testid="stSidebar"] > div > div > div > button:first-child {{ displ
 .ai-txt strong {{ color:var(--arlo-white); font-weight:600; }}
 
 /* KPI cards */
-.kpi5 {{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }}
+.kpi5 {{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }}
 .kc {{
   background:var(--arlo-dark3); border:1px solid var(--arlo-border);
   border-radius:var(--r); padding:14px 12px; position:relative; overflow:hidden;

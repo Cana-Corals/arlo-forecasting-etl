@@ -654,7 +654,7 @@ with _dow_col:
 # ── Revenue by segment ───────────────────────────────────────────────────────
 st.html(f"""
 <div style="padding:0 20px;">
-<div class="panel" style="max-width:420px;">
+<div class="panel">
   <div class="pt">Revenue by segment</div>
   <div class="ps" style="margin-bottom:10px;">Year to date {latest_yr}</div>
   <div class="seg-rows">

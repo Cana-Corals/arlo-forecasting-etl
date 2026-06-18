@@ -69,25 +69,6 @@ def load_room_type_stats() -> pd.DataFrame:
     return df.sort_values(["business_date", "room_type"]).reset_index(drop=True)
 
 
-MARKET_NAMES = {
-    "OTA": "OTA",        "SP": "Special / Pkg",
-    "CO":  "Corporate",  "HSE": "Hotel Sales",
-    "GC":  "Gov / Corp", "NG":  "Negotiated",
-    "RA":  "Rack / Retail", "GS": "Group & Social",
-    "PK":  "Packages",   "CS":  "Consortia",
-    "GE":  "Gov / Ext",  "WH":  "Wholesale",
-}
-
-@st.cache_data
-def load_market_stats() -> pd.DataFrame:
-    path = PROCESSED_DIR / "daily_stats_market.csv"
-    if not path.exists():
-        return pd.DataFrame()
-    df = pd.read_csv(path, parse_dates=["business_date"])
-    df["segment"] = df["market_code"].map(MARKET_NAMES).fillna(df["market_code"])
-    return df.sort_values("business_date").reset_index(drop=True)
-
-
 @st.cache_data
 def load_str() -> pd.DataFrame:
     path = PROCESSED_DIR / "str_daily.csv"

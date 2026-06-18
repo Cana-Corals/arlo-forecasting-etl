@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from components.data import load_master, load_events, load_str, load_market_stats
+from components.data import load_master, load_events, load_str
 from components.sidebar import render_sidebar
 
 # ── Session state ─────────────────────────────────────────────────────────────
@@ -228,7 +228,6 @@ section[data-testid="stSidebar"] > div > div > div > button:first-child {{ displ
 master = load_master()
 events = load_events()
 str_df = load_str()
-mkt_df = load_market_stats()
 
 _max_yr = int(master["business_date"].dt.year.max())
 _min_yr = int(master["business_date"].dt.year.min())
@@ -557,63 +556,48 @@ st.html("""
 </div>
 """)
 
-# ── Revenue by segment + DOW occupancy ───────────────────────────────────────
+# ── Booking pace + DOW occupancy ──────────────────────────────────────────────
 _bp_col, _dow_col = st.columns([1.5, 1])
 
 with _bp_col:
-    # Build segment revenue from filtered date range
-    _seg_colors = ["#e8854a","#4a6fa5","#3ecf8e","#d4903a","#9b59b6","#3b7a5c","#e05252","#5dade2"]
-    if not mkt_df.empty:
-        _mkt_filtered = mkt_df[
-            mkt_df["business_date"].between(_start, _end)
-        ]
-        _seg = (
-            _mkt_filtered.groupby("segment")["room_revenue"]
-            .sum()
-            .sort_values(ascending=True)
-        )
-        _seg_total = _seg.sum()
-        _seg_pcts  = (_seg / _seg_total * 100).round(1) if _seg_total else _seg * 0
-
-        fig_seg = go.Figure()
-        fig_seg.add_trace(go.Bar(
-            x=_seg.values,
-            y=_seg.index,
-            orientation="h",
-            marker_color=_seg_colors[:len(_seg)],
-            text=[f"${v/1e6:.2f}M  {p:.0f}%" for v, p in zip(_seg.values, _seg_pcts.values)],
-            textposition="outside",
-            textfont=dict(size=10, color="rgba(245,245,240,0.65)"),
-            hovertemplate="%{y}: $%{x:,.0f}<extra></extra>",
-            cliponaxis=False,
-        ))
-        fig_seg.update_layout(
-            paper_bgcolor="#222222", plot_bgcolor="#222222",
-            margin=dict(l=0, r=90, t=4, b=4),
-            height=max(160, len(_seg) * 30),
-            showlegend=False,
-            xaxis=dict(
-                showgrid=False, showticklabels=False, zeroline=False,
-            ),
-            yaxis=dict(
-                tickfont=dict(size=11, color="rgba(245,245,240,0.6)"),
-                showgrid=False,
-            ),
-            bargap=0.28,
-        )
-
-    st.html('<div style="padding:0 20px 0 20px;"><div class="panel" style="padding-bottom:8px;">'
-            f'<div class="pt">Revenue by segment</div>'
-            f'<div class="ps">{_start.strftime("%b %-d, %Y")} – {_end.strftime("%b %-d, %Y")}</div>'
-            '</div></div>')
-    if not mkt_df.empty:
-        with st.container():
-            st.markdown('<div style="padding:0 20px 8px 20px;margin-top:-8px;">'
-                        '<div class="panel" style="padding-top:4px;border-top:none;'
-                        'border-top-left-radius:0;border-top-right-radius:0;"></div></div>',
-                        unsafe_allow_html=True)
-            st.plotly_chart(fig_seg, use_container_width=True, config={"displayModeBar": False},
-                            key="dash_seg_chart")
+    st.html("""
+<div style="padding:0 20px 0 20px;">
+  <div class="panel">
+    <div class="pt">Booking pace — next 30 days</div>
+    <div class="ps">On-books vs same point last year</div>
+    <div class="pace-row">
+      <div class="pace-per">This week</div><div class="pace-onb">94%</div>
+      <div class="pace-bar"><div class="pace-fill" style="width:94%;background:var(--arlo-green);"></div></div>
+      <div class="pace-stly">89%</div>
+      <div class="pace-pill" style="background:var(--arlo-green2);color:var(--arlo-green);">Strong</div>
+    </div>
+    <div class="pace-row">
+      <div class="pace-per">Next week</div><div class="pace-onb">71%</div>
+      <div class="pace-bar"><div class="pace-fill" style="width:71%;background:var(--arlo-red);"></div></div>
+      <div class="pace-stly">78%</div>
+      <div class="pace-pill" style="background:var(--arlo-red2);color:var(--arlo-red);">Slow</div>
+    </div>
+    <div class="pace-row">
+      <div class="pace-per">+ 2 weeks</div><div class="pace-onb">48%</div>
+      <div class="pace-bar"><div class="pace-fill" style="width:48%;background:var(--arlo-amber);"></div></div>
+      <div class="pace-stly">51%</div>
+      <div class="pace-pill" style="background:var(--arlo-amber2);color:var(--arlo-amber);">Watch</div>
+    </div>
+    <div class="pace-row">
+      <div class="pace-per">+ 3 weeks</div><div class="pace-onb">31%</div>
+      <div class="pace-bar"><div class="pace-fill" style="width:31%;background:var(--arlo-green);"></div></div>
+      <div class="pace-stly">28%</div>
+      <div class="pace-pill" style="background:var(--arlo-green2);color:var(--arlo-green);">On track</div>
+    </div>
+    <div class="pace-row">
+      <div class="pace-per">+ 4 weeks</div><div class="pace-onb">19%</div>
+      <div class="pace-bar"><div class="pace-fill" style="width:19%;background:var(--arlo-slate);"></div></div>
+      <div class="pace-stly">17%</div>
+      <div class="pace-pill" style="background:var(--arlo-slate2);color:var(--arlo-slate);">Early</div>
+    </div>
+  </div>
+</div>
+""")
 
 with _dow_col:
     st.html(
@@ -673,6 +657,45 @@ with _dow_col:
             st.session_state["db_dow_filter"] = _new_filter
             st.rerun()
 
+# ── Revenue by segment ───────────────────────────────────────────────────────
+st.html(f"""
+<div style="padding:0 20px;">
+<div class="panel">
+  <div class="pt">Revenue by segment</div>
+  <div class="ps" style="margin-bottom:10px;">Year to date {latest_yr}</div>
+  <div class="seg-rows">
+    <div class="seg-item">
+      <div class="seg-lbl">Transient</div>
+      <div class="seg-track"><div class="seg-fill" style="width:52%;background:#4a6fa5;">
+        <span class="seg-pct" style="color:rgba(255,255,255,.8);">52%</span></div></div>
+      <div class="seg-amt">~$9.1M</div>
+    </div>
+    <div class="seg-item">
+      <div class="seg-lbl">Corporate</div>
+      <div class="seg-track"><div class="seg-fill" style="width:22%;background:#3b7a5c;">
+        <span class="seg-pct" style="color:rgba(255,255,255,.8);">22%</span></div></div>
+      <div class="seg-amt">~$3.9M</div>
+    </div>
+    <div class="seg-item">
+      <div class="seg-lbl">Group</div>
+      <div class="seg-track"><div class="seg-fill" style="width:15%;background:#e8854a;">
+        <span class="seg-pct" style="color:rgba(255,255,255,.9);">15%</span></div></div>
+      <div class="seg-amt">~$2.6M</div>
+    </div>
+    <div class="seg-item">
+      <div class="seg-lbl">Wholesale</div>
+      <div class="seg-track"><div class="seg-fill" style="width:7%;background:#555;"></div></div>
+      <div class="seg-amt">~$1.2M</div>
+    </div>
+    <div class="seg-item">
+      <div class="seg-lbl">Comp / OP</div>
+      <div class="seg-track"><div class="seg-fill" style="width:4%;background:#444;"></div></div>
+      <div class="seg-amt">~$0.7M</div>
+    </div>
+  </div>
+</div>
+</div>
+""")
 
 # ── Competitive set + Medallia ────────────────────────────────────────────────
 arlo_adr_disp  = f"${str_adr_val:.0f}"  if str_adr_val  else f"${adr_c:.0f}"

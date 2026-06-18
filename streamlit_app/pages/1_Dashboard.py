@@ -159,8 +159,11 @@ section[data-testid="stSidebar"] > div > div > div > button:first-child {{ displ
 .pace-stly {{ font-size:9px; color:var(--arlo-muted); width:26px; text-align:right; flex-shrink:0; }}
 .pace-pill {{ font-size:8px; font-weight:600; padding:2px 8px; border-radius:2px; letter-spacing:.06em; width:52px; text-align:center; flex-shrink:0; text-transform:uppercase; }}
 
-/* DOW chart */
+/* DOW chart — bottom half of panel (header is .panel with bottom border removed) */
 .dow-grid {{ display:grid; grid-template-columns:repeat(7,1fr); gap:5px; text-align:center; }}
+.dow-chart-wrap {{ background:var(--arlo-dark3); border:1px solid var(--arlo-border); border-top:none;
+  border-bottom-left-radius:var(--r); border-bottom-right-radius:var(--r);
+  padding:0 4px 8px; margin-right:20px; overflow:hidden; }}
 .dow-col  {{ display:flex; flex-direction:column; align-items:center; gap:4px; }}
 .dow-wrap {{ width:100%; display:flex; flex-direction:column; justify-content:flex-end; height:74px; }}
 .dow-bar  {{ width:100%; border-radius:2px 2px 0 0; }}
@@ -597,13 +600,13 @@ with _bp_col:
 """)
 
 with _dow_col:
-    st.markdown(
-        f'<div style="padding:0 20px 4px 0;">'
-        f'<div style="font-size:9px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;'
-        f'color:rgba(245,245,240,0.38);padding:0 0 4px 2px;">Occupancy by day of week</div>'
-        f'<div style="font-size:9px;color:rgba(245,245,240,0.35);padding:0 0 4px 2px;">'
-        f'Click a bar to filter all KPIs · click again to clear</div></div>',
-        unsafe_allow_html=True,
+    st.html(
+        '<div style="padding:0 20px 0 0;">'
+        '<div class="panel" style="padding-bottom:6px;border-bottom:none;'
+        'border-bottom-left-radius:0;border-bottom-right-radius:0;">'
+        '<div class="pt">Occupancy by day of week</div>'
+        '<div class="ps" style="margin-bottom:0;">Click a bar to filter all KPIs · click again to clear</div>'
+        '</div></div>'
     )
     _dow_bar_colors = []
     for i in range(7):
@@ -629,7 +632,7 @@ with _dow_col:
     ))
     fig_dow.update_layout(
         paper_bgcolor="#222222", plot_bgcolor="#222222",
-        margin=dict(l=4, r=4, t=8, b=4),
+        margin=dict(l=4, r=4, t=4, b=8),
         height=160,
         showlegend=False,
         xaxis=dict(tickfont=dict(size=12, color="rgba(245,245,240,0.45)"),
@@ -638,6 +641,7 @@ with _dow_col:
         bargap=0.25,
     )
 
+    st.markdown('<div class="dow-chart-wrap">', unsafe_allow_html=True)
     _dow_event = st.plotly_chart(
         fig_dow,
         on_select="rerun",
@@ -645,6 +649,7 @@ with _dow_col:
         use_container_width=True,
         config={"displayModeBar": False},
     )
+    st.markdown('</div>', unsafe_allow_html=True)
     if _dow_event and _dow_event.selection and _dow_event.selection.points:
         _clicked = _dow_event.selection.points[0]["point_index"]
         _new_filter = None if _clicked == _dow_filter else _clicked

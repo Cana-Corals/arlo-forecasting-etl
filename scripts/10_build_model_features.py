@@ -168,13 +168,13 @@ def join_rooms_on_books(df: pd.DataFrame) -> pd.DataFrame:
 def add_lag_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.sort_values("business_date").reset_index(drop=True)
 
-    for col, alias in [("occupancy_rate", "occ"), ("room_revenue", "rev"), ("adr", "adr")]:
+    for col, alias in [("occupancy_rate", "occ"), ("room_revenue", "rev"), ("adr", "adr"), ("revpar", "revpar")]:
         for lag in [7, 14, 28, 364]:
             df[f"{alias}_lag_{lag}d"] = _lag(df[col], lag).round(4)
         for window in [7, 28]:
             df[f"{alias}_roll_{window}d"] = _rolling_mean(df[col], window)
 
-    print("  [6] Lag & rolling features added (occ, rev, adr x lag 7/14/28/364 + roll 7/28)")
+    print("  [6] Lag & rolling features added (occ, rev, adr, revpar x lag 7/14/28/364 + roll 7/28)")
     return df
 
 
@@ -248,6 +248,7 @@ def add_targets_and_split(df: pd.DataFrame) -> pd.DataFrame:
     df["target_room_revenue"]   = df["room_revenue"]
     df["target_occupancy_rate"] = df["occupancy_rate"]
     df["target_adr"]            = df["adr"]
+    df["target_revpar"]         = df["revpar"]
     df["split"] = np.where(df["business_date"] < "2025-11-01", "train", "test")
 
     n_train = (df["split"] == "train").sum()
@@ -277,7 +278,7 @@ def main():
 
     # Final column ordering: date | actuals | external | pace | lags | targets | split
     front = ["business_date", "split"]
-    targets = ["target_room_revenue", "target_occupancy_rate", "target_adr"]
+    targets = ["target_room_revenue", "target_occupancy_rate", "target_adr", "target_revpar"]
     actuals = [
         "total_physical_rooms", "ooo_rooms", "available_rooms",
         "room_nights", "occupancy_rate",

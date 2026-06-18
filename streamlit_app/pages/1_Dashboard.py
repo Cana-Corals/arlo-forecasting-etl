@@ -102,7 +102,7 @@ section[data-testid="stSidebar"] > div > div > div > button:first-child {{ displ
 
 /* Section headers */
 .sec-hd {{ display:flex; align-items:center; gap:10px; margin-bottom:9px; }}
-.sec-lbl {{ font-size:9px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--arlo-muted); white-space:nowrap; }}
+.sec-lbl {{ font-size:27px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--arlo-muted); white-space:nowrap; }}
 .sec-line {{ flex:1; height:1px; background:var(--arlo-border); }}
 .sec-line.accent {{ background:linear-gradient(90deg,rgba(232,133,74,.4),transparent); }}
 
@@ -146,7 +146,7 @@ section[data-testid="stSidebar"] > div > div > div > button:first-child {{ displ
 .row3  {{ display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr); gap:10px; }}
 .row22 {{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; }}
 .panel {{ background:var(--arlo-dark3); border:1px solid var(--arlo-border); border-radius:var(--r); padding:16px; }}
-.pt {{ font-size:9px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--arlo-muted); margin-bottom:2px; }}
+.pt {{ font-size:27px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--arlo-muted); margin-bottom:2px; }}
 .ps {{ font-size:10px; color:var(--arlo-muted); margin-bottom:12px; }}
 
 /* Booking pace */
@@ -200,7 +200,7 @@ section[data-testid="stSidebar"] > div > div > div > button:first-child {{ displ
 .comp-item.self .comp-name {{ color:var(--arlo-accent); font-weight:600; }}
 .comp-bw {{ flex:1; height:3px; background:rgba(255,255,255,.06); border-radius:1px; overflow:hidden; }}
 .comp-bf {{ height:100%; border-radius:1px; }}
-.comp-rate {{ font-size:10px; color:var(--arlo-white); width:36px; text-align:right; flex-shrink:0; }}
+.comp-rate {{ font-size:30px; color:var(--arlo-white); width:36px; text-align:right; flex-shrink:0; }}
 .comp-item.self .comp-rate {{ color:var(--arlo-accent); }}
 .comp-idx {{ display:flex; padding-top:10px; border-top:1px solid var(--arlo-border); margin-top:7px; }}
 .ci   {{ flex:1; text-align:center; }}
@@ -730,7 +730,7 @@ if med_overall is not None:
         <div class="score-l">/ 10 overall</div>
       </div>
       <div style="width:1px;height:48px;background:var(--arlo-border);"></div>
-      <div style="font-size:10px;color:var(--arlo-muted2);line-height:2.1;">
+      <div style="font-size:30px;color:var(--arlo-muted2);line-height:2.1;">
         <div>Positive <span style="color:var(--arlo-green);font-weight:600;">89%</span></div>
         <div>Neutral  <span style="color:var(--arlo-amber);font-weight:600;">7%</span></div>
         <div>Negative <span style="color:var(--arlo-red);font-weight:600;">4%</span></div>
@@ -738,7 +738,7 @@ if med_overall is not None:
     </div>
     <div class="rev-rows2">{med_rows_html}</div>"""
 else:
-    med_html = '<div style="font-size:10px;color:var(--arlo-muted);padding:8px 0;">No Medallia data available</div>'
+    med_html = '<div style="font-size:30px;color:var(--arlo-muted);padding:8px 0;">No Medallia data available</div>'
 
 samples_label = f"{med_samples:,} responses · year to date" if med_overall is not None else "year to date"
 

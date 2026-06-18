@@ -35,7 +35,7 @@ st.markdown("""
 
 .rm-topbar { background:var(--dark); border-bottom:1px solid var(--border); height:52px; display:flex; align-items:center; padding:0 20px; gap:10px; }
 .rm-title  { font-size:14px; font-weight:600; color:var(--white); }
-.rm-sub    { font-size:11px; color:var(--muted); }
+.rm-sub    { font-size:33px; color:var(--muted); }
 .rm-rule   { height:2px; background:linear-gradient(90deg,var(--rm-accent) 0%,transparent 60%); }
 .rm-home-btn { margin-left:auto; font-size:11px; color:rgba(245,245,240,.45); text-decoration:none; padding:5px 11px; border:1px solid rgba(255,255,255,.1); border-radius:4px; transition:color .15s,border-color .15s; }
 .rm-home-btn:hover { color:rgba(245,245,240,.9); border-color:rgba(255,255,255,.25); }
@@ -52,11 +52,11 @@ st.markdown("""
 .rm-kpi-desc  { font-size:9px; color:var(--muted); margin-top:3px; line-height:1.4; }
 
 .rm-section { padding:16px 20px 10px; }
-.rm-section-ttl { font-size:9px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.rm-section-ttl { font-size:27px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
 .rm-live-bar { display:flex; align-items:center; gap:10px; padding:0 20px 10px; }
 .rm-live-dot { width:7px; height:7px; border-radius:50%; background:#3ecf8e; box-shadow:0 0 6px #3ecf8e; animation:pulse 1.8s ease-in-out infinite; flex-shrink:0; }
 .rm-live-lbl { font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#3ecf8e; }
-.rm-live-dates { font-size:10px; color:rgba(245,245,240,0.5); }
+.rm-live-dates { font-size:30px; color:rgba(245,245,240,0.5); }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
 </style>
 """, unsafe_allow_html=True)
@@ -593,7 +593,7 @@ if not rt_w.empty:
             f'<div style="width:34px;font-size:9px;font-weight:600;letter-spacing:.06em;'
             f'color:rgba(245,245,240,0.4);flex-shrink:0;text-transform:uppercase;">{r["room_type"]}</div>'
             f'<div style="flex:1;min-width:80px;">'
-            f'<div style="font-size:11px;color:#f5f5f0;white-space:nowrap;overflow:hidden;'
+            f'<div style="font-size:33px;color:#f5f5f0;white-space:nowrap;overflow:hidden;'
             f'text-overflow:ellipsis;">{r["label"]}</div>'
             f'<div style="height:3px;border-radius:2px;background:rgba(255,255,255,0.06);margin-top:4px;">'
             f'<div style="height:3px;border-radius:2px;background:{rc};width:{r["share"]:.1f}%;"></div>'
@@ -620,7 +620,7 @@ if not rt_w.empty:
             f'<div style="padding:0 0 0 20px;">'
             f'<div style="background:#111111;border:1px solid rgba(255,255,255,0.08);'
             f'border-radius:6px;padding:16px 18px;">'
-            f'<div style="font-size:10px;color:rgba(245,245,240,0.35);margin-bottom:14px;">'
+            f'<div style="font-size:30px;color:rgba(245,245,240,0.35);margin-bottom:14px;">'
             f'{date_rng} &nbsp;&middot;&nbsp; {gf_note}</div>'
             f'{rows_html}'
             f'</div></div>',
@@ -660,7 +660,7 @@ if not rt_w.empty:
             f'border-radius:6px;padding:12px 14px;">'
             f'<div style="font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;'
             f'color:#38bdf8;margin-bottom:6px;">HSK &amp; ENG Priority</div>'
-            f'<div style="font-size:10px;color:rgba(245,245,240,0.6);line-height:1.7;">'
+            f'<div style="font-size:30px;color:rgba(245,245,240,0.6);line-height:1.7;">'
             f'Schedule deep-clean and preventive maintenance for '
             f'<strong style="color:#f5f5f0;">{top1}</strong> and '
             f'<strong style="color:#f5f5f0;">{top2}</strong> '
@@ -671,7 +671,7 @@ if not rt_w.empty:
         )
 else:
     st.markdown(
-        '<div style="padding:0 20px;font-size:10px;color:rgba(245,245,240,0.4);">'
+        '<div style="padding:0 20px;font-size:30px;color:rgba(245,245,240,0.4);">'
         'No room-type data found for the equivalent prior-year period.</div>',
         unsafe_allow_html=True,
     )

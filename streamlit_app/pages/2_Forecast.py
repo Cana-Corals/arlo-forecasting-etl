@@ -289,16 +289,16 @@ GREEN_F = "rgba(62,207,142,0.20)"
 def chart_layout(h=280):
     return dict(
         paper_bgcolor=BG, plot_bgcolor=BG,
-        font=dict(family="Inter", color=FONT, size=20),
+        font=dict(family="Inter", color=FONT, size=12),
         margin=dict(l=4, r=4, t=48, b=4),
         height=h, bargap=0.18, bargroupgap=0.08,
         legend=dict(bgcolor="rgba(0,0,0,0)", borderwidth=0,
                     orientation="h", x=0, y=1.14,
-                    font=dict(size=20, color="rgba(245,245,240,0.6)")),
+                    font=dict(size=12, color="rgba(245,245,240,0.6)")),
         xaxis=dict(gridcolor=GRID, linecolor="rgba(255,255,255,0.08)",
-                   tickfont=dict(size=14), tickangle=-30),
+                   tickfont=dict(size=12), tickangle=-30),
         yaxis=dict(gridcolor=GRID, linecolor="rgba(255,255,255,0.08)",
-                   tickfont=dict(size=14), zeroline=False),
+                   tickfont=dict(size=12), zeroline=False),
         hovermode="x unified",
     )
 

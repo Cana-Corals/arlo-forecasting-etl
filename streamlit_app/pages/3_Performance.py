@@ -272,16 +272,16 @@ SLATE,  SLATE_F  = "#4a6fa5", "rgba(74,111,165,0.22)"
 def base_layout(h=280, ytitle="", yprefix="", ysuffix=""):
     return dict(
         paper_bgcolor=BG, plot_bgcolor=BG,
-        font=dict(family="Inter", color=FONT, size=20),
+        font=dict(family="Inter", color=FONT, size=12),
         margin=dict(l=4, r=4, t=48, b=4), height=h,
         bargap=0.2, bargroupgap=0.08,
         legend=dict(bgcolor="rgba(0,0,0,0)", borderwidth=0,
                     orientation="h", x=0, y=1.14,
-                    font=dict(size=20, color="rgba(245,245,240,0.6)")),
+                    font=dict(size=12, color="rgba(245,245,240,0.6)")),
         xaxis=dict(gridcolor=GRID, linecolor="rgba(255,255,255,0.08)",
-                   tickfont=dict(size=14), tickangle=-30),
+                   tickfont=dict(size=12), tickangle=-30),
         yaxis=dict(gridcolor=GRID, linecolor="rgba(255,255,255,0.08)",
-                   tickfont=dict(size=14), zeroline=False,
+                   tickfont=dict(size=12), zeroline=False,
                    title=ytitle, tickprefix=yprefix, ticksuffix=ysuffix),
         hovermode="x unified",
     )
@@ -659,7 +659,7 @@ if not _sat_master.empty:
         _fig_exp.add_hline(y=8.0, line_dash="dot",
                            line_color="rgba(255,255,255,0.12)",
                            annotation_text="8.0", annotation_position="right",
-                           annotation_font=dict(size=14, color="rgba(255,255,255,0.3)"))
+                           annotation_font=dict(size=12, color="rgba(255,255,255,0.3)"))
 
         # Thin dashed trend lines connecting the numbers
         if _yv_cur:
@@ -681,7 +681,7 @@ if not _sat_master.empty:
             mode="markers+text",
             text=[f"{v:.1f}" if v is not None else "" for v in _yv_cur],
             textposition="top center",
-            textfont=dict(size=15, color=_open_color, family="Inter"),
+            textfont=dict(size=12, color=_open_color, family="Inter"),
             marker=dict(size=5, color=_open_color),
             name=_lbl_cur,
             hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_lbl_cur}</extra>",
@@ -695,7 +695,7 @@ if not _sat_master.empty:
                 mode="markers+text",
                 text=[f"{v:.1f}" if v is not None else "" for v in _yv_py],
                 textposition="bottom center",
-                textfont=dict(size=14, color=_faded_color, family="Inter"),
+                textfont=dict(size=12, color=_faded_color, family="Inter"),
                 marker=dict(size=3, color=_faded_color),
                 name=_lbl_py,
                 hovertemplate=f"{_open_metric}: %{{y:.2f}}<extra>{_lbl_py}</extra>",
@@ -710,7 +710,7 @@ if not _sat_master.empty:
         _exp_lay["title"] = dict(
             text=f"{_open_metric} — score / 10  ·  {_lbl_cur} (full) vs {_lbl_py} (faded)"
                  if _show_py_exp else f"{_open_metric} — score / 10",
-            font=dict(size=20, color="rgba(245,245,240,0.45)"),
+            font=dict(size=12, color="rgba(245,245,240,0.45)"),
             x=0, xanchor="left", pad=dict(l=4),
         )
         _fig_exp.update_layout(**_exp_lay)

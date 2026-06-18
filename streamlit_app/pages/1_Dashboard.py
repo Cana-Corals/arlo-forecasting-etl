@@ -625,14 +625,14 @@ with _dow_col:
         hovertemplate="%{x}: %{y:.1f}%<extra></extra>",
         text=[f"{v:.0f}%" for v in dow_vals],
         textposition="outside",
-        textfont=dict(size=13, color="rgba(245,245,240,0.6)"),
+        textfont=dict(size=12, color="rgba(245,245,240,0.6)"),
     ))
     fig_dow.update_layout(
         paper_bgcolor="#222222", plot_bgcolor="#222222",
         margin=dict(l=4, r=4, t=8, b=4),
         height=160,
         showlegend=False,
-        xaxis=dict(tickfont=dict(size=14, color="rgba(245,245,240,0.45)"),
+        xaxis=dict(tickfont=dict(size=12, color="rgba(245,245,240,0.45)"),
                    showgrid=False, fixedrange=True),
         yaxis=dict(visible=False, fixedrange=True),
         bargap=0.25,

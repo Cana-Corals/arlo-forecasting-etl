@@ -24,10 +24,4 @@ def _load_config() -> dict:
 
 
 def require_auth() -> None:
-    """
-    Call at the top of every page (after set_page_config).
-    Navigation via st.page_link keeps session alive, so a plain session check is enough.
-    Redirects to login only if someone lands on the page without an active session.
-    """
-    if not st.session_state.get("authentication_status"):
-        st.switch_page("Home.py")
+    pass

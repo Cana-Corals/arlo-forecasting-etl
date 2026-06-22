@@ -584,15 +584,12 @@ def home_page():
     hour     = datetime.now().hour
     greeting = "Good morning" if hour < 12 else "Good afternoon" if hour < 18 else "Good evening"
 
-    col_space, col_logout = st.columns([11, 1])
-    with col_logout:
-        authenticator.logout("Logout", location="main")
-
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown("<br>", unsafe_allow_html=True)
+        greeting_name = f", {name.split()[0]}" if name.strip() else ""
         st.markdown(
-            f'<div class="arlo-title" style="text-align:center;">{greeting}, {name.split()[0]}.</div>',
+            f'<div class="arlo-title" style="text-align:center;">{greeting}{greeting_name}.</div>',
             unsafe_allow_html=True,
         )
         st.markdown(
@@ -639,28 +636,17 @@ def home_page():
 
 
 # ── Navigation router ─────────────────────────────────────────────────────────
-is_auth = st.session_state.get("authentication_status")
-
-if is_auth:
-    _pg_home = st.Page(home_page, title="Home", url_path="", default=True)
-    st.session_state["_pg_home"] = _pg_home
-    pg = st.navigation(
-        [
-            _pg_home,
-            st.Page("pages/1_Dashboard.py",      title="Dashboard"),
-            st.Page("pages/2_Forecast.py",       title="Forecast"),
-            st.Page("pages/3_Performance.py",    title="Performance"),
-            st.Page("pages/4_Demand.py",         title="Demand"),
-            st.Page("pages/7_Rooms.py",          title="Rooms"),
-            st.Page("pages/5_Competitive.py",    title="Competitive"),
-            st.Page("pages/6_Model_Insights.py", title="Model Insights"),
-        ],
-        position="hidden",
-    )
-else:
-    pg = st.navigation(
-        [st.Page(login_page, title="Login", url_path="", default=True)],
-        position="hidden",
-    )
+pg = st.navigation(
+    [
+        st.Page("pages/1_Dashboard.py",      title="Dashboard",      default=True),
+        st.Page("pages/2_Forecast.py",       title="Forecast"),
+        st.Page("pages/3_Performance.py",    title="Performance"),
+        st.Page("pages/4_Demand.py",         title="Demand"),
+        st.Page("pages/5_Competitive.py",    title="Competitive"),
+        st.Page("pages/6_Model_Insights.py", title="Model Insights"),
+        st.Page(home_page,                   title="AI Assistant",   url_path="ai"),
+    ],
+    position="hidden",
+)
 
 pg.run()

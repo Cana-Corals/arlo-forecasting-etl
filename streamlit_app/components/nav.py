@@ -2,7 +2,6 @@ import streamlit as st
 from pathlib import Path
 
 PAGES = [
-    ("AI Assistant",   "Home.py"),
     ("Dashboard",      "pages/1_Dashboard.py"),
     ("Forecast",       "pages/2_Forecast.py"),
     ("Performance",    "pages/3_Performance.py"),
